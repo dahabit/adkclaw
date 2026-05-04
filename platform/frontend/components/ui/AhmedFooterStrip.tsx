@@ -19,7 +19,7 @@ export function AhmedFooterStrip() {
           background:
             'radial-gradient(circle at 50% 50%, rgba(59,130,246,0.25), rgba(20,30,56,0.9) 70%)',
         }}
-        aria-label="Ahmed Abu Eldahab — Google Developer Expert"
+        aria-label="Ahmed Abu Eldahab — Google Developer Expert in Dart & Flutter"
       >
         <img
           src="/ahmed.png"
@@ -45,26 +45,28 @@ export function AhmedFooterStrip() {
       </div>
 
       {/* Bio + socials */}
-      <div className="text-center sm:text-left">
+      <div className="text-center sm:text-left min-w-0">
         <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-ink-tertiary mb-2">
-          Built by
+          About me
         </p>
-        <p className="font-display text-2xl sm:text-3xl font-bold text-ink-primary leading-tight">
+        <p className="font-display text-xl sm:text-2xl font-bold text-ink-primary leading-tight whitespace-nowrap overflow-hidden text-ellipsis">
           Ahmed Abu Eldahab
         </p>
         <p className="text-accent text-sm font-semibold mt-1">
-          Google Developer Expert · Flutter & Dart
+          Google Developer Expert in Dart &amp; Flutter
         </p>
         <p className="text-ink-secondary text-sm mt-3 leading-relaxed">
-          Speaker, course author, and shipping engineer. AdkClaw distills the agent patterns I use
-          in production into a workshop students can finish in a weekend.
+          Entrepreneur, public speaker, technology advocate &amp; consultant. Web &amp; mobile
+          consultant with more than <strong className="text-ink-primary">24 years</strong> of
+          professional software engineering experience.
         </p>
 
         <div className="mt-5 flex flex-wrap gap-2 justify-center sm:justify-start">
-          <SocialPill href="https://github.com/dahabit" label="GitHub" />
-          <SocialPill href="https://www.youtube.com/@h3boh3bo" label="YouTube" />
+          <SocialPill href="https://www.linkedin.com/in/dahabdev/" label="LinkedIn" />
           <SocialPill href="https://x.com/dahabdev" label="X" />
-          <SocialPill href="https://www.linkedin.com/in/dahabit/" label="LinkedIn" />
+          <SocialPill href="https://www.youtube.com/@dahabdev" label="YouTube" />
+          <SocialPill href="https://facebook.com/dahabdev" label="Facebook" />
+          <SocialPill href="https://instagram.com/dahabdev" label="Instagram" />
         </div>
       </div>
     </div>

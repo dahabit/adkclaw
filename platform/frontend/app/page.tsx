@@ -160,11 +160,11 @@ export default function HomePage() {
         <FadeIn>
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-primary mb-3">
-              Powered by Google
+              Google Technologies
             </h2>
             <p className="text-ink-secondary max-w-2xl mx-auto">
-              Production-grade Google Cloud + open-source plumbing. Every layer is something the
-              workshop teaches you to operate.
+              Production-grade Google Cloud services. Every layer is something the workshop teaches
+              you to operate. AdkClaw is community-built and not officially affiliated with Google.
             </p>
           </div>
         </FadeIn>
@@ -284,7 +284,7 @@ export default function HomePage() {
 
           <div>
             <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mb-3">
-              Powered by Google
+              Google Technologies
             </p>
             <ul className="flex flex-col gap-1.5 text-sm text-ink-secondary">
               <li>Gemini · Google ADK</li>
