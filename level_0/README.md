@@ -4,7 +4,7 @@
 
 **Get oriented before you build. Learn the six pillars of an autonomous agent and tour the AdkClaw repo from top to bottom.**
 
-You're about to build an autonomous AI agent across the next four levels. Before any code, you need a map of the territory: what an agent actually *is*, what makes one autonomous, what's Google's tech and what's open-source plumbing, and where every concept lives in the codebase. Forty-five minutes of orientation now will save four hours of head-scratching later.
+You're about to build an autonomous AI agent across the next four levels. Before any code, you need a map of the territory: what an agent actually *is*, what makes one autonomous, what's Google's tech and what's open-source plumbing, and where every concept lives in the codebase. A bit of orientation now saves you a lot of head-scratching later.
 
 ## 🎯 What You'll Learn
 
@@ -35,7 +35,7 @@ This level is **presentation-style** — no agent code yet. You read, you watch 
 - ✅ Cloud Shell access (recommended) or local Node.js 22+ environment
 - ✅ A free [Gemini API key](https://aistudio.google.com/apikey) (used in Level 1)
 - ✅ A [Telegram bot token](https://t.me/BotFather) (used in Level 1) — send `/newbot` to BotFather
-- ✅ ~60 minutes (45 min reading + demo, 15 min setup)
+- ✅ A short orientation block + setup check
 
 ## 🚀 Quick Start
 
@@ -239,7 +239,7 @@ Now that you understand the territory, it's time to build:
 
 **[Level 1: Build the Brain →](../level_1/README.md)**
 
-You'll wrap the Gemini API in an agent loop, register three tools, give your agent a name and a personality, and put it on Telegram in 2 hours.
+You'll wrap the Gemini API in an agent loop, register three tools, give your agent a name and a personality, and put it on Telegram by the end of this level.
 
 ---
 

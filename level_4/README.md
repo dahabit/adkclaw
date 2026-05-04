@@ -290,4 +290,4 @@ The repo is the scaffolding. Now build something with it.
 
 ---
 
-*From `console.log` to globally-reachable autonomous agent in under 10 hours. Welcome to the future.* 🚀
+*From `console.log` to globally-reachable autonomous agent. Welcome to the future.* 🚀

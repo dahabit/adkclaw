@@ -4,7 +4,7 @@
 
 **Wrap a single `generateContent` call in the core ADK pattern — `think → act → observe → respond` — give it tools, a personality, and a Telegram channel. By the end of this level your agent has a name and a working chat surface.**
 
-You've used `client.models.generateContent()`. That's not an agent — it's a function call. In the next two hours, you'll wrap that one call in **a loop**, give it **tools** (web search, URL fetching, filesystem), hand it a **personality** through markdown files, and put it on **Telegram** so you can talk to it from your phone. Your agent will know your name, remember your conversation across turns, and search the web when it needs to.
+You've used `client.models.generateContent()`. That's not an agent — it's a function call. In this level you'll wrap that one call in **a loop**, give it **tools** (web search, URL fetching, filesystem), hand it a **personality** through markdown files, and put it on **Telegram** so you can talk to it from your phone. Your agent will know your name, remember your conversation across turns, and search the web when it needs to.
 
 ## 🎯 What You'll Learn
 
