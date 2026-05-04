@@ -1,0 +1,11 @@
+node_modules
+dist
+data
+workspace
+output
+package-lock.json
+BRD.md
+CLAUDE.md
+EXECUTION-PLAN.md
+README.md
+*.md

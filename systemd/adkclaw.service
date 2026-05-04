@@ -1,0 +1,22 @@
+[Unit]
+Description=AdkClaw autonomous agent daemon
+After=network.target
+
+[Service]
+Type=simple
+User=adkclaw
+WorkingDirectory=/opt/adkclaw
+EnvironmentFile=/opt/adkclaw/.env
+ExecStart=/usr/bin/node /opt/adkclaw/dist/index.js
+Restart=on-failure
+RestartSec=5s
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=adkclaw
+
+# Hard limits
+MemoryMax=512M
+TasksMax=64
+
+[Install]
+WantedBy=multi-user.target

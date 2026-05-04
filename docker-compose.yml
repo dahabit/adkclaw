@@ -1,0 +1,17 @@
+services:
+  adkclaw:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_PATH: /data/db/adkclaw.db
+      WORKSPACE_PATH: /data/workspace
+    ports:
+      - "3000:3000"
+    volumes:
+      - workspace:/data/workspace
+      - db:/data/db
+
+volumes:
+  workspace:
+  db:

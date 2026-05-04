@@ -1,0 +1,87 @@
+# === Dependencies ===
+node_modules/
+package-lock.json
+*.log
+npm-debug.log*
+
+# === Build output ===
+dist/
+*.tsbuildinfo
+.next/
+out/
+build/
+
+# === Environment (NEVER commit these) ===
+.env
+.env.local
+.env.*.local
+!.env.example
+agent.yaml
+config.json
+set_env.sh
+
+# === Runtime data (per-user; never commit) ===
+data/
+workspace/
+!workspace.example/
+output/
+**/*.db
+**/*.db-journal
+**/*.pid
+
+# === OS / editor ===
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# === Secrets / certs (CRITICAL) ===
+*.pem
+*.key
+*.p12
+service-account.json
+gcp-credentials.json
+**/credentials/
+
+# === Test / coverage ===
+coverage/
+.nyc_output/
+.cache/
+
+# === Cloud / deploy artifacts ===
+.gcloudignore
+*.tfstate
+*.tfstate.backup
+.terraform/
+
+# === Instructor-only (paranoid backup — should be in adkclaw-instructor/ already) ===
+codelab/briefs/
+codelab/full-prompts/
+codelab/CURRICULUM.md
+codelab/SNAPSHOTS.md
+codelab/GOOGLE-PROPOSAL.md
+codelab/MASTER-PLAN.md
+codelab/PUBLIC-VS-PRIVATE.md
+codelab/DNS-SETUP.md
+codelab/HOSTING-COSTS.md
+BRD.md
+EXECUTION-PLAN.md
+CLAUDE.md
+memory/
+plans/
+__pycache__/
+
+# === Python (for platform/api if Python) ===
+*.pyc
+*.pyo
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+
+# === Frontend (for platform/frontend) ===
+.parcel-cache/
+.turbo/

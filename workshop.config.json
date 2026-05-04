@@ -1,0 +1,48 @@
+{
+  "workshop_name": "AdkClaw — Build an Autonomous AI Agent",
+  "version": "1.0.0",
+  "api_base_url": "https://api.adkclaw.dev",
+  "map_base_url": "https://adkclaw.dev",
+  "default_event_code": "sandbox",
+  "default_region": "us-central1",
+  "default_model": "gemini-2.5-pro",
+  "fallback_model": "gemini-2.5-flash",
+  "node_version": "22",
+  "levels": [
+    {
+      "id": 0,
+      "slug": "intro",
+      "title": "Architecture Tour",
+      "duration_min": 60,
+      "type": "presentation"
+    },
+    {
+      "id": 1,
+      "slug": "build-the-brain",
+      "title": "Build the Brain",
+      "duration_min": 120,
+      "type": "hands-on"
+    },
+    {
+      "id": 2,
+      "slug": "memory-and-skills",
+      "title": "Memory & Skills",
+      "duration_min": 120,
+      "type": "hands-on"
+    },
+    {
+      "id": 3,
+      "slug": "agent-army",
+      "title": "The Agent Army",
+      "duration_min": 120,
+      "type": "hands-on"
+    },
+    {
+      "id": 4,
+      "slug": "cloud-deploy",
+      "title": "Ship to the Cloud",
+      "duration_min": 150,
+      "type": "hands-on"
+    }
+  ]
+}
