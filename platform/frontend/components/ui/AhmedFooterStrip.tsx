@@ -22,11 +22,11 @@ export function AhmedFooterStrip() {
           }}
           aria-label="Ahmed Abu Eldahab — Google Developer Expert"
         >
-          {/* If /ahmed.jpg exists in /public, it'll show; otherwise the alt-fallback shows */}
           <img
-            src="/ahmed.jpg"
+            src="/ahmed.png"
             alt="Ahmed Abu Eldahab"
             className="h-full w-full object-cover"
+            style={{ objectPosition: 'center top' }}
             onError={(e) => {
               (e.currentTarget as HTMLImageElement).style.display = 'none';
             }}
