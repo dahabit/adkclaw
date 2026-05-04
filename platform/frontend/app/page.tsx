@@ -68,8 +68,8 @@ export default function HomePage() {
             <p className="text-lg sm:text-xl text-ink-secondary mb-10 leading-relaxed max-w-3xl mx-auto">
               A 5-level workshop teaching autonomous AI agents on Google ADK + Gemini in TypeScript.
               From <code className="text-mono text-accent">console.log</code> to a
-              globally-reachable agent on Cloud Run, talking to you on Telegram, in{' '}
-              <strong className="text-ink-primary">9.5 hours total</strong>.
+              globally-reachable agent running 24/7 on Google Cloud — that you can chat with from
+              anywhere.
             </p>
           </FadeIn>
           <FadeIn delay={240}>
@@ -173,16 +173,18 @@ export default function HomePage() {
         </FadeIn>
       </section>
 
-      {/* === About / Builder === */}
+      {/* === About === */}
       <section id="about" className="container-wide py-16 scroll-mt-20">
         <FadeIn>
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-primary mb-3">
-              Who built this
+              About AdkClaw
             </h2>
             <p className="text-ink-secondary max-w-2xl mx-auto">
-              AdkClaw is an open-source workshop by a Google Developer Expert — distilled from
-              shipping production agent systems.
+              An open-source workshop by Google Developer Expert{' '}
+              <span className="text-ink-primary font-semibold">Ahmed Abu Eldahab</span> — built to
+              teach students how to design and ship autonomous AI agents the right way, from first
+              principles to production on Google Cloud.
             </p>
           </div>
         </FadeIn>
@@ -274,14 +276,14 @@ export default function HomePage() {
 
           <div>
             <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mb-3">
-              Stack
+              Powered by Google
             </p>
             <ul className="flex flex-col gap-1.5 text-sm text-ink-secondary">
-              <li>Gemini 2.5 Pro / Flash</li>
-              <li>Google ADK · TypeScript</li>
-              <li>Cloud Run · Firestore</li>
-              <li>Secret Manager · Cloud Build</li>
-              <li>Telegram · WhatsApp (soon)</li>
+              <li>Gemini · Google ADK</li>
+              <li>Vertex AI · Cloud Run</li>
+              <li>Firestore · Firebase</li>
+              <li>Cloud Build · Secret Manager</li>
+              <li>Cloud Scheduler</li>
             </ul>
           </div>
         </div>

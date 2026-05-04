@@ -1,64 +1,71 @@
 'use client';
 
 /**
- * Founder strip — small "Built by Ahmed" identity card.
- * Photo gracefully degrades to monogram if /ahmed.jpg is absent.
+ * AhmedFooterStrip — About card with prominent founder portrait, GDE chip, bio, socials.
+ * Photo gracefully degrades to monogram if /ahmed.png is absent.
  */
 
 import Link from 'next/link';
 
 export function AhmedFooterStrip() {
   return (
-    <div className="surface-raised rounded-xl px-6 py-5 sm:flex sm:items-center sm:gap-5">
-      <div className="flex items-center gap-4 sm:flex-1">
-        {/* Photo / monogram */}
-        <div
-          className="relative h-16 w-16 flex-none rounded-full overflow-hidden border-2"
-          style={{
-            borderColor: 'rgba(59, 130, 246, 0.55)',
-            boxShadow: '0 0 18px -4px rgba(59,130,246,0.5)',
-            background:
-              'radial-gradient(circle at 50% 50%, rgba(59,130,246,0.25), rgba(20,30,56,0.9) 70%)',
+    <div className="surface-raised rounded-2xl p-6 sm:p-8 grid gap-6 sm:gap-10 sm:grid-cols-[auto_1fr] items-center">
+      {/* Photo */}
+      <div
+        className="relative h-40 w-40 sm:h-48 sm:w-48 flex-none rounded-2xl overflow-hidden border-2 mx-auto sm:mx-0"
+        style={{
+          borderColor: 'rgba(59, 130, 246, 0.55)',
+          boxShadow: '0 0 36px -6px rgba(59,130,246,0.55)',
+          background:
+            'radial-gradient(circle at 50% 50%, rgba(59,130,246,0.25), rgba(20,30,56,0.9) 70%)',
+        }}
+        aria-label="Ahmed Abu Eldahab — Google Developer Expert"
+      >
+        <img
+          src="/ahmed.png"
+          alt="Ahmed Abu Eldahab"
+          className="h-full w-full object-cover"
+          style={{ objectPosition: 'center top' }}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
           }}
-          aria-label="Ahmed Abu Eldahab — Google Developer Expert"
+        />
+        <span
+          aria-hidden
+          className="absolute inset-0 flex items-center justify-center font-display text-5xl font-bold text-ink-primary -z-0"
         >
-          <img
-            src="/ahmed.png"
-            alt="Ahmed Abu Eldahab"
-            className="h-full w-full object-cover"
-            style={{ objectPosition: 'center top' }}
-            onError={(e) => {
-              (e.currentTarget as HTMLImageElement).style.display = 'none';
-            }}
-          />
-          <span
-            aria-hidden
-            className="absolute inset-0 flex items-center justify-center font-display text-xl font-bold text-ink-primary -z-0"
-          >
-            AD
-          </span>
-          <span
-            className="absolute -bottom-1 -right-1 inline-flex h-5 items-center rounded-full bg-accent px-1.5 text-[9px] font-bold uppercase tracking-wider text-bg-deep"
-            aria-label="Google Developer Expert"
-          >
-            GDE
-          </span>
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-mono text-[10px] uppercase tracking-[0.2em] text-ink-tertiary mb-1">
-            Built by
-          </p>
-          <p className="font-display text-base font-semibold text-ink-primary">Ahmed Abu Eldahab</p>
-          <p className="text-ink-secondary text-sm">Google Developer Expert · Flutter & Dart</p>
-        </div>
+          AD
+        </span>
+        <span
+          className="absolute -bottom-2 -right-2 inline-flex h-7 items-center rounded-full bg-accent px-2 text-[10px] font-bold uppercase tracking-wider text-bg-deep shadow-glow"
+          aria-label="Google Developer Expert"
+        >
+          GDE
+        </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap gap-3 sm:mt-0">
-        <SocialPill href="https://github.com/dahabit" label="GitHub" />
-        <SocialPill href="https://www.youtube.com/@h3boh3bo" label="YouTube" />
-        <SocialPill href="https://x.com/dahabdev" label="X" />
-        <SocialPill href="https://www.linkedin.com/in/dahabit/" label="LinkedIn" />
+      {/* Bio + socials */}
+      <div className="text-center sm:text-left">
+        <p className="text-mono text-[10px] uppercase tracking-[0.22em] text-ink-tertiary mb-2">
+          Built by
+        </p>
+        <p className="font-display text-2xl sm:text-3xl font-bold text-ink-primary leading-tight">
+          Ahmed Abu Eldahab
+        </p>
+        <p className="text-accent text-sm font-semibold mt-1">
+          Google Developer Expert · Flutter & Dart
+        </p>
+        <p className="text-ink-secondary text-sm mt-3 leading-relaxed">
+          Speaker, course author, and shipping engineer. AdkClaw distills the agent patterns I use
+          in production into a workshop students can finish in a weekend.
+        </p>
+
+        <div className="mt-5 flex flex-wrap gap-2 justify-center sm:justify-start">
+          <SocialPill href="https://github.com/dahabit" label="GitHub" />
+          <SocialPill href="https://www.youtube.com/@h3boh3bo" label="YouTube" />
+          <SocialPill href="https://x.com/dahabdev" label="X" />
+          <SocialPill href="https://www.linkedin.com/in/dahabit/" label="LinkedIn" />
+        </div>
       </div>
     </div>
   );
