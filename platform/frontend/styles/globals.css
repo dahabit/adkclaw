@@ -1,0 +1,75 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    font-family: theme('fontFamily.body');
+    background-color: theme('colors.bg.deep');
+    color: theme('colors.ink.primary');
+    scroll-behavior: smooth;
+  }
+
+  body {
+    min-height: 100dvh;
+    background:
+      radial-gradient(ellipse at top, rgba(59, 130, 246, 0.04) 0%, transparent 60%),
+      radial-gradient(ellipse at bottom right, rgba(59, 130, 246, 0.03) 0%, transparent 60%),
+      theme('colors.bg.deep');
+    background-attachment: fixed;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: theme('fontFamily.display');
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+  }
+
+  ::selection {
+    background-color: rgba(59, 130, 246, 0.32);
+    color: theme('colors.ink.primary');
+  }
+
+  *:focus-visible {
+    outline: 2px solid theme('colors.accent.ring');
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-6 sm:px-8;
+  }
+
+  .text-mono {
+    font-family: theme('fontFamily.mono');
+  }
+
+  .surface {
+    background-color: theme('colors.bg.surface');
+    border: 1px solid theme('colors.border.subtle');
+  }
+
+  .surface-raised {
+    background-color: theme('colors.bg.raised');
+    border: 1px solid theme('colors.border.subtle');
+  }
+
+  /* Gold beacon glow for deployed agents */
+  .beacon-deployed {
+    background-color: theme('colors.status.deployed');
+    box-shadow: 0 0 12px -2px rgba(250, 204, 21, 0.7);
+    animation: pulse-glow 2s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  }
+}
