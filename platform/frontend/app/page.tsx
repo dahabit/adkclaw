@@ -206,9 +206,17 @@ export default function HomePage() {
             secrets. Your agent runs on your infrastructure — and keeps running after the workshop
             ends.
           </p>
-          <Link href="/join/sandbox" className="btn-hero text-base inline-flex items-center">
-            Join the sandbox →
-          </Link>
+          <div className="flex flex-wrap justify-center items-center gap-4">
+            <Link href="/join/sandbox" className="btn-hero text-base inline-flex items-center">
+              Join the sandbox →
+            </Link>
+            <Link
+              href="/preflight"
+              className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary hover:text-accent transition-colors duration-fast ease-out"
+            >
+              First time? Run pre-flight check →
+            </Link>
+          </div>
         </section>
       </FadeIn>
 
