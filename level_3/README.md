@@ -111,6 +111,12 @@ $ bin/adkclaw open
 # Live: sessions, tokens, channel breakdown, sub-agent activity
 ```
 
+## 🏆 Light Up Your Level 3 Badge
+
+**Trigger**: a sub-agent spawns (any of `spawn_search` / `spawn_researcher` / `spawn_communicator` / `spawn_coder` / generic `spawn_agent`) AND returns a result without erroring out of the recovery pyramid.
+
+If you registered at [adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox) (see [Level 0 → Connect to the Cohort Fleet](../level_0/README.md#-optional-connect-to-the-cohort-fleet)), your third pillar lights up on the fleet view. If not registered, no-op.
+
 ## 📖 Full Codelab
 
 **[📚 Level 3 Codelab →](https://codelabs.developers.google.com/adkclaw-level-3/instructions)**

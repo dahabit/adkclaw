@@ -144,6 +144,12 @@ You: Are you still alive?
 Bot: Of course. I'm not on your laptop anymore.
 ```
 
+## 🏆 Light Up Your Level 4 Badge (the final pillar)
+
+**Trigger**: deployment completes and `gcloud run services describe` returns a public HTTPS URL. The agent calls `mark_level_complete` with `level: 4`, `region`, and `publicAgentUrl` so the platform can verify and surface your Cloud Run URL on your profile at `adkclaw.dev/u/<username>`.
+
+If you registered at [adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox) (see [Level 0 → Connect to the Cohort Fleet](../level_0/README.md#-optional-connect-to-the-cohort-fleet)), all four pillars light up — you're on the leaderboard. If not registered, no-op.
+
 ## 📖 Full Codelab
 
 **[📚 Level 4 Codelab →](https://codelabs.developers.google.com/adkclaw-level-4/instructions)**

@@ -111,6 +111,12 @@ Bot: Done — workspace/skills/remember-decisions.md.
 
 `cat workspace/skills/remember-decisions.md` shows the agent's draft. Restart; it's now a listed skill.
 
+## 🏆 Light Up Your Level 2 Badge
+
+**Trigger**: memory bank gets its first fact AND compaction runs once. The agent calls `mark_level_complete` with `level: 2` after both happen in the same session.
+
+If you registered at [adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox) (see [Level 0 → Connect to the Cohort Fleet](../level_0/README.md#-optional-connect-to-the-cohort-fleet)), your second pillar lights up on the fleet view. If not registered, no-op.
+
 ## 📖 Full Codelab
 
 For detailed step-by-step instructions:

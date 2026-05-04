@@ -104,6 +104,40 @@ npx adkclaw check
 
 You should see all green ticks. If `ALLOWED_SENDERS` is missing, that's expected — Level 1 covers it.
 
+## 🏆 Optional: Connect to the Cohort Fleet
+
+Your agent can self-report level milestones to **[adkclaw.dev](https://adkclaw.dev)** so you light up on the live cohort fleet, earn the four pillar badges, and get a public profile at `adkclaw.dev/u/<your-username>`.
+
+This is optional — the agent runs the same with or without it.
+
+### How to register
+
+1. Visit **[adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox)** (or your event code if your instructor gave you one).
+2. Pick the same `username` you entered in `./scripts/setup.sh`.
+3. Pick your character avatar.
+4. The page shows your **builder secret ONCE** — copy it now, it isn't shown again.
+
+### How to wire it up
+
+Add the secret to your `.env` (or append to `set_env.sh`):
+
+```bash
+# Append to ~/adkclaw/set_env.sh
+echo 'export ADKCLAW_BUILDER_SECRET="paste-the-secret-here"' >> ~/adkclaw/set_env.sh
+source ~/adkclaw/set_env.sh
+```
+
+That's it. The next time your agent finishes a level, it calls `mark_level_complete` and the badge lights up on the fleet within ~2 seconds.
+
+| Level | Badge unlocks when |
+|-------|-------------------|
+| 1 | First Telegram conversation completes |
+| 2 | Memory bank gets its first fact + compaction runs once |
+| 3 | A sub-agent spawns and returns a result |
+| 4 | Agent is deployed to Cloud Run with a public URL |
+
+If you skip this step the agent **does not** report — it logs `[badge-reporter] disabled (no ADKCLAW_BUILDER_SECRET)` once at startup and runs normally.
+
 ## 📖 Full Codelab
 
 For detailed step-by-step instructions with the architecture deep-dive:

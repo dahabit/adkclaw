@@ -137,6 +137,14 @@ npm run chat
 
 Same agent, terminal interface. Same memory. Same personality.
 
+## 🏆 Light Up Your Level 1 Badge
+
+If you registered at [adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox) (see [Level 0 → Connect to the Cohort Fleet](../level_0/README.md#-optional-connect-to-the-cohort-fleet)), your agent reports completion automatically.
+
+**Trigger**: first Telegram message exchanged with your agent. After the agent replies, it calls the `mark_level_complete` tool, which POSTs an HMAC-signed badge to `api.adkclaw.dev`. Within ~2 seconds your beacon turns blue on the cohort fleet at [adkclaw.dev](https://adkclaw.dev).
+
+If `ADKCLAW_BUILDER_SECRET` is unset the agent runs the same — it just won't appear on the fleet view.
+
 ## 📖 Full Codelab
 
 For detailed step-by-step instructions with explanations:
