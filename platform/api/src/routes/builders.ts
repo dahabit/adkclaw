@@ -121,17 +121,19 @@ buildersRouter.get(
         registeredAt: data.registeredAt,
       };
 
-      // Fetch their level completions
+      // Fetch their level completions (no orderBy — sort in JS to avoid composite index)
       const completionsSnapshot = await collections.levelCompletions
         .where('username', '==', username)
-        .orderBy('level', 'asc')
         .get();
 
       const levels: BuilderProfile['levels'] = {};
       let totalSec = 0;
 
-      for (const c of completionsSnapshot.docs) {
-        const completion = c.data() as LevelCompletion;
+      const completions = completionsSnapshot.docs
+        .map((c) => c.data() as LevelCompletion)
+        .sort((a, b) => a.level - b.level);
+
+      for (const completion of completions) {
         levels[completion.level] = {
           completedAt: completion.completedAt,
           durationSec: completion.durationSec,
