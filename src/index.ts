@@ -17,6 +17,7 @@ import {
   makeBrowserPdfTool,
 } from './tools/browser.js';
 import { makeCodeFixTool } from './tools/code-fix.js';
+import { makeBadgeTool } from './tools/badge.js';
 import {
   makeSpawnAgentTool,
   makeSpawnSearchTool,
@@ -82,6 +83,7 @@ async function main() {
   registry.register(makeBrowserScreenshotTool());
   registry.register(makeBrowserPdfTool());
   registry.register(makeCodeFixTool());
+  registry.register(makeBadgeTool());
 
   const healing = new HealingEngine();
   const budget = new BudgetGuard({

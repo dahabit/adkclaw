@@ -177,7 +177,8 @@ describe('BadgeReporter', () => {
     const calls: string[] = [];
     vi.spyOn(globalThis, 'fetch').mockImplementation(async (_url, init) => {
       const headers = (init as RequestInit)?.headers as Record<string, string>;
-      calls.push(headers['Authorization']);
+      const auth = headers['Authorization'] ?? '';
+      calls.push(auth);
       return new Response(JSON.stringify({ ok: true, badgesEarned: [1] }), { status: 200 });
     });
 
