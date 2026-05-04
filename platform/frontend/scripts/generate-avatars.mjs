@@ -29,10 +29,22 @@ const SPECS = [
     look: 'short dark hair, round glasses, light beard, focused expression',
   },
   {
+    id: 'nova',
+    category: 'boy',
+    personality: 'studious',
+    look: 'pale skin, dark undercut hair, sharp jawline, light stubble, deep blue turtleneck, intense thoughtful gaze',
+  },
+  {
     id: 'bronze',
     category: 'boy',
     personality: 'cool',
     look: 'curly black hair, mirror sunglasses, slight smirk, leather jacket',
+  },
+  {
+    id: 'onyx',
+    category: 'boy',
+    personality: 'cool',
+    look: 'dark skin, clean shaved head, neatly trimmed beard, gold earring, slate grey collared shirt, confident slight smile',
   },
   {
     id: 'slate',
@@ -41,10 +53,22 @@ const SPECS = [
     look: 'wavy brown hair, big warm smile, freckles, hoodie',
   },
   {
+    id: 'pine',
+    category: 'boy',
+    personality: 'friendly',
+    look: 'olive skin, full warm beard, square glasses, shaggy chestnut hair, plaid green flannel, big kind smile',
+  },
+  {
     id: 'cosmic',
     category: 'boy',
     personality: 'creative',
     look: 'long wavy hair tied back, paint splatter on jacket, thoughtful look, gentle smile',
+  },
+  {
+    id: 'ember',
+    category: 'boy',
+    personality: 'creative',
+    look: 'fair skin, vibrant red curly hair, freckled cheeks, light auburn beard, patterned mustard scarf, paint dabs on hands, playful smile',
   },
 
   // Girls with hijab

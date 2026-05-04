@@ -4,8 +4,8 @@
  * CharacterIcon — renders a painterly portrait from /public/avatars/<id>.png
  * inside a colored ring (cmux-style). The ring color is the character's accent.
  *
- * If the PNG is missing (Imagen hasn't generated it yet), gracefully shows a
- * monogram + accent ring so the page still looks alive.
+ * If the PNG is missing (Imagen hasn't generated it yet), the dark gradient
+ * background shows through so the page still looks alive.
  */
 
 import { AVATAR_CHARACTERS } from '@/lib/avatars';
@@ -32,7 +32,6 @@ export function CharacterIcon({
   if (!character) return null;
 
   const ring = character.accent;
-  const monogram = preset.charAt(0).toUpperCase();
 
   return (
     <div
@@ -69,13 +68,6 @@ export function CharacterIcon({
             (e.currentTarget as HTMLImageElement).style.display = 'none';
           }}
         />
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 -z-0 flex items-center justify-center font-display font-bold text-ink-primary"
-          style={{ fontSize: Math.round(size * 0.42), opacity: 0.55 }}
-        >
-          {monogram}
-        </span>
       </div>
     </div>
   );

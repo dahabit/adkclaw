@@ -50,7 +50,7 @@ export function AhmedFooterStrip() {
             Built by
           </p>
           <p className="font-display text-base font-semibold text-ink-primary">Ahmed Abu Eldahab</p>
-          <p className="text-ink-secondary text-sm">Google Developer Expert · Flutter, Dart & AI</p>
+          <p className="text-ink-secondary text-sm">Google Developer Expert · Flutter & Dart</p>
         </div>
       </div>
 

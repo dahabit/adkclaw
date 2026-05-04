@@ -9,6 +9,11 @@ const AVATAR_PRESETS = [
   'chrome',
   'bronze',
   'slate',
+  'cosmic',
+  'nova',
+  'onyx',
+  'pine',
+  'ember',
   'mint',
   'coral',
   'sky',
@@ -17,7 +22,6 @@ const AVATAR_PRESETS = [
   'forest',
   'sunset',
   'arctic',
-  'cosmic',
 ] as const;
 
 const usernameSchema = z

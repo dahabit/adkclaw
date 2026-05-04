@@ -14,13 +14,11 @@
     scroll-behavior: smooth;
   }
 
+  /* Body must be transparent so the fixed cosmic background (z=-10) is visible.
+     The deep slate base color comes from <html>. */
   body {
     min-height: 100dvh;
-    background:
-      radial-gradient(ellipse at top, rgba(59, 130, 246, 0.04) 0%, transparent 60%),
-      radial-gradient(ellipse at bottom right, rgba(59, 130, 246, 0.03) 0%, transparent 60%),
-      theme('colors.bg.deep');
-    background-attachment: fixed;
+    background: transparent;
   }
 
   h1,
@@ -51,6 +49,9 @@
   .container-page {
     @apply mx-auto w-full max-w-6xl px-6 sm:px-8;
   }
+  .container-wide {
+    @apply mx-auto w-full max-w-7xl px-6 sm:px-10 lg:px-12;
+  }
 
   .text-mono {
     font-family: theme('fontFamily.mono');
@@ -77,35 +78,44 @@
   .aurora {
     position: absolute;
     border-radius: 9999px;
-    filter: blur(90px);
-    opacity: 0.55;
+    filter: blur(110px);
+    opacity: 0.7;
     will-change: transform;
   }
   .aurora-1 {
-    width: 60vw;
-    height: 60vw;
-    top: -10vw;
-    left: -10vw;
-    background: radial-gradient(circle, rgba(59, 130, 246, 0.55) 0%, transparent 65%);
+    width: 65vw;
+    height: 65vw;
+    top: -12vw;
+    left: -12vw;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.7) 0%, transparent 65%);
     animation: aurora 24s cubic-bezier(0.65, 0, 0.35, 1) infinite;
   }
   .aurora-2 {
-    width: 50vw;
-    height: 50vw;
+    width: 55vw;
+    height: 55vw;
     top: 30vh;
     right: -15vw;
-    background: radial-gradient(circle, rgba(99, 102, 241, 0.42) 0%, transparent 65%);
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.6) 0%, transparent 65%);
     animation: aurora 38s cubic-bezier(0.65, 0, 0.35, 1) infinite;
     animation-delay: -8s;
   }
   .aurora-3 {
-    width: 45vw;
-    height: 45vw;
+    width: 50vw;
+    height: 50vw;
     bottom: -10vh;
-    left: 20vw;
-    background: radial-gradient(circle, rgba(34, 211, 238, 0.32) 0%, transparent 65%);
+    left: 18vw;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.5) 0%, transparent 65%);
     animation: aurora 32s cubic-bezier(0.65, 0, 0.35, 1) infinite;
     animation-delay: -16s;
+  }
+  .aurora-4 {
+    width: 45vw;
+    height: 45vw;
+    top: 55vh;
+    left: 50vw;
+    background: radial-gradient(circle, rgba(217, 70, 239, 0.4) 0%, transparent 65%);
+    animation: aurora 44s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+    animation-delay: -24s;
   }
   .grain {
     background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");

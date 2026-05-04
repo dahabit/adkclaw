@@ -15,6 +15,11 @@ export type AvatarPreset =
   | 'chrome'
   | 'bronze'
   | 'slate'
+  | 'cosmic'
+  | 'nova'
+  | 'onyx'
+  | 'pine'
+  | 'ember'
   | 'mint'
   | 'coral'
   | 'sky'
@@ -22,8 +27,7 @@ export type AvatarPreset =
   | 'lavender'
   | 'forest'
   | 'sunset'
-  | 'arctic'
-  | 'cosmic';
+  | 'arctic';
 
 export type BuilderStatus = 'idle' | 'building' | 'deployed';
 

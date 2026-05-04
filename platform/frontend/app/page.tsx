@@ -5,6 +5,7 @@ import { AVATAR_LIST } from '@/lib/avatars';
 import { FadeIn } from '@/components/ui/FadeIn';
 import { TechRail } from '@/components/ui/TechRail';
 import { AhmedFooterStrip } from '@/components/ui/AhmedFooterStrip';
+import { TopNav } from '@/components/ui/TopNav';
 
 const LEVELS = [
   {
@@ -47,24 +48,24 @@ const LEVELS = [
 export default function HomePage() {
   return (
     <main className="min-h-dvh">
+      <TopNav />
+
       {/* === Hero === */}
-      <section className="container-page py-24 sm:py-32 relative">
-        <div className="mx-auto max-w-3xl text-center">
+      <section
+        id="home"
+        className="container-wide pt-32 pb-20 sm:pt-36 sm:pb-28 relative scroll-mt-20"
+      >
+        <div className="mx-auto max-w-5xl text-center">
           <FadeIn>
-            <p className="text-mono text-sm uppercase tracking-[0.18em] text-accent mb-6">
-              Open source · Apache 2.0 · Google ADK + Gemini
-            </p>
-          </FadeIn>
-          <FadeIn delay={80}>
-            <h1 className="text-3xl sm:text-4xl font-display font-bold text-ink-primary mb-6">
+            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-ink-primary mb-6 leading-[1.05]">
               Build your AI teammate. <br className="hidden sm:block" />
               <span className="bg-gradient-to-r from-accent via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
                 From a function call to global autonomy.
               </span>
             </h1>
           </FadeIn>
-          <FadeIn delay={160}>
-            <p className="text-lg text-ink-secondary mb-10 leading-relaxed">
+          <FadeIn delay={120}>
+            <p className="text-lg sm:text-xl text-ink-secondary mb-10 leading-relaxed max-w-3xl mx-auto">
               A 5-level workshop teaching autonomous AI agents on Google ADK + Gemini in TypeScript.
               From <code className="text-mono text-accent">console.log</code> to a
               globally-reachable agent on Cloud Run, talking to you on Telegram, in{' '}
@@ -92,30 +93,22 @@ export default function HomePage() {
 
       {/* === Avatar gallery === */}
       <FadeIn>
-        <section className="container-page pb-20">
+        <section className="container-wide pb-20">
           <div className="mx-auto max-w-3xl text-center mb-8">
             <p className="text-mono text-xs uppercase tracking-[0.2em] text-accent mb-2">
               Pick your face
             </p>
-            <h2 className="text-xl font-display font-semibold text-ink-primary">
-              Twelve characters. One you.
-            </h2>
-            <p className="text-ink-secondary text-sm mt-2">
-              Painterly portraits — boys, girls with hijab, girls — generated with Imagen 3 on
-              Vertex AI.
+            <p className="text-ink-secondary text-sm">
+              Painterly portraits — each builder gets one. You add your own name.
             </p>
           </div>
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mx-auto max-w-5xl">
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 mx-auto max-w-6xl">
             {AVATAR_LIST.map((a, i) => (
               <div
                 key={a.id}
-                className="surface rounded-lg p-2 transition-all duration-fast ease-out hover:-translate-y-1"
-                style={{
-                  borderColor: 'rgba(154,163,184,0.12)',
-                  boxShadow: `inset 0 0 0 1px ${a.glow}`,
-                  animation: `pulse-glow 3s ease-in-out ${i * 200}ms infinite`,
-                }}
-                title={`${a.personality} · ${a.category}`}
+                className="rounded-full transition-all duration-fast ease-out hover:-translate-y-1 hover:scale-105"
+                style={{ animation: `pulse-glow 4s ease-in-out ${i * 200}ms infinite` }}
+                title={a.personality}
               >
                 <CharacterIcon preset={a.id} size={64} />
               </div>
@@ -125,9 +118,9 @@ export default function HomePage() {
       </FadeIn>
 
       {/* === The 5 levels === */}
-      <section className="container-page py-16 sm:py-24">
+      <section id="levels" className="container-wide py-16 sm:py-24 scroll-mt-20">
         <FadeIn>
-          <h2 className="text-2xl font-display font-bold text-ink-primary mb-3 text-center">
+          <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-primary mb-3 text-center">
             Five levels. Ship by the end.
           </h2>
           <p className="text-ink-secondary text-center mb-12 max-w-2xl mx-auto">
@@ -163,15 +156,46 @@ export default function HomePage() {
       </section>
 
       {/* === Tech rail === */}
-      <FadeIn>
-        <section className="container-page py-12">
+      <section id="technology" className="container-wide py-16 scroll-mt-20">
+        <FadeIn>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-primary mb-3">
+              Powered by Google
+            </h2>
+            <p className="text-ink-secondary max-w-2xl mx-auto">
+              Production-grade Google Cloud + open-source plumbing. Every layer is something the
+              workshop teaches you to operate.
+            </p>
+          </div>
+        </FadeIn>
+        <FadeIn delay={120}>
           <TechRail />
-        </section>
-      </FadeIn>
+        </FadeIn>
+      </section>
+
+      {/* === About / Builder === */}
+      <section id="about" className="container-wide py-16 scroll-mt-20">
+        <FadeIn>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-primary mb-3">
+              Who built this
+            </h2>
+            <p className="text-ink-secondary max-w-2xl mx-auto">
+              AdkClaw is an open-source workshop by a Google Developer Expert — distilled from
+              shipping production agent systems.
+            </p>
+          </div>
+        </FadeIn>
+        <FadeIn delay={120}>
+          <div className="max-w-4xl mx-auto">
+            <AhmedFooterStrip />
+          </div>
+        </FadeIn>
+      </section>
 
       {/* === CTA === */}
       <FadeIn>
-        <section className="container-page py-24 text-center">
+        <section className="container-wide py-24 text-center">
           <h2 className="text-2xl sm:text-3xl font-display font-bold mb-4 text-ink-primary">
             Ready to build?
           </h2>
@@ -187,15 +211,8 @@ export default function HomePage() {
       </FadeIn>
 
       {/* === Footer === */}
-      <footer className="container-page border-t border-border-subtle py-16 mt-16">
-        <FadeIn>
-          <div className="mb-12">
-            <AhmedFooterStrip />
-          </div>
-        </FadeIn>
-
-        <div className="grid gap-10 sm:grid-cols-3 max-w-5xl mx-auto">
-          {/* Brand */}
+      <footer className="container-wide border-t border-border-subtle py-12 mt-12">
+        <div className="grid gap-10 sm:grid-cols-3 max-w-6xl mx-auto">
           <div className="sm:col-span-1">
             <p className="font-display text-xl font-bold text-ink-primary mb-2">AdkClaw</p>
             <p className="text-ink-tertiary text-sm leading-relaxed">
@@ -213,7 +230,6 @@ export default function HomePage() {
             </p>
           </div>
 
-          {/* Project */}
           <div>
             <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mb-3">
               Project
@@ -239,6 +255,14 @@ export default function HomePage() {
               </li>
               <li>
                 <Link
+                  href="/e/sandbox/fleet"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                >
+                  Cohort fleet (sandbox)
+                </Link>
+              </li>
+              <li>
+                <Link
                   href="/join/sandbox"
                   className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
                 >
@@ -248,7 +272,6 @@ export default function HomePage() {
             </ul>
           </div>
 
-          {/* Stack */}
           <div>
             <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mb-3">
               Stack
@@ -258,7 +281,7 @@ export default function HomePage() {
               <li>Google ADK · TypeScript</li>
               <li>Cloud Run · Firestore</li>
               <li>Secret Manager · Cloud Build</li>
-              <li>Telegram (WhatsApp soon)</li>
+              <li>Telegram · WhatsApp (soon)</li>
             </ul>
           </div>
         </div>

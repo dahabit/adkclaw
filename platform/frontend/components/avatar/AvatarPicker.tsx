@@ -1,8 +1,7 @@
 'use client';
 
-import { useState } from 'react';
 import { CharacterIcon } from './CharacterIcon';
-import { AVATAR_LIST, AVATAR_CATEGORIES, type AvatarCategory } from '@/lib/avatars';
+import { AVATAR_LIST } from '@/lib/avatars';
 import type { AvatarPreset } from '@/lib/types';
 
 interface Props {
@@ -18,29 +17,14 @@ const PERSONALITY_EMOJI: Record<string, string> = {
 };
 
 export function AvatarPicker({ value, onChange }: Props) {
-  const [filter, setFilter] = useState<AvatarCategory | 'all'>('all');
-
-  const visible = filter === 'all' ? AVATAR_LIST : AVATAR_LIST.filter((c) => c.category === filter);
-
   return (
     <div>
-      <div className="mb-4 flex flex-wrap items-center gap-2">
-        <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mr-2">
-          Pick your character
-        </p>
-        <CategoryButton active={filter === 'all'} onClick={() => setFilter('all')} label="All" />
-        {AVATAR_CATEGORIES.map((cat) => (
-          <CategoryButton
-            key={cat.id}
-            active={filter === cat.id}
-            onClick={() => setFilter(cat.id)}
-            label={cat.label}
-          />
-        ))}
-      </div>
+      <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mb-4">
+        Pick your character
+      </p>
 
-      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
-        {visible.map((char) => {
+      <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3">
+        {AVATAR_LIST.map((char) => {
           const isSelected = value === char.id;
           return (
             <button
@@ -48,24 +32,24 @@ export function AvatarPicker({ value, onChange }: Props) {
               type="button"
               onClick={() => onChange(char.id)}
               className={[
-                'group relative rounded-lg p-3 transition-all duration-fast ease-out',
+                'group relative rounded-lg p-2 transition-all duration-fast ease-out',
                 'border-2 focus:outline-none flex flex-col items-center text-center',
                 'hover:-translate-y-0.5',
                 isSelected
-                  ? 'bg-accent-muted border-accent shadow-glow scale-[1.03]'
-                  : 'bg-bg-surface border-border-subtle hover:border-border-strong hover:bg-bg-raised',
+                  ? 'bg-accent-muted border-accent shadow-glow scale-[1.05]'
+                  : 'bg-bg-surface/40 border-border-subtle hover:border-border-strong',
               ].join(' ')}
               aria-pressed={isSelected}
-              title={`${char.personality} · ${char.category}`}
+              title={char.personality}
               style={{
                 background: isSelected
                   ? `radial-gradient(circle at 50% 0%, ${char.glow}, rgba(20, 30, 56, 0.55) 70%)`
                   : undefined,
               }}
             >
-              <CharacterIcon preset={char.id} size={68} withGlow={isSelected} />
+              <CharacterIcon preset={char.id} size={64} withGlow={isSelected} />
               <span
-                className="mt-2 inline-flex items-center gap-1 text-mono text-[10px] uppercase tracking-[0.12em]"
+                className="mt-1.5 inline-flex items-center gap-1 text-[10px] uppercase tracking-[0.1em] font-mono"
                 style={{ color: isSelected ? char.accent : undefined }}
               >
                 <span aria-hidden>{PERSONALITY_EMOJI[char.personality] || '🤖'}</span>
@@ -76,30 +60,5 @@ export function AvatarPicker({ value, onChange }: Props) {
         })}
       </div>
     </div>
-  );
-}
-
-function CategoryButton({
-  active,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={[
-        'h-8 px-3 rounded-md text-xs transition-colors duration-fast ease-out',
-        active
-          ? 'bg-accent text-bg-deep font-semibold'
-          : 'bg-bg-surface border border-border-subtle text-ink-secondary hover:border-accent',
-      ].join(' ')}
-    >
-      {label}
-    </button>
   );
 }
