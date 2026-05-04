@@ -158,29 +158,129 @@ export default function HomePage() {
       </section>
 
       {/* === Footer === */}
-      <footer className="container-page py-12 border-t border-border-subtle text-center text-ink-tertiary text-sm">
-        <p>
-          AdkClaw is open source under{' '}
-          <Link
-            href="https://github.com/dahabit/adkclaw/blob/main/LICENSE"
-            className="text-accent hover:underline"
-          >
-            Apache 2.0
-          </Link>
-          .
-        </p>
-        <p className="mt-2">
-          Inspired by{' '}
-          <Link
-            href="https://github.com/gca-americas/way-back-home"
-            className="text-accent hover:underline"
-            target="_blank"
-            rel="noreferrer"
-          >
-            Way Back Home
-          </Link>{' '}
-          (Google Developer Champions Americas).
-        </p>
+      <footer className="container-page border-t border-border-subtle py-16 mt-16">
+        <div className="grid gap-10 sm:grid-cols-3 max-w-5xl mx-auto">
+          {/* Brand */}
+          <div className="sm:col-span-1">
+            <p className="font-display text-xl font-bold text-ink-primary mb-2">AdkClaw</p>
+            <p className="text-ink-tertiary text-sm leading-relaxed">
+              Open-source workshop teaching autonomous AI agents on Google ADK.
+            </p>
+            <p className="text-ink-tertiary text-xs mt-4">
+              Open source under{' '}
+              <Link
+                href="https://github.com/dahabit/adkclaw/blob/main/LICENSE"
+                className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+              >
+                Apache 2.0
+              </Link>
+              .
+            </p>
+          </div>
+
+          {/* Created by */}
+          <div>
+            <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mb-3">
+              Created by
+            </p>
+            <p className="font-display text-base font-semibold text-ink-primary mb-1">
+              Ahmed Abu Eldahab
+            </p>
+            <p className="text-ink-secondary text-sm mb-3">
+              Google Developer Expert · Flutter & Dart
+            </p>
+            <ul className="flex flex-col gap-1.5 text-sm">
+              <li>
+                <Link
+                  href="https://github.com/dahabit"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out inline-flex items-center gap-2"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <span aria-hidden>↗</span> github.com/dahabit
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://www.youtube.com/@h3boh3bo"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out inline-flex items-center gap-2"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <span aria-hidden>↗</span> youtube.com/@h3boh3bo
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://x.com/dahabdev"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out inline-flex items-center gap-2"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <span aria-hidden>↗</span> @dahabdev on X
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://www.linkedin.com/in/dahabit/"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out inline-flex items-center gap-2"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  <span aria-hidden>↗</span> LinkedIn
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Project */}
+          <div>
+            <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mb-3">
+              Project
+            </p>
+            <ul className="flex flex-col gap-1.5 text-sm">
+              <li>
+                <Link
+                  href="https://github.com/dahabit/adkclaw"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Repository
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/levels"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                >
+                  Levels
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/quickstart"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                >
+                  Quickstart
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/agent"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                >
+                  Try the demo agent
+                </Link>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div className="mt-12 pt-6 border-t border-border-subtle text-center text-ink-tertiary text-xs">
+          © {new Date().getFullYear()} Ahmed Abu Eldahab · adkclaw.dev · Built with Google ADK +
+          Gemini
+        </div>
       </footer>
     </main>
   );

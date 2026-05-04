@@ -221,11 +221,18 @@ Each level has a parallel `solutions/level_N/` folder with the complete implemen
 
 Apache 2.0 — see [LICENSE](LICENSE) for details.
 
-## 🙏 Acknowledgments
+## 👤 Author
 
-- Built on [Google Agent Development Kit (ADK)](https://google.github.io/adk-docs/) and [Gemini](https://deepmind.google/technologies/gemini/)
-- Inspired by [OpenClaw](https://paperclip.ing) and [Way Back Home](https://github.com/gca-americas/way-back-home) (Google Developer Champions Americas)
-- Cloud infrastructure: [Google Cloud Run](https://cloud.google.com/run), [Firestore](https://cloud.google.com/firestore), [Cloud Scheduler](https://cloud.google.com/scheduler)
+**Ahmed Abu Eldahab** — Google Developer Expert · Flutter & Dart
+
+- GitHub: [@dahabit](https://github.com/dahabit)
+- YouTube: [@h3boh3bo](https://www.youtube.com/@h3boh3bo)
+- X: [@dahabdev](https://x.com/dahabdev)
+- LinkedIn: [in/dahabit](https://www.linkedin.com/in/dahabit/)
+
+## 🛠️ Stack
+
+Built on [Google Agent Development Kit (ADK)](https://google.github.io/adk-docs/), [Gemini](https://deepmind.google/technologies/gemini/), [Cloud Run](https://cloud.google.com/run), [Firestore](https://cloud.google.com/firestore), [Cloud Scheduler](https://cloud.google.com/scheduler), and [Vertex AI](https://cloud.google.com/vertex-ai).
 
 ## 🌟 Star History
 
@@ -234,3 +241,5 @@ If AdkClaw helps you teach autonomous agents, give us a star — it helps other 
 ---
 
 **Ready to build your autonomous AI teammate?** Start with [Level 0](level_0/README.md) 🚀
+
+© Ahmed Abu Eldahab · Apache 2.0 licensed
