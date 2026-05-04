@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import '../styles/globals.css';
+import { CosmicBackground } from '@/components/ui/CosmicBackground';
 
 export const metadata: Metadata = {
   title: 'AdkClaw — Build your AI teammate on Google ADK',
@@ -32,7 +33,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
         />
       </head>
-      <body className="font-body antialiased">{children}</body>
+      <body className="font-body antialiased">
+        <CosmicBackground />
+        {children}
+      </body>
     </html>
   );
 }

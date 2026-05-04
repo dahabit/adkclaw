@@ -1,49 +1,82 @@
+'use client';
+
 /**
- * CharacterIcon — renders a single avatar from DiceBear via <img>.
- * Replaces the old RobotIcon. Same props for backwards compatibility.
+ * CharacterIcon — renders a painterly portrait from /public/avatars/<id>.png
+ * inside a colored ring (cmux-style). The ring color is the character's accent.
+ *
+ * If the PNG is missing (Imagen hasn't generated it yet), gracefully shows a
+ * monogram + accent ring so the page still looks alive.
  */
 
-import { AVATAR_CHARACTERS, avatarUrl } from '@/lib/avatars';
+import { AVATAR_CHARACTERS } from '@/lib/avatars';
 import type { AvatarPreset } from '@/lib/types';
 
 interface Props {
   preset: AvatarPreset;
   size?: number;
   className?: string;
+  /** When true, an extra outer halo glow is rendered (selected / status=deployed). */
   withGlow?: boolean;
+  /** Pixel width of the ring border. Default 3. */
+  ringWidth?: number;
 }
 
-export function CharacterIcon({ preset, size = 64, className = '', withGlow = false }: Props) {
+export function CharacterIcon({
+  preset,
+  size = 64,
+  className = '',
+  withGlow = false,
+  ringWidth = 3,
+}: Props) {
   const character = AVATAR_CHARACTERS[preset];
   if (!character) return null;
 
+  const ring = character.accent;
+  const monogram = preset.charAt(0).toUpperCase();
+
   return (
     <div
-      className={['inline-flex items-center justify-center', className].join(' ')}
+      className={['relative inline-flex items-center justify-center', className].join(' ')}
       style={{
         width: size,
         height: size,
-        borderRadius: 12,
-        background: 'rgba(20, 30, 56, 0.55)',
-        boxShadow: withGlow ? `0 0 18px ${character.glow}` : undefined,
+        borderRadius: '50%',
+        padding: ringWidth,
+        background: `conic-gradient(from 220deg, ${ring}, ${ring}cc, ${ring})`,
+        boxShadow: withGlow
+          ? `0 0 22px ${character.glow}, inset 0 0 0 1px rgba(255,255,255,0.08)`
+          : `0 0 10px ${character.glow}55, inset 0 0 0 1px rgba(255,255,255,0.05)`,
         transition: 'box-shadow 280ms cubic-bezier(0.16, 1, 0.3, 1)',
       }}
-      aria-label={`${character.name} avatar`}
+      aria-label={`${character.personality} ${character.category} avatar`}
       role="img"
     >
-      <img
-        src={avatarUrl(character, { size: Math.round(size * 1.6) })}
-        alt={character.name}
-        width={size}
-        height={size}
-        loading="lazy"
+      <div
+        className="relative h-full w-full overflow-hidden rounded-full"
         style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'contain',
-          borderRadius: 12,
+          background:
+            'radial-gradient(circle at 50% 35%, rgba(59,130,246,0.25), rgba(20,30,56,0.92) 80%)',
         }}
-      />
+      >
+        <img
+          src={`/avatars/${character.id}.png`}
+          alt=""
+          width={size}
+          height={size}
+          loading="lazy"
+          className="h-full w-full object-cover"
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = 'none';
+          }}
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-0 flex items-center justify-center font-display font-bold text-ink-primary"
+          style={{ fontSize: Math.round(size * 0.42), opacity: 0.55 }}
+        >
+          {monogram}
+        </span>
+      </div>
     </div>
   );
 }

@@ -95,11 +95,29 @@ const config: Config = {
       },
       animation: {
         'pulse-glow': 'pulse-glow 2s cubic-bezier(0.16, 1, 0.3, 1) infinite',
+        aurora: 'aurora 24s ease-in-out infinite',
+        'aurora-slow': 'aurora 38s ease-in-out infinite',
+        'gradient-shift': 'gradient-shift 6s ease-in-out infinite',
+        'pulse-ring': 'pulse-ring 2.4s cubic-bezier(0.16, 1, 0.3, 1) infinite',
       },
       keyframes: {
         'pulse-glow': {
           '0%, 100%': { boxShadow: '0 0 12px -2px rgba(250, 204, 21, 0.4)' },
           '50%': { boxShadow: '0 0 24px -2px rgba(250, 204, 21, 0.8)' },
+        },
+        aurora: {
+          '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
+          '33%': { transform: 'translate3d(8%,-6%,0) scale(1.1)' },
+          '66%': { transform: 'translate3d(-6%,4%,0) scale(0.95)' },
+        },
+        'gradient-shift': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'pulse-ring': {
+          '0%': { boxShadow: '0 0 0 0 rgba(59,130,246,0.55)' },
+          '70%': { boxShadow: '0 0 0 14px rgba(59,130,246,0)' },
+          '100%': { boxShadow: '0 0 0 0 rgba(59,130,246,0)' },
         },
       },
     },

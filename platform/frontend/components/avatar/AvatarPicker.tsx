@@ -39,7 +39,7 @@ export function AvatarPicker({ value, onChange }: Props) {
         ))}
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+      <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
         {visible.map((char) => {
           const isSelected = value === char.id;
           return (
@@ -48,32 +48,29 @@ export function AvatarPicker({ value, onChange }: Props) {
               type="button"
               onClick={() => onChange(char.id)}
               className={[
-                'rounded-md p-3 transition-all duration-fast ease-out',
+                'group relative rounded-lg p-3 transition-all duration-fast ease-out',
                 'border-2 focus:outline-none flex flex-col items-center text-center',
+                'hover:-translate-y-0.5',
                 isSelected
-                  ? 'bg-accent-muted border-accent shadow-glow'
+                  ? 'bg-accent-muted border-accent shadow-glow scale-[1.03]'
                   : 'bg-bg-surface border-border-subtle hover:border-border-strong hover:bg-bg-raised',
               ].join(' ')}
               aria-pressed={isSelected}
-              title={`${char.name} · ${char.personality}`}
+              title={`${char.personality} · ${char.category}`}
+              style={{
+                background: isSelected
+                  ? `radial-gradient(circle at 50% 0%, ${char.glow}, rgba(20, 30, 56, 0.55) 70%)`
+                  : undefined,
+              }}
             >
-              <CharacterIcon preset={char.id} size={72} withGlow={isSelected} />
-              <div className="mt-2 flex items-center gap-1">
-                <span className="text-base" aria-hidden>
-                  {PERSONALITY_EMOJI[char.personality] || '🤖'}
-                </span>
-                <p
-                  className={[
-                    'text-sm font-semibold transition-colors duration-fast ease-out',
-                    isSelected ? 'text-accent' : 'text-ink-primary',
-                  ].join(' ')}
-                >
-                  {char.name}
-                </p>
-              </div>
-              <p className="text-mono text-[10px] uppercase tracking-wider text-ink-tertiary">
-                {char.personality}
-              </p>
+              <CharacterIcon preset={char.id} size={68} withGlow={isSelected} />
+              <span
+                className="mt-2 inline-flex items-center gap-1 text-mono text-[10px] uppercase tracking-[0.12em]"
+                style={{ color: isSelected ? char.accent : undefined }}
+              >
+                <span aria-hidden>{PERSONALITY_EMOJI[char.personality] || '🤖'}</span>
+                <span className={isSelected ? '' : 'text-ink-tertiary'}>{char.personality}</span>
+              </span>
             </button>
           );
         })}
