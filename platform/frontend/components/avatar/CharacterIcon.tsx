@@ -8,6 +8,8 @@
  * background shows through so the page still looks alive.
  */
 
+import Image from 'next/image';
+import { useState } from 'react';
 import { AVATAR_CHARACTERS } from '@/lib/avatars';
 import type { AvatarPreset } from '@/lib/types';
 
@@ -29,6 +31,7 @@ export function CharacterIcon({
   ringWidth = 3,
 }: Props) {
   const character = AVATAR_CHARACTERS[preset];
+  const [hidden, setHidden] = useState(false);
   if (!character) return null;
 
   const ring = character.accent;
@@ -57,17 +60,18 @@ export function CharacterIcon({
             'radial-gradient(circle at 50% 35%, rgba(59,130,246,0.25), rgba(20,30,56,0.92) 80%)',
         }}
       >
-        <img
-          src={`/avatars/${character.id}.png`}
-          alt=""
-          width={size}
-          height={size}
-          loading="lazy"
-          className="h-full w-full object-cover"
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = 'none';
-          }}
-        />
+        {!hidden && (
+          <Image
+            src={`/avatars/${character.id}.png`}
+            alt=""
+            width={size}
+            height={size}
+            loading="lazy"
+            sizes={`${size}px`}
+            className="h-full w-full object-cover"
+            onError={() => setHidden(true)}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
@@ -40,15 +41,16 @@ export function TopNav() {
         <Link
           href="/"
           className="flex items-center gap-2 font-display text-lg font-bold text-ink-primary"
+          aria-label="AdkClaw home"
         >
-          <span
-            aria-hidden
-            className="inline-block h-7 w-7 rounded-md"
-            style={{
-              background:
-                'conic-gradient(from 220deg at 50% 50%, #3B82F6, #6366f1, #22d3ee, #3B82F6)',
-              boxShadow: '0 0 12px rgba(59,130,246,0.45)',
-            }}
+          <Image
+            src="/icon-192.png"
+            alt=""
+            width={28}
+            height={28}
+            priority
+            className="rounded-md"
+            style={{ boxShadow: '0 0 12px rgba(59,130,246,0.35)' }}
           />
           AdkClaw
         </Link>

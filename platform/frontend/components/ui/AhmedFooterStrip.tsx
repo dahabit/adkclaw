@@ -5,9 +5,12 @@
  * Photo gracefully degrades to monogram if /ahmed.png is absent.
  */
 
+import Image from 'next/image';
 import Link from 'next/link';
+import { useState } from 'react';
 
 export function AhmedFooterStrip() {
+  const [photoHidden, setPhotoHidden] = useState(false);
   return (
     <div className="surface-raised rounded-2xl p-6 sm:p-8 grid gap-6 sm:gap-10 sm:grid-cols-[auto_1fr] items-center">
       {/* Photo */}
@@ -21,15 +24,18 @@ export function AhmedFooterStrip() {
         }}
         aria-label="Ahmed Abu Eldahab — Google Developer Expert in Dart & Flutter"
       >
-        <img
-          src="/ahmed.png"
-          alt="Ahmed Abu Eldahab"
-          className="h-full w-full object-cover"
-          style={{ objectPosition: 'center top' }}
-          onError={(e) => {
-            (e.currentTarget as HTMLImageElement).style.display = 'none';
-          }}
-        />
+        {!photoHidden && (
+          <Image
+            src="/ahmed.png"
+            alt="Ahmed Abu Eldahab"
+            fill
+            sizes="(max-width: 640px) 160px, 192px"
+            className="h-full w-full object-cover"
+            style={{ objectPosition: 'center top' }}
+            onError={() => setPhotoHidden(true)}
+            priority
+          />
+        )}
         <span
           aria-hidden
           className="absolute inset-0 flex items-center justify-center font-display text-5xl font-bold text-ink-primary -z-0"
