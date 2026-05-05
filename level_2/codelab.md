@@ -201,16 +201,29 @@ export class ContextEngine {
 
   fingerprint(): string {
     const stamps: string[] = [];
+    // CORE FILES (IDENTITY/USER/SOUL/AGENTS/MEMORY/TOOLS)
     for (const { filename } of CORE_FILES) {
       const path = resolve(this.workspacePath, filename);
       if (!existsSync(path)) continue;
       stamps.push(`${filename}:${statSync(path).mtimeMs}`);
     }
-    // Daily note
+    // DAILY NOTE (today only)
     const today = new Date().toISOString().slice(0, 10);
     const dailyPath = resolve(this.workspacePath, 'memory', `${today}.md`);
     if (existsSync(dailyPath)) stamps.push(`memory/${today}:${statSync(dailyPath).mtimeMs}`);
-    // Skills directory
+    // BANK INDEX (every entry — implement after Section 4)
+    const bankDir = resolve(this.workspacePath, 'bank');
+    if (existsSync(bankDir)) {
+      for (const cat of ['facts', 'decisions', 'projects', 'people']) {
+        const catDir = resolve(bankDir, cat);
+        if (!existsSync(catDir)) continue;
+        for (const f of readdirSync(catDir)) {
+          if (!f.endsWith('.md')) continue;
+          stamps.push(`bank/${cat}/${f}:${statSync(resolve(catDir, f)).mtimeMs}`);
+        }
+      }
+    }
+    // SKILLS directory
     const skillsDir = resolve(this.workspacePath, 'skills');
     if (existsSync(skillsDir)) {
       for (const f of readdirSync(skillsDir)) {
@@ -218,10 +231,17 @@ export class ContextEngine {
         stamps.push(`skills/${f}:${statSync(resolve(skillsDir, f)).mtimeMs}`);
       }
     }
+    // HEARTBEAT.md
+    const heartbeatPath = resolve(this.workspacePath, 'HEARTBEAT.md');
+    if (existsSync(heartbeatPath)) {
+      stamps.push(`HEARTBEAT.md:${statSync(heartbeatPath).mtimeMs}`);
+    }
     return stamps.join('|');
   }
 }
 ```
+
+> **Important:** `fingerprint()` MUST scan every file/directory that `bootstrap()` reads. Miss one (the bank, the skills directory, HEARTBEAT.md) and the cache won't invalidate when that source changes — your "edit a file → next turn knows" demo will silently break. The implementation above is complete; copy it as-is.
 
 ### Test it
 
@@ -233,13 +253,15 @@ The tests verify: section order, mtime cache invalidation, missing-file toleranc
 
 > **Common pitfall**: students sometimes use `Date.now()` in the fingerprint. Don't. The fingerprint must depend on **file content's mtime**, not the wall clock.
 
-## 3. Compaction at 80% — surviving long conversations
+## 3. Compaction at long-context boundaries — surviving long conversations
 
-Gemini 2.5 Pro has a 1M-token window. That sounds infinite — but a chatty agent can fill it in a week. When you cross 80% of the window, you start seeing latency spikes and degraded reasoning. Compaction is how you keep the agent fresh without losing what matters.
+Gemini 2.5 Pro has a 1M-token window. That sounds infinite — but a chatty agent can fill it in a week, and reasoning quality **degrades smoothly** below the ceiling, not at a cliff edge. Compaction is how you keep the agent fresh without losing what matters.
+
+> **Where to set the threshold:** there's no magic number. We default to **70–80% of the model window** because empirically that's where latency starts to climb on hot prompts. Lower the threshold (60%) for cost-sensitive setups; raise it (90%) if your turns are short and you want to preserve maximum recent context. The threshold is a `Compactor` constructor option — change it as your traffic shape changes.
 
 ### The strategy
 
-1. **Threshold check** — count tokens in the active history (since the last compaction checkpoint). If it exceeds the threshold, compact.
+1. **Threshold check** — count tokens in the active history (since the last compaction checkpoint). If it exceeds the configured threshold, compact.
 2. **Pick oldest fraction** — by default, the oldest 60% of messages.
 3. **Summarise with strict preservation** — send those messages to a cheap model (Gemini 2.5 Flash) with a prompt that **mandates preservation** of:
    - All task IDs, URLs, file paths, opaque identifiers
@@ -350,11 +372,19 @@ SQLite is faster for single-host workloads and removes the need for a separate
 DB process. Switch to Postgres only when concurrency or replication demands it.
 ```
 
-### Why not vectors?
+### Why grep first, vectors later?
 
-A vector DB is overkill at the scale we operate. With <500 entries, a plain `grep`-style scan against name + preview returns better results than a fuzzy embedding nearest-neighbour. Stay simple until simple breaks.
+Two different search problems. Grep wins on **exact-term match** (the user types "SQLite" and an entry titled "Prefer SQLite over Postgres" is the obvious hit). Vector search wins on **semantic recall** (the user types "what databases do I prefer?" and you want to retrieve the SQLite decision even though the word "database" never appears in the entry).
 
-When the bank crosses ~5,000 entries (you'll know — recall starts feeling slow), swap the implementation for Vertex AI Vector Search. The interface stays the same; only `recall()` changes. **Defer the complexity.**
+For the small bank we start with, both approaches work, but grep is dramatically simpler:
+
+| Bank size | Grep latency | Vector latency | Recommendation |
+|-----------|--------------|----------------|----------------|
+| <500 entries | ~10ms | ~50ms (cold) | **Grep** — semantic gains rarely justify infrastructure |
+| 500–5,000 | ~50–200ms | ~50ms | **Grep with monitoring** — start logging `recall()` latency. If it crosses 200ms regularly, that's the migration signal. |
+| >5,000 | >500ms | ~50ms | **Vertex AI Vector Search** — the interface stays identical, only `recall()` changes. |
+
+Stay simple until simple breaks. **Add embeddings the day grep latency starts hurting**, not before. The instrumentation hint: log `MemoryBank.recall()` duration on every call — your migration trigger is data, not vibes.
 
 ### Implement `src/memory/bank.ts`
 
@@ -527,7 +557,27 @@ export class Consolidator {
 }
 ```
 
-`parseJsonLoose()` strips markdown fences if Gemini wrapped the JSON, then falls back to extracting the first `{...}` block — small models sometimes ignore "JSON only".
+`parseJsonLoose()` strips markdown fences if Gemini wrapped the JSON, then falls back to extracting the first `{...}` block — small models sometimes ignore "JSON only". Inline implementation:
+
+```typescript
+function parseJsonLoose(text: string): ParsedConsolidation {
+  // Strip markdown fences if Gemini wrapped it
+  const stripped = text
+    .replace(/^```(?:json)?\s*/i, '')
+    .replace(/\s*```\s*$/i, '')
+    .trim();
+  try {
+    return JSON.parse(stripped) as ParsedConsolidation;
+  } catch {
+    // Try to extract first {...} block
+    const match = stripped.match(/\{[\s\S]*\}/);
+    if (match) {
+      try { return JSON.parse(match[0]) as ParsedConsolidation; } catch { return {}; }
+    }
+    return {};
+  }
+}
+```
 
 ### When does consolidation run?
 
@@ -658,6 +708,16 @@ npm test src/skills/loader.test.ts
 
 Tests verify frontmatter parsing, missing-file tolerance, and that path-traversal attempts (`../../etc/passwd`) are normalised away.
 
+> **Security note:** the character whitelist (`replace(/[^a-zA-Z0-9._-]/g, '')`) is **safe by accident** — it strips `/` and `..` so `../../etc/passwd` becomes `etcpasswd` which doesn't exist as a skill, so `load()` returns `null`. For a more defence-in-depth approach, **also** verify the resolved path stays under `skillsDir` using `realpath`:
+>
+> ```typescript
+> import { realpathSync } from 'node:fs';
+> const resolved = realpathSync(path);
+> if (!resolved.startsWith(realpathSync(this.skillsDir))) return null;
+> ```
+>
+> Combine the two — input sanitisation **and** path validation. Belt and braces.
+
 ## 7. The wow demo
 
 Now run the full integration test by hand.
@@ -734,7 +794,7 @@ If you registered at [adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox
 Your agent has graduated from "stateful chatbot with tools" to **stateful operator with persistent memory and runtime extensibility**:
 
 - A system prompt that rebuilds from disk every turn (cached by mtime)
-- Compaction at 80% so it can sustain hour-long conversations
+- Compaction at the 70–80% boundary so it can sustain hour-long conversations
 - A four-category bank that survives reboots and is auditable in plain text
 - A daily scratch pad that promotes overnight via Gemini-as-curator
 - A skills directory that turns markdown files into agent capabilities
@@ -759,7 +819,7 @@ Level 3 turns this single agent into a **team**. You'll add:
 | File | Role | What you implemented |
 |------|------|----------------------|
 | `src/context/manager.ts` | Bootstrap system prompt | `bootstrap()`, `fingerprint()` |
-| `src/context/compaction.ts` | Compact history at 80% | `maybeCompact()` with preservation rules |
+| `src/context/compaction.ts` | Compact history at configured threshold (70–80% default) | `maybeCompact()` with preservation rules |
 | `src/context/token-counter.ts` | Approximate token counts | (already provided) |
 | `src/memory/bank.ts` | Memory bank CRUD | `save()`, `list()`, `recall()`, `read()` |
 | `src/memory/daily-notes.ts` | Append-only daily scratch pad | `append()`, `read()`, `listDates()` |
@@ -784,7 +844,7 @@ Cumulative through L0–L2: ~$2 per participant.
 
 | Issue | Fix |
 |-------|-----|
-| `Compaction failed: insufficient context` | Threshold too high. Verify it's set to 80% of the model window, not 95%. |
+| `Compaction failed: insufficient context` | Threshold too high. Configure `thresholdTokens` in the 70–80% range of your model window. |
 | Bank entries never appear in recall | The `ContextEngine` is caching past file changes. Add the bank directory to your `fingerprint()`. |
 | Skill file not advertised in system prompt | YAML frontmatter parse error. Validate with `npx yaml-validator workspace/skills/*.md`. |
 | Daily note never appended | `daily_append` tool's path resolution. Check the `TZ` env var matches your machine. |
