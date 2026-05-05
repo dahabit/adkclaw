@@ -1,0 +1,14 @@
+/* TEAM */
+Author: Ahmed Abu Eldahab
+Site: https://x.com/dahabdev
+Location: MENA — global
+
+/* THANKS */
+Google ADK team for the framework that makes this curriculum possible.
+The MENA developer community for testing and feedback.
+
+/* SITE */
+Standards: HTML5, ES2023, Next.js 15 (App Router), Tailwind CSS
+Components: TypeScript, React 18, Zustand
+Software: Cloud Run, Firestore, Secret Manager, Cloud Scheduler
+License: Apache 2.0 (https://github.com/dahabit/adkclaw/blob/main/LICENSE)
