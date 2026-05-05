@@ -28,7 +28,7 @@ This guide pairs with `level_4/codelab.md`. Read both before delivering. **L4 ha
 
 ## 2. Session run-of-show
 
-L4 is the **deploy session.** ~2.5 hours total. Lots of `gcloud` commands; plan for variance.
+L4 is the **deploy session.** **~3 hours total** (180 min). Lots of `gcloud` commands; plan for variance. Cohort 1 ran 200+ min — retargeted from the original 150-min budget after L4 consistently overran. If you have a 2-hour slot, run **L4a only** (Ch. 1–6 — deploy + smoke test); save Ch. 7–10 for an asynchronous follow-up.
 
 | Block | Chapter | What you do |
 |-------|---------|-------------|
@@ -296,24 +296,33 @@ Skip Ch. 10 entirely. The `.run.app` URL works fine. They can add a domain later
 
 ---
 
-## 7. Timing notes (real-world pacing)
+## 7. Timing notes (real-world pacing — retargeted to 180 min)
 
 | Block | Planned | Cohort 1 actual range | Adjust |
 |-------|---------|----------------------|--------|
 | Re-intro | 5 min | 3–8 min | Cap at 8 |
-| Branch + verify | 5 min | 5–15 min | API enable propagation eats time — let students enable while you teach |
-| Containerise | 15 min | 12–25 min | First-time Docker users go slow |
+| Branch + verify | 10 min | 5–15 min | API enable propagation eats time — let students enable while you teach |
+| Containerise | 20 min | 12–25 min | First-time Docker users go slow; budget for it |
 | Secret Manager | 10 min | 8–15 min | The IAM grant has the most variance |
 | Workspace to GCS | 15 min | 12–20 min | FUSE mount syntax confuses people |
-| Firestore adapter | 20 min | 18–35 min | The biggest variance — adapter pattern is new for most |
-| Deploy | 15 min | 12–25 min | Cloud Build duration is non-deterministic |
-| Telegram webhook | 10 min | 8–15 min | One bash command — usually quick |
-| Cloud Scheduler | 15 min | 12–20 min | OIDC explanation takes time |
-| Cloud Logging | 10 min | 8–15 min | Logger refactor is mechanical |
+| Firestore adapter | 25 min | 18–35 min | The biggest variance — adapter pattern is new for most. The async/sync sidebar is essential. |
+| **PRE-DEPLOY CHECKLIST** | 5 min | new | At ~minute 90, pause and run a checklist: Dockerfile builds locally, secrets created, GCS bucket has files, Firestore enabled, env vars set. Catches the 80% of failures before the big deploy. |
+| Deploy | 20 min | 12–25 min | Cloud Build duration is non-deterministic — build in foreground while you do Q&A on architecture |
+| Lock-down dashboard (§6.5) | 10 min | new | Day-one auth — not optional |
+| Telegram webhook (with secret) | 15 min | 8–15 min | Generate the secret, register, validate on phone |
+| Cloud Scheduler | 20 min | 12–20 min | OIDC implementation walkthrough (10 min) + create job + log query |
+| Cloud Logging + PII redaction | 10 min | 8–15 min | Logger refactor + redact regex |
 | Custom domain | 15 min (opt) | DNS propagation variable | **Skip if behind** |
-| Wow demos | 15 min | 12–25 min | The "anywhere on Earth" moment is the highlight |
+| Wow demos + Q&A | 15 min | 12–25 min | The "anywhere on Earth" moment is the highlight |
+| **Total** | **180 min** | 200–240 min | Budget honestly — overrun was 30%+ on cohort 1 |
 
-If you're 30+ min behind by Ch. 6 (deploy), **skip Ch. 10 (custom domain) and shorten Ch. 9 (logging) to 5 min**. The deploy + webhook + scheduler trio is the load-bearing ending.
+**Three recovery branches:**
+
+1. **30 min behind by Ch. 5 (Firestore)** → demo the adapter instead of having students implement; provide them the snippet inline
+2. **30 min behind by Ch. 6 (Deploy)** → skip Ch. 10 (custom domain), shorten Ch. 9 (logging) to 5 min, keep the wow demo
+3. **45+ min behind by Ch. 6** → run as **L4a + L4b**: deploy + smoke test today (Ch. 1–6), durability + scheduler + logging async (Ch. 7–10) over the next week with Slack support
+
+The deploy + webhook + scheduler trio is the load-bearing ending. Cut decoration before you cut substance.
 
 ---
 

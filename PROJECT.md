@@ -125,6 +125,8 @@ The conceptual spine of the curriculum. Each level adds one or two pillars.
 | **Build** | tsc, Docker, pm2, systemd |
 | **Format** | Prettier (`.prettierrc.json`, `.prettierignore`) |
 
+> **Model versioning policy:** the workshop pins Gemini IDs in `workshop.config.json` (`default_model`, `fallback_model`). Google deprecates older Gemini generations on a published cadence — when you run a cohort, **check the [Gemini API models page](https://ai.google.dev/gemini-api/docs/models) for the current stable IDs** and update `workshop.config.json` if needed. The `client.models.generateContent({ model })` API surface is stable across generations; only the model strings change. The agent's tool registry, healing pyramid, and Cloud Run deploy code are model-version-agnostic.
+
 ### Direct dependencies (`package.json`)
 
 ```

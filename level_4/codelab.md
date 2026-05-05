@@ -26,6 +26,8 @@ In Levels 1–3 your agent has lived on your laptop. When the laptop sleeps, the
 - `gcloud` CLI authenticated: `gcloud auth login` && `gcloud config set project YOUR_PROJECT_ID`
 - A working terminal and editor
 
+> **Before you start — verify model IDs:** the deploy command below pins `gemini-2.5-pro` and `gemini-2.5-flash`. Google deprecates older Gemini generations on a published cadence. Check [the current stable model IDs](https://ai.google.dev/gemini-api/docs/models) before running the cohort and update `workshop.config.json` + the `--set-env-vars` block accordingly. The API surface is stable across generations — only the model strings change.
+
 ### What you will learn
 
 - **Containerisation** — multi-stage Dockerfile with Playwright base image
@@ -138,11 +140,16 @@ FROM base AS runtime
 COPY --from=deps /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY --from=build /app/workspace.example ./workspace.example
+# Defence-in-depth: drop root before running the agent process
+RUN useradd -m -u 1000 agent && chown -R agent:agent /app
+USER agent
 ENV NODE_ENV=production
 ENV PORT=8080
 EXPOSE 8080
 CMD ["node", "dist/index.js"]
 ```
+
+> **Why a non-root `USER`:** Cloud Run's gVisor sandbox is strong, but if a tool with shell access (`shell`, `code_fix`) is exploited, running as a non-root user contains the blast radius. Belt and braces — no reason to run as root.
 
 Why Playwright base image? Because we need browser tools (`browser_fetch`, `browser_screenshot`, `browser_pdf`) and the official Playwright image ships with Chromium, FFmpeg, all the system libs. ~700 MB base — tolerable for Cloud Run.
 
@@ -193,6 +200,8 @@ done
 ```
 
 > **Why three secrets, not one?** Rotating a single key shouldn't force re-deploying everything that uses the others.
+>
+> **Rotation cadence (preview — full playbook in Phase 2 hardening):** rotate `gemini-api-key` annually, `telegram-bot-token` every 6 months (or after onboarding handoff), `allowed-senders` whenever your contributor list changes. Cloud Run picks up `:latest` automatically — no redeploy needed for rotation, just `gcloud secrets versions add <secret> --data-file=-` and let Cloud Run refresh on next cold start (or trigger explicitly with `gcloud run services update --update-secrets=...`).
 
 ## 4. Migrate workspace to Cloud Storage
 
@@ -226,11 +235,24 @@ volumeMounts:
 
 Then `WORKSPACE_PATH=/workspace` becomes the new env var.
 
-> **Common pitfall**: GCS FUSE has eventual consistency. A write returns before the next read sees it. For the bank (write-once-then-read), this is fine. For session-active state, use Firestore (next section).
+> **GCS FUSE eventual consistency (read this carefully):** writes return before the next read sees them. Typical propagation is <2 seconds, but spikes to 5–10s do happen. For the bank — where the write-then-read flow is "user tells the agent something → the agent saves it → the user asks about it ten seconds later" — this is **acceptable**. For tighter loops (the agent saves a fact, then immediately reads the bank index in the next turn), add one of:
+>
+> 1. **In-process write-through cache** — the `MemoryBank` keeps a recently-written set in memory; reads check there before hitting GCS.
+> 2. **Read-after-write retry** — `MemoryBank.read()` retries with backoff if the file isn't visible (1s, 2s, 4s).
+> 3. **Switch to the GCS SDK** with explicit reads — slower for bulk operations but lets you `if-not-exists` retry cleanly.
+>
+> For session-active state (messages, cron metadata), use **Firestore** (next section) — it has strong consistency guarantees within a region.
 
 ## 5. Implement the Firestore session adapter
 
-`SessionStore` was an interface from L1. The SQLite implementation lives in `src/sessions/store.ts`. We add a Firestore implementation in `src/sessions/firestore-store.ts`:
+`SessionStore` was an interface from L1. The SQLite implementation lives in `src/sessions/store.ts`. We add a Firestore implementation in `src/sessions/firestore-store.ts`.
+
+> **Async boundary you cannot ignore:** SQLite (`better-sqlite3`) is **synchronous** — `list()` returns `Message[]`. Firestore is **async** — it returns `Promise<Message[]>`. The runner's hot loop expects sync reads, so the Firestore adapter has two honest choices:
+>
+> 1. **Make `SessionStore` async everywhere** — change the interface to `Promise<Message[]>`, propagate `await` through the runner. Cleanest, biggest diff.
+> 2. **Buffer reads at session start** — when a session opens, the adapter prefetches its messages into an in-memory array; the rest of the turn reads from the buffer; appends are async-fire-and-forget with eventual write-through.
+>
+> The production implementation uses **option 2**. The shape below shows the real interface (note `loadSession` is async, but `list` returns the buffered slice synchronously):
 
 ```typescript
 import { Firestore } from '@google-cloud/firestore';
@@ -238,14 +260,22 @@ import type { SessionStore, Session, Message } from './store.js';
 
 export class FirestoreSessionStore implements SessionStore {
   private readonly db: Firestore;
+  private readonly buffers = new Map<string, Message[]>();
 
   constructor() {
     this.db = new Firestore();
   }
 
+  /** Call this before every turn — prefetches the session's message history. */
+  async loadSession(sessionKey: string): Promise<void> {
+    const snap = await this.db
+      .collection('sessions').doc(sessionKey).collection('messages')
+      .orderBy('createdAt').limit(200).get();
+    this.buffers.set(sessionKey, snap.docs.map((d) => d.data() as Message));
+  }
+
   createSession(opts: { key: string; kind: string; channel: string; model: string; parentKey?: string }) {
-    const ref = this.db.collection('sessions').doc(opts.key);
-    ref.set({
+    void this.db.collection('sessions').doc(opts.key).set({
       key: opts.key,
       kind: opts.kind,
       channel: opts.channel,
@@ -255,23 +285,30 @@ export class FirestoreSessionStore implements SessionStore {
       updatedAt: Date.now(),
       archivedAt: null,
     });
+    this.buffers.set(opts.key, []);
   }
 
   appendMessage(sessionKey: string, msg: Omit<Message, 'id'>) {
-    const ref = this.db.collection('sessions').doc(sessionKey).collection('messages').doc();
-    ref.set({ ...msg, createdAt: Date.now() });
+    // Update buffer synchronously, write-through to Firestore async (fire-and-forget)
+    const buf = this.buffers.get(sessionKey) ?? [];
+    buf.push({ ...msg, id: '' } as Message);
+    this.buffers.set(sessionKey, buf);
+    void this.db
+      .collection('sessions').doc(sessionKey).collection('messages').doc()
+      .set({ ...msg, createdAt: Date.now() });
   }
 
   list(sessionKey: string): Message[] {
-    // Note: in production this is async; the L4 adapter buffers reads at session start
-    // See src/sessions/firestore-store.ts full version for the real shape
+    return this.buffers.get(sessionKey) ?? [];
   }
 
   archiveSession(key: string) {
-    this.db.collection('sessions').doc(key).update({ archivedAt: Date.now() });
+    void this.db.collection('sessions').doc(key).update({ archivedAt: Date.now() });
   }
 }
 ```
+
+The runner is updated to call `await sessions.loadSession(sessionKey)` before each turn — that's the only async boundary the adapter introduces. **Failure mode:** if Firestore times out during `loadSession`, the runner gets an empty buffer and the turn proceeds with no history (the agent will reintroduce itself). The `HealingEngine.withRetry` from L3 wraps the load to absorb transient failures.
 
 A factory picks the backend by env:
 
@@ -357,35 +394,98 @@ curl $SERVICE_URL/api/health   # {"ok":true}
 |------|-----|
 | `--memory=2Gi` | Playwright + Gemini Pro context comfortably fits in 2 GB |
 | `--cpu=2` | 2 vCPU lets the agent loop run while a tool call is in flight |
-| `--max-instances=3` | Caps cost — past 3 instances you're paying real money |
-| `--concurrency=10` | Each instance handles up to 10 simultaneous requests |
-| `--allow-unauthenticated` | Telegram webhook can't sign requests — the app verifies internally |
+| `--max-instances=2` | Caps cost — past 2 instances you're paying real money. **Workshop default.** Increase to 5–10 only after you've verified your agent's behaviour under load. |
+| `--concurrency=5` | Each instance handles up to 5 simultaneous requests. Tighter than the Cloud Run default (80) on purpose — agent turns are CPU-heavy and a runaway loop hitting concurrency=10 burns through tokens fast. |
+| `--allow-unauthenticated` | Required for Telegram webhook delivery. **The dashboard is exposed too — see security note immediately below.** |
 
-> **Common pitfall**: `--allow-unauthenticated` exposes the dashboard publicly too. Phase 2 hardening: add `app.use('/api/admin', authMiddleware)`.
+### 6.5 — Lock down the dashboard before any traffic hits
 
-## 7. Switch Telegram to webhook mode
+`--allow-unauthenticated` exposes **every route**, including the L3 admin dashboard at `/` and `/api/admin/*` (which surfaces session keys, message counts, cron jobs, and tokens consumed). **Add admin auth before sending real users to your URL** — this is not a Phase 2 item, it's day-one.
 
-Long-polling is for development; webhooks are for production:
-
-```bash
-curl -F "url=$SERVICE_URL/api/telegram" \
-  https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook
-# {"ok":true,"result":true,"description":"Webhook was set"}
-```
-
-In `src/channels/telegram.ts`:
+In `src/server/middleware/admin-auth.ts`:
 
 ```typescript
-if (process.env.TELEGRAM_MODE === 'webhook') {
-  app.use(this.bot.webhookCallback('/api/telegram'));
-} else {
-  await this.bot.launch();
+import type { Request, Response, NextFunction } from 'express';
+import { timingSafeEqual } from 'node:crypto';
+
+export function adminAuth(req: Request, res: Response, next: NextFunction) {
+  const expected = process.env.ADMIN_KEY;
+  if (!expected) return res.status(503).json({ error: 'ADMIN_KEY not configured' });
+  const provided = (req.header('x-admin-key') ?? '').toString();
+  const a = Buffer.from(provided);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !timingSafeEqual(a, b)) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  next();
 }
 ```
 
-Send a message on Telegram. Your Cloud Run logs (in Cloud Logging) should show the inbound update.
+Wire it in `src/server/http.ts` **before** the dashboard routes:
 
-> **Common pitfall**: forgetting to clear the previous webhook before changing it. Telegram allows one webhook per bot. Run `setWebhook` again to overwrite.
+```typescript
+app.use('/api/admin', adminAuth);
+app.get('/', adminAuth, (_req, res) => res.send(DASHBOARD_HTML));
+```
+
+Add to Secret Manager and the deploy command:
+
+```bash
+echo -n "$(openssl rand -hex 32)" | gcloud secrets create admin-key --data-file=-
+gcloud secrets add-iam-policy-binding admin-key --member="serviceAccount:$SA" --role="roles/secretmanager.secretAccessor"
+# Re-deploy with the new secret mounted
+gcloud run services update $SERVICE --region=$REGION --update-secrets=ADMIN_KEY=admin-key:latest
+```
+
+Now you visit the dashboard with `curl -H "x-admin-key: $(gcloud secrets versions access latest --secret=admin-key)" $SERVICE_URL/` (or paste it as a header in your browser via an extension). Telegram and `/api/cron/fire` are unaffected — those have their own verification (next sections).
+
+> **Cost-runaway guard:** even with `--max-instances=2 --concurrency=5`, a buggy agent looping on `spawn_agent` can chew through Gemini tokens fast. Keep the L1 `BudgetGuard` (`DAILY_TOKEN_BUDGET=100000`) wired in production, and set a Cloud Billing budget alert at $20 so you find out before you find a $400 bill.
+
+## 7. Switch Telegram to webhook mode (with secret token)
+
+Long-polling is for development; webhooks are for production. Telegram supports a per-webhook **secret token** — every inbound POST carries an `X-Telegram-Bot-Api-Secret-Token` header that telegraf validates automatically. Set it.
+
+Generate the secret and store it:
+
+```bash
+TELEGRAM_WEBHOOK_SECRET=$(openssl rand -hex 32)
+echo -n "$TELEGRAM_WEBHOOK_SECRET" | gcloud secrets create telegram-webhook-secret --data-file=-
+gcloud secrets add-iam-policy-binding telegram-webhook-secret --member="serviceAccount:$SA" --role="roles/secretmanager.secretAccessor"
+gcloud run services update $SERVICE --region=$REGION --update-secrets=TELEGRAM_WEBHOOK_SECRET=telegram-webhook-secret:latest
+```
+
+Register the webhook **with** the secret token:
+
+```bash
+curl -F "url=$SERVICE_URL/api/telegram" \
+     -F "secret_token=$TELEGRAM_WEBHOOK_SECRET" \
+     https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/setWebhook
+# {"ok":true,"result":true,"description":"Webhook was set"}
+```
+
+In `src/channels/telegram.ts`, configure telegraf to validate it:
+
+```typescript
+import { Telegraf } from 'telegraf';
+
+const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN!);
+
+if (process.env.TELEGRAM_MODE === 'webhook') {
+  // telegraf auto-validates the X-Telegram-Bot-Api-Secret-Token header
+  // against the secret passed here. Mismatched headers → 403, dropped silently.
+  app.use(bot.webhookCallback('/api/telegram', {
+    secretToken: process.env.TELEGRAM_WEBHOOK_SECRET,
+  }));
+} else {
+  await bot.launch();
+}
+```
+
+> **Why the secret token matters:** without it, anyone who guesses your `/api/telegram` URL can POST fake updates and impersonate Telegram. With the token, only POSTs whose header matches your secret are accepted. **Telegraf does the validation — do NOT roll your own HMAC verification.**
+
+Send a message on Telegram. Your Cloud Run logs should show the inbound update with `severity=INFO`.
+
+> **Common pitfall**: forgetting to clear the previous webhook before changing it. Telegram allows one webhook per bot. Run `setWebhook` again to overwrite. To check current state: `curl https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo`.
 
 ## 8. Schedule cron via Cloud Scheduler
 
@@ -401,45 +501,114 @@ gcloud scheduler jobs create http adkclaw-heartbeat \
   --message-body='{"jobId":"heartbeat"}'
 ```
 
-In `src/server/http.ts`, add the endpoint with OIDC verification:
+In `src/server/middleware/oidc.ts`, implement the OIDC verifier — **do not skip this**, an unverified `/api/cron/fire` is a public RCE-on-cron endpoint:
 
 ```typescript
+import { OAuth2Client } from 'google-auth-library';
+import type { Request, Response, NextFunction } from 'express';
+
+const googleClient = new OAuth2Client();
+
+export async function verifyOidc(req: Request, res: Response, next: NextFunction) {
+  const header = req.header('authorization') ?? '';
+  const match = header.match(/^Bearer (.+)$/);
+  if (!match) return res.status(401).json({ error: 'missing bearer token' });
+  try {
+    const ticket = await googleClient.verifyIdToken({
+      idToken: match[1],
+      audience: process.env.SERVICE_URL,   // your Cloud Run URL
+    });
+    const payload = ticket.getPayload();
+    const expectedSa = process.env.CRON_SERVICE_ACCOUNT;
+    if (!payload || (expectedSa && payload.email !== expectedSa)) {
+      return res.status(403).json({ error: 'wrong service account' });
+    }
+    (req as any).oidc = payload;
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'invalid token' });
+  }
+}
+```
+
+Then in `src/server/http.ts`:
+
+```typescript
+import { verifyOidc } from './middleware/oidc.js';
+
 app.post('/api/cron/fire', verifyOidc, async (req, res) => {
   const { jobId } = req.body as { jobId: string };
+  // Validate jobId against a whitelist before firing — never trust the body
+  if (!cronEngine.has(jobId)) return res.status(404).json({ error: 'unknown jobId' });
   await cronEngine.fire(jobId);
   res.json({ ok: true });
 });
 ```
 
-`verifyOidc` is a middleware that extracts the `Authorization: Bearer <jwt>` header and validates it against Google's certs. Requests without a valid token return 401.
+Set the env vars on the deployed service:
+
+```bash
+gcloud run services update $SERVICE --region=$REGION \
+  --update-env-vars=SERVICE_URL=$SERVICE_URL,CRON_SERVICE_ACCOUNT=$SA
+```
+
+Test that unauthorised requests are rejected:
+
+```bash
+# No token → 401
+curl -X POST $SERVICE_URL/api/cron/fire -d '{"jobId":"heartbeat"}'
+# Wrong audience → 401
+# Wrong SA → 403
+```
 
 For multiple schedules (e.g., different jobs), create one Cloud Scheduler entry per job. Each posts a different `jobId`.
 
 > **Why Cloud Scheduler instead of running `node-cron`?** Cloud Run scales to zero. There's nothing to run cron in. Cloud Scheduler triggers a fresh HTTPS request, which spins up an instance, runs the work, and lets it scale back down.
 
-## 9. Cloud Logging — structured JSON
+## 9. Cloud Logging — structured JSON with PII redaction
 
-Replace `console.log` in `src/index.ts` with a structured logger:
+Replace `console.log` in `src/index.ts` with a structured logger that **redacts PII before logging**. Cloud Logging is searchable; an email or phone number in a tool result will sit there indexed for 30 days. Redact at the boundary.
 
 ```typescript
 // src/lib/logger.ts
-export function logInfo(message: string, fields: Record<string, unknown> = {}) {
-  console.log(JSON.stringify({
-    severity: 'INFO',
-    message,
+const EMAIL_RE = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+const PHONE_RE = /\+?\d[\d\s().-]{8,}\d/g;
+const TOKEN_RE = /\b(sk-|pk-|ya29\.|AIza|gho_|ghs_)[A-Za-z0-9_-]{16,}/g;
+const CARD_RE = /\b(?:\d[ -]*?){13,16}\b/g;
+
+export function redactPII(input: unknown): unknown {
+  if (typeof input === 'string') {
+    return input
+      .replace(EMAIL_RE, '[email]')
+      .replace(PHONE_RE, '[phone]')
+      .replace(TOKEN_RE, '[token]')
+      .replace(CARD_RE, '[card]');
+  }
+  if (Array.isArray(input)) return input.map(redactPII);
+  if (input && typeof input === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(input)) out[k] = redactPII(v);
+    return out;
+  }
+  return input;
+}
+
+function emit(severity: 'INFO' | 'WARNING' | 'ERROR', message: string, fields: Record<string, unknown>) {
+  const stream = severity === 'ERROR' ? console.error : console.log;
+  stream(JSON.stringify({
+    severity,
+    message: redactPII(message) as string,
     timestamp: new Date().toISOString(),
-    ...fields,
+    ...(redactPII(fields) as Record<string, unknown>),
   }));
 }
-export function logError(message: string, fields: Record<string, unknown> = {}) {
-  console.error(JSON.stringify({
-    severity: 'ERROR',
-    message,
-    timestamp: new Date().toISOString(),
-    ...fields,
-  }));
-}
+
+export const logInfo = (msg: string, fields: Record<string, unknown> = {}) => emit('INFO', msg, fields);
+export const logWarn = (msg: string, fields: Record<string, unknown> = {}) => emit('WARNING', msg, fields);
+export const logError = (msg: string, fields: Record<string, unknown> = {}) => emit('ERROR', msg, fields);
 ```
+
+> **What this redacts and what it doesn't:** the regexes catch the common shapes (Gmail-style emails, phone numbers, API-key prefixes, plain card numbers). They will NOT catch addresses, names, or messages where PII is expressed in prose ("my friend Sara at 5 Cedar Lane..."). For workshop traffic this is fine; for regulated workloads add a more sophisticated DLP step (e.g. Cloud DLP API).
 
 Cloud Logging picks up `severity` and indexes the JSON — you can query:
 
