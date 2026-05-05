@@ -106,6 +106,31 @@ Why is rule 2 non-negotiable? If you pass parent history to children:
 - **Secrets leak** — a Researcher sub-agent reads the user's other unrelated messages
 - **Children get confused** — "wait, am I the parent or am I the parent's research helper?"
 
+> **What "forked context" actually means (be precise):** sub-agents have **isolated message history** (their own session row, no parent messages) but **share the workspace** (same `IDENTITY.md`, same memory bank, same skills directory). The isolation is at the **session** level, not the **knowledge** level. This is intentional — the agent team shares long-term knowledge but not conversation context.
+>
+> **Anti-pattern (don't do this):**
+>
+> ```typescript
+> // ❌ WRONG — leaks parent's unrelated conversation into the child
+> const result = await this.runner.run({
+>   sessionKey: childKey,
+>   message: req.task,
+>   history: parentHistory,   // never pass this
+> });
+> ```
+>
+> **Correct (the runner should refuse parent history for `kind='isolated'` sessions):**
+>
+> ```typescript
+> // ✅ RIGHT — child starts with empty messages, gets workspace + extra prompt
+> const result = await this.runner.run({
+>   sessionKey: childKey,        // SessionStore returns [] for new isolated session
+>   message: req.task,
+>   extraSystemPrompt,           // identity (workspace) + role + goal ancestry
+>   allowedToolNames,
+> });
+> ```
+
 ### Implement `src/multi-agent/orchestrator.ts`
 
 ```typescript
@@ -233,6 +258,18 @@ The brand promise of an autonomous agent: **it never crashes.** That's not "rare
 
 Read bottom-up: try the cheap recovery first, escalate only when nothing else works.
 
+> **What we ship in L3 vs aspirational layers:**
+>
+> | Layer | L3 status | Where it lives |
+> |------|-----------|----------------|
+> | **RETRY** | Shipped — `HealingEngine.withRetry()` | `src/healing/engine.ts` |
+> | **FALLBACK** | Shipped — `HealingEngine.withFallback()` and `protect()` | `src/healing/engine.ts` |
+> | **RECOVER** | Per-subsystem (Telegram reconnect, cron re-arm), not in `HealingEngine` | `src/channels/telegram.ts`, `src/cron/engine.ts` |
+> | **DEGRADE** | Caller's responsibility — pattern shown in `runner.ts` ("answer from training data only" branch) | `src/agent/runner.ts` |
+> | **ESCALATE** | Caller's responsibility — surface a clear message via the channel | runner + channel |
+>
+> Layers 1–2 are proper primitives in `HealingEngine`. Layers 3–5 are **patterns** the runner and adapters apply themselves. We teach all five so the vocabulary is shared, but only Retry + Fallback have a unit-testable surface today. A future iteration may promote Recover/Degrade into the engine.
+
 ### Step 1 — classify the error
 
 Implement `src/healing/classifier.ts`:
@@ -296,7 +333,7 @@ async withRetry<T>(fn: () => Promise<T>, opts: RetryOptions = {}): Promise<T> {
 }
 ```
 
-Sequence: 1s → 2s → 4s, capped at 8s. If the server returns `Retry-After`, honour it instead.
+Sequence: 1s → 2s → 4s → (8s cap). The exponent is `2^(attempt-1)`. If the server returns `Retry-After`, honour it instead of the exponential calculation.
 
 ### Step 3 — fallback when retries are exhausted
 
