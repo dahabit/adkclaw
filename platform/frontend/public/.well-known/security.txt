@@ -1,6 +1,0 @@
-Contact: https://x.com/dahabdev
-Contact: mailto:dahabit@gmail.com
-Expires: 2027-05-05T00:00:00.000Z
-Preferred-Languages: en, ar
-Canonical: https://adkclaw.dev/.well-known/security.txt
-Policy: https://github.com/dahabit/adkclaw/blob/main/SECURITY.md

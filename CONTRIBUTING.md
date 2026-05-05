@@ -23,7 +23,7 @@ npm test                   # all 145 tests should pass
 | **New sub-agent profiles** | New file in `src/multi-agent/profiles/`. Include role + tool allowlist + default model. |
 | **Skill files** | New `workspace.example/skills/<name>.md` with frontmatter. Brief description in `docs/extending.md`. |
 | **Codelab improvements** | PRs to `level_N/README.md` with clearer instructions, fixed links, better diagrams. |
-| **Documentation** | Improvements to `docs/`, especially `teaching-guide.md`, `tech-stack.md`, `capabilities.md`. |
+| **Documentation** | Improvements to `docs/`, especially `tech-stack.md`, `capabilities.md`, `internals.md`. |
 | **Translation** | Codelab translations (Arabic, Spanish, Portuguese, etc.) to `level_N/README.<lang>.md`. |
 | **Cloud Run deploy improvements** | `Dockerfile`, `cloudbuild.yaml`, `deploy/` scripts. Especially welcome: cost-reduction tips. |
 

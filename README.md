@@ -71,7 +71,6 @@ See the [Workshop Hosting Guide](#-workshop-hosting-guide) below for running you
 | [Level 2 README](level_2/README.md) | Memory bank, compaction at 80%, markdown skills, runtime extensibility |
 | [Level 3 README](level_3/README.md) | Sub-agent profiles, recovery pyramid, cron + heartbeat, admin dashboard |
 | [Level 4 README](level_4/README.md) | Containerize, Firestore migration, Cloud Run deploy, Telegram webhook, Cloud Scheduler |
-| [Teaching Guide](docs/teaching-guide.md) | Why every architecture decision was made — for instructors |
 | [Tech Stack Audit](docs/tech-stack.md) | Google vs open-source dependencies, with rationale per package |
 | [Capabilities Tour](docs/capabilities.md) | What the finished agent can do — 8 wow demos |
 | [API Reference](docs/api.md) | All HTTP endpoints with curl examples |
