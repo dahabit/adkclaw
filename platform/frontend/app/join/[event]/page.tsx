@@ -84,19 +84,50 @@ export default function JoinPage() {
   if (eventLoading) {
     return (
       <main className="min-h-dvh container-page py-24">
-        <p className="text-center text-ink-tertiary">Loading event…</p>
+        <p className="text-center text-ink-tertiary">Spinning up your registration…</p>
       </main>
     );
   }
 
   if (eventError) {
+    const isSandbox = eventCode === 'sandbox';
     return (
       <main className="min-h-dvh container-page py-24 text-center">
-        <h1 className="font-display text-2xl mb-4">Event not available</h1>
-        <p className="text-ink-secondary mb-6">{eventError}</p>
-        <Link href="/">
-          <Button variant="secondary">Back to home</Button>
-        </Link>
+        <h1 className="font-display text-2xl mb-4">
+          {isSandbox ? 'No live cohort right now' : 'Event not available'}
+        </h1>
+        <p className="text-ink-secondary mb-8 max-w-xl mx-auto">
+          {isSandbox
+            ? 'There is no live AdkClaw cohort active at the moment. You can still go self-paced — the entire workshop is open-source and the curriculum lives in the public repo.'
+            : eventError}
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          {isSandbox ? (
+            <>
+              <Link
+                href="https://github.com/dahabit/adkclaw#level_0"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <Button>Begin Level 0 (self-paced) →</Button>
+              </Link>
+              <Link
+                href="https://forms.gle/ADKCLAW_WAITLIST"
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <Button variant="secondary">Join the waitlist</Button>
+              </Link>
+              <Link href="/">
+                <Button variant="ghost">Back to home</Button>
+              </Link>
+            </>
+          ) : (
+            <Link href="/">
+              <Button variant="secondary">Back to home</Button>
+            </Link>
+          )}
+        </div>
       </main>
     );
   }
@@ -166,13 +197,48 @@ export default function JoinPage() {
             </ol>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex gap-4 flex-wrap">
             <Link href={`/u/${success.username}`}>
               <Button>View my profile →</Button>
             </Link>
             <Link href="/quickstart">
               <Button variant="secondary">5-min Quickstart</Button>
             </Link>
+          </div>
+
+          {/* Share strip — invite the new builder to share */}
+          <div className="surface rounded-lg p-6 mt-8">
+            <p className="text-mono text-xs uppercase tracking-[0.18em] text-accent mb-2">
+              📸 You&apos;re in. Tell the world.
+            </p>
+            <p className="text-ink-secondary text-sm mb-4 leading-relaxed">
+              Share that you&apos;re building your AI teammate — tag{' '}
+              <span className="text-mono text-accent">#AdkClaw</span> so others can find you.
+            </p>
+            <div className="flex flex-wrap gap-3">
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(
+                  `Building my AI teammate with AdkClaw 🤖 5 levels, Google ADK + Gemini, ships to MY Cloud Run. #AdkClaw #GoogleADK`,
+                )}&url=${encodeURIComponent('https://adkclaw.dev')}&via=dahabdev`}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <Button variant="secondary" size="sm">
+                  Share on X →
+                </Button>
+              </a>
+              <a
+                href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(
+                  'https://adkclaw.dev',
+                )}`}
+                target="_blank"
+                rel="noreferrer noopener"
+              >
+                <Button variant="secondary" size="sm">
+                  Share on LinkedIn →
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </main>
