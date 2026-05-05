@@ -14,6 +14,8 @@ const LEVELS = [
     desc: 'Get oriented. The 6 pillars of an autonomous agent.',
     dur: '60 min',
     tag: 'Orientation',
+    prereq: 'No prerequisites',
+    outcome: '📚 Understand autonomous agents',
   },
   {
     id: 1,
@@ -21,6 +23,8 @@ const LEVELS = [
     desc: 'Agent loop, tools, personality, Telegram, sessions.',
     dur: '120 min',
     tag: 'Foundations',
+    prereq: 'Node.js basics · Telegram account',
+    outcome: '🤖 Your agent talks on Telegram',
   },
   {
     id: 2,
@@ -28,6 +32,8 @@ const LEVELS = [
     desc: 'Context bootstrap, memory bank, compaction, runtime skills.',
     dur: '120 min',
     tag: 'Cognition',
+    prereq: 'L1 complete',
+    outcome: '🧠 Your agent remembers you',
   },
   {
     id: 3,
@@ -35,6 +41,8 @@ const LEVELS = [
     desc: 'Sub-agents, recovery pyramid, cron, dashboard.',
     dur: '120 min',
     tag: 'Autonomy',
+    prereq: 'L2 complete',
+    outcome: '👥 Your agent has a team',
   },
   {
     id: 4,
@@ -42,6 +50,73 @@ const LEVELS = [
     desc: 'Cloud Run, Firestore, Secret Manager, webhook.',
     dur: '150 min',
     tag: 'Production',
+    prereq: 'L3 complete · Google Cloud account',
+    outcome: '🚀 Your agent runs 24/7',
+  },
+];
+
+const CAPABILITIES = [
+  {
+    icon: '💬',
+    title: 'Telegram Agent',
+    detail: 'Chat with your agent from your phone, 24/7.',
+    example: '"Summarise my day."',
+  },
+  {
+    icon: '🔍',
+    title: 'Web Search',
+    detail: 'Live grounding via Gemini Search.',
+    example: '"What happened in tech today?"',
+  },
+  {
+    icon: '📄',
+    title: 'Create Content',
+    detail: 'PDFs, slide decks, reports — generated on demand.',
+    example: '"Make a 5-slide deck on Google ADK."',
+  },
+  {
+    icon: '⏰',
+    title: 'Scheduled Tasks',
+    detail: 'Cron-driven work the agent runs without you.',
+    example: '"Every weekday at 9am, brief me on Flutter news."',
+  },
+  {
+    icon: '🧠',
+    title: 'Persistent Memory',
+    detail: 'Survives reboots and grows over time.',
+    example: '"Remember I prefer SQLite for v1 projects."',
+  },
+  {
+    icon: '🤝',
+    title: 'Sub-Agents',
+    detail: 'Delegates specialised work to focused sub-agents.',
+    example: '"Research Vertex Vector Search and save findings."',
+  },
+];
+
+const AUDIENCES = [
+  {
+    icon: '👩‍💻',
+    title: 'TypeScript / Node Developers',
+    detail:
+      'You know async/await — now learn agent loops. Move from API calls to autonomous agents.',
+  },
+  {
+    icon: '🎓',
+    title: 'CS Students & Bootcamp Grads',
+    detail:
+      'Understand AI from first principles. Real agent architecture, not just prompt engineering.',
+  },
+  {
+    icon: '🧑‍🏫',
+    title: 'Community Leads & Instructors',
+    detail:
+      'Want to teach AI agents at your local GDG, university, or meetup. Train-the-trainer ready.',
+  },
+  {
+    icon: '🏢',
+    title: 'Teams Exploring AI Agents',
+    detail: 'Evaluate if autonomous agents fit your product. Build a proof-of-concept in one day.',
   },
 ];
 
@@ -53,27 +128,47 @@ export default function HomePage() {
       {/* === Hero === */}
       <section
         id="home"
-        className="container-wide pt-32 pb-20 sm:pt-36 sm:pb-28 relative scroll-mt-20"
+        className="container-wide pt-24 pb-12 sm:pt-28 sm:pb-16 relative scroll-mt-20"
       >
         <div className="mx-auto max-w-5xl text-center">
-          <FadeIn>
-            <h1 className="text-4xl sm:text-5xl lg:text-6xl font-display font-bold text-ink-primary mb-6 leading-[1.05]">
-              Build your AI teammate. <br className="hidden sm:block" />
-              <span className="bg-gradient-to-r from-accent via-indigo-400 to-cyan-400 bg-clip-text text-transparent">
-                From a function call to global autonomy.
-              </span>
-            </h1>
-          </FadeIn>
-          <FadeIn delay={120}>
-            <p className="text-lg sm:text-xl text-ink-secondary mb-10 leading-relaxed max-w-3xl mx-auto">
-              A 5-level workshop teaching autonomous AI agents on Google ADK + Gemini in TypeScript.
-              From <code className="text-mono text-accent">console.log</code> to a
-              globally-reachable agent running 24/7 on Google Cloud — that you can chat with from
-              anywhere.
+          <p className="text-mono text-[11px] sm:text-xs uppercase tracking-[0.28em] text-accent mb-5">
+            Google ADK · Gemini · TypeScript
+          </p>
+          <h1 className="font-display font-bold text-ink-primary mb-4 leading-[0.95] tracking-tight text-[clamp(2.5rem,4.5vw+0.5rem,4.5rem)]">
+            <span className="block hero-shimmer">
+              {'Build your AI teammate.'.split(' ').map((word, i) => (
+                <span
+                  key={`l1-${i}`}
+                  className="hero-word"
+                  style={{ animationDelay: `${i * 80}ms` }}
+                >
+                  {word}
+                  {i < 'Build your AI teammate.'.split(' ').length - 1 ? ' ' : ''}
+                </span>
+              ))}
+            </span>
+            <span className="block hero-gradient-text">
+              {'From a function call to global autonomy.'.split(' ').map((word, i) => (
+                <span
+                  key={`l2-${i}`}
+                  className="hero-word"
+                  style={{ animationDelay: `${360 + i * 70}ms` }}
+                >
+                  {word}
+                  {i < 'From a function call to global autonomy.'.split(' ').length - 1 ? ' ' : ''}
+                </span>
+              ))}
+            </span>
+          </h1>
+          <FadeIn delay={780}>
+            <p className="text-base sm:text-lg text-ink-secondary mb-7 leading-relaxed max-w-2xl mx-auto">
+              A 5-level workshop teaching autonomous AI agents on Google ADK + Gemini. From{' '}
+              <code className="text-mono text-accent">console.log</code> to a globally-reachable
+              agent running on Google Cloud — yours to chat with from anywhere.
             </p>
           </FadeIn>
-          <FadeIn delay={240}>
-            <div className="flex flex-wrap justify-center gap-4">
+          <FadeIn delay={920}>
+            <div className="flex flex-wrap justify-center gap-3">
               <Link href="/join/sandbox" className="btn-hero text-base inline-flex items-center">
                 Start Level 0 →
               </Link>
@@ -123,32 +218,106 @@ export default function HomePage() {
           <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-primary mb-3 text-center">
             Five levels. Ship by the end.
           </h2>
-          <p className="text-ink-secondary text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-ink-secondary text-center mb-14 max-w-2xl mx-auto">
             Each level adds a pillar. By Level 4 your agent runs 24/7 on Google Cloud, reachable
             from any phone.
           </p>
         </FadeIn>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="levels-timeline mx-auto max-w-4xl">
           {LEVELS.map((lvl, i) => (
-            <FadeIn key={lvl.id} delay={i * 80}>
-              <article
-                className={[
-                  'surface rounded-lg p-5 level-card',
-                  `level-glow-${lvl.id}`,
-                  'h-full',
-                ].join(' ')}
-              >
-                <div className="flex items-baseline justify-between mb-3">
-                  <p className="text-mono text-xs font-semibold level-tag">L{lvl.id}</p>
-                  <p className="text-mono text-[10px] uppercase tracking-wider text-ink-tertiary">
-                    {lvl.tag}
-                  </p>
+            <FadeIn key={lvl.id} delay={i * 100}>
+              <div className={`level-row ${`level-glow-${lvl.id}`} mb-10 sm:mb-12 last:mb-0`}>
+                <span className="level-node" aria-hidden="true">
+                  L{lvl.id}
+                </span>
+                <article className="surface rounded-lg p-6 sm:p-7 level-card">
+                  <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1 mb-2">
+                    <h3 className="font-display text-xl sm:text-2xl font-semibold text-ink-primary">
+                      {lvl.title}
+                    </h3>
+                    <p className="text-mono text-[10px] uppercase tracking-wider text-ink-tertiary">
+                      {lvl.tag}
+                    </p>
+                  </div>
+                  <p className="text-ink-secondary text-base leading-relaxed mb-5">{lvl.desc}</p>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-6">
+                    <div>
+                      <p className="text-mono text-[10px] uppercase tracking-wider text-ink-tertiary mb-1">
+                        Prereq
+                      </p>
+                      <p className="text-mono text-xs sm:text-sm text-ink-secondary">
+                        {lvl.prereq}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-mono text-[10px] uppercase tracking-wider text-ink-tertiary mb-1">
+                        Outcome
+                      </p>
+                      <p className="text-sm font-semibold text-accent">{lvl.outcome}</p>
+                    </div>
+                  </div>
+                </article>
+              </div>
+            </FadeIn>
+          ))}
+        </div>
+      </section>
+
+      {/* === What you'll build === */}
+      <section id="capabilities" className="container-wide py-16 sm:py-20 scroll-mt-20">
+        <FadeIn>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-primary mb-3">
+              What you&apos;ll build
+            </h2>
+            <p className="text-ink-secondary max-w-2xl mx-auto">
+              By Level 4 your agent has these capabilities — every one a tool the workshop teaches
+              you to wire and operate.
+            </p>
+          </div>
+        </FadeIn>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-6xl mx-auto">
+          {CAPABILITIES.map((c, i) => (
+            <FadeIn key={c.title} delay={i * 60}>
+              <article className="surface rounded-lg p-5 h-full">
+                <div className="text-2xl mb-3" aria-hidden="true">
+                  {c.icon}
                 </div>
-                <h3 className="font-display text-lg font-semibold mb-2 text-ink-primary">
-                  {lvl.title}
+                <h3 className="font-display text-base font-semibold mb-2 text-ink-primary">
+                  {c.title}
                 </h3>
-                <p className="text-ink-secondary text-sm leading-relaxed mb-4">{lvl.desc}</p>
-                <p className="text-mono text-xs text-ink-tertiary">{lvl.dur}</p>
+                <p className="text-ink-secondary text-sm leading-relaxed mb-3">{c.detail}</p>
+                <p className="text-mono text-xs text-ink-tertiary italic">{c.example}</p>
+              </article>
+            </FadeIn>
+          ))}
+        </div>
+      </section>
+
+      {/* === Who is this for? === */}
+      <section id="audience" className="container-wide py-16 sm:py-20 scroll-mt-20">
+        <FadeIn>
+          <div className="text-center mb-10">
+            <h2 className="text-2xl sm:text-3xl font-display font-bold text-ink-primary mb-3">
+              Who is this for?
+            </h2>
+            <p className="text-ink-secondary max-w-2xl mx-auto">
+              Designed for developers, students, instructors, and teams who want real agent
+              architecture — not just prompt engineering.
+            </p>
+          </div>
+        </FadeIn>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 max-w-6xl mx-auto">
+          {AUDIENCES.map((a, i) => (
+            <FadeIn key={a.title} delay={i * 80}>
+              <article className="surface rounded-lg p-5 h-full">
+                <div className="text-2xl mb-3" aria-hidden="true">
+                  {a.icon}
+                </div>
+                <h3 className="font-display text-base font-semibold mb-2 text-ink-primary">
+                  {a.title}
+                </h3>
+                <p className="text-ink-secondary text-sm leading-relaxed">{a.detail}</p>
               </article>
             </FadeIn>
           ))}
@@ -210,19 +379,13 @@ export default function HomePage() {
             <Link href="/join/sandbox" className="btn-hero text-base inline-flex items-center">
               Join the sandbox →
             </Link>
-            <Link
-              href="/preflight"
-              className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary hover:text-accent transition-colors duration-fast ease-out"
-            >
-              First time? Run pre-flight check →
-            </Link>
           </div>
         </section>
       </FadeIn>
 
       {/* === Footer === */}
       <footer className="container-wide border-t border-border-subtle py-12 mt-12">
-        <div className="grid gap-10 sm:grid-cols-3 max-w-6xl mx-auto">
+        <div className="grid gap-10 sm:grid-cols-4 max-w-6xl mx-auto">
           <div className="sm:col-span-1">
             <p className="font-display text-xl font-bold text-ink-primary mb-2">AdkClaw</p>
             <p className="text-ink-tertiary text-sm leading-relaxed">
@@ -233,10 +396,15 @@ export default function HomePage() {
               <Link
                 href="https://github.com/dahabit/adkclaw/blob/main/LICENSE"
                 className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                target="_blank"
+                rel="noreferrer noopener"
               >
                 Apache 2.0
               </Link>
               .
+            </p>
+            <p className="text-ink-tertiary text-xs mt-3 leading-relaxed">
+              Built for the global developer community, with special focus on MENA.
             </p>
           </div>
 
@@ -294,11 +462,70 @@ export default function HomePage() {
               <li>Cloud Scheduler</li>
             </ul>
           </div>
+
+          <div>
+            <p className="text-mono text-xs uppercase tracking-[0.15em] text-ink-tertiary mb-3">
+              Connect
+            </p>
+            <ul className="flex flex-col gap-1.5 text-sm">
+              <li>
+                <Link
+                  href="https://x.com/dahabdev"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  X / Twitter
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://www.linkedin.com/in/dahabit/"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  LinkedIn
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://www.youtube.com/@h3boh3bo"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  YouTube
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://www.facebook.com/dahabdev"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Facebook
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="https://www.instagram.com/dahabdev"
+                  className="text-ink-secondary hover:text-accent transition-colors duration-fast ease-out"
+                  target="_blank"
+                  rel="noreferrer noopener"
+                >
+                  Instagram
+                </Link>
+              </li>
+            </ul>
+          </div>
         </div>
 
-        <div className="mt-12 pt-6 border-t border-border-subtle text-center text-ink-tertiary text-xs">
-          © {new Date().getFullYear()} Ahmed Abu Eldahab · adkclaw.dev · Built with Google ADK +
-          Gemini
+        <div className="mt-12 pt-6 border-t border-border-subtle text-center text-ink-tertiary text-xs leading-relaxed">
+          AdkClaw is community-built and not officially affiliated with Google.
+          <br />© {new Date().getFullYear()} Ahmed Abu Eldahab · adkclaw.dev · Built with Google ADK
+          + Gemini
         </div>
       </footer>
     </main>
