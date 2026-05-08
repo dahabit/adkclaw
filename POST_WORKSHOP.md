@@ -48,6 +48,7 @@ Three optional projects, ranked by difficulty. Pick one (or none — finishing i
 | [`extensions/slack-channel/`](extensions/slack-channel/README.md) | Medium | Plug a second channel into the same agent — Slack instead of Telegram |
 | [`extensions/researcher-rag/`](extensions/researcher-rag/README.md) | Hard | Embed your own PDFs/docs into Vertex AI Vector Search; agent answers from your private corpus |
 | [`extensions/voice-tutor/`](extensions/voice-tutor/README.md) | Medium | Bidirectional voice chat with Gemini Live API |
+| [`extensions/mcp-server/`](extensions/mcp-server/README.md) | Medium | Expose your agent's tools to Claude Desktop, Cursor, and other MCP-aware clients |
 
 Each scaffold has a README, a starter, two passing tests, three failing tests you fix to graduate, and clear success criteria.
 

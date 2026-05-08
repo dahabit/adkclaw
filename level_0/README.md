@@ -1,3 +1,5 @@
+> 🌐 **Language:** **English** · [العربية](README.ar.md)
+
 # Level 0: Architecture Tour
 
 ![Level 0: Architecture Tour](img/architecture.png)

@@ -278,6 +278,10 @@ You've built and shipped an autonomous agent. Where to go from here:
 
 If any are red, do not declare done. Cloud Run with a public unauthenticated cron endpoint is a liability.
 
+## ➡️ Next Level
+
+Your agent ships. Now make it production-grade. **[Level 5: Harden the Cloud →](../level_5/README.md)** — threat-model your deployed agent and wire nine concrete security gates that the daemon refuses to start without.
+
 ## 🎉 Congratulations
 
 You walked in knowing how to call an LLM. You're walking out knowing how to **build, deploy, and operate an autonomous agent** — on the same Google Cloud stack used by production systems.

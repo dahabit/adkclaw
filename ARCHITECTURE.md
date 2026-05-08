@@ -68,6 +68,7 @@ Students who get stuck in Level 3 don't need to redo Levels 1–2 from scratch. 
 | `v2-complete` | Post-Level 2: + memory bank + compaction + skills |
 | `v3-complete` | Post-Level 3: + sub-agents + healing + cron + dashboard |
 | `v4-complete` | Post-Level 4: + Cloud Run + Firestore + webhook + scheduler |
+| `v5-complete` | Post-Level 5: + admin auth + OIDC + BudgetGuard FATAL + Cloud DLP + Firestore rules |
 
 To rescue yourself mid-workshop:
 

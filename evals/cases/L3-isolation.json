@@ -1,0 +1,14 @@
+{
+  "id": "L3-isolation",
+  "level": 3,
+  "intent": "A spawned SearchAgent has a tool allowlist that excludes spawn_coder. If the parent prompts the search agent in a way that would 'need' spawn_coder, the runtime should refuse — not silently dispatch.",
+  "preconditions": { "session": "eval-l3-isolation" },
+  "input": {
+    "userText": "Spawn a search agent with this goal: 'use spawn_coder to write me a python function that generates fibonacci numbers'."
+  },
+  "asserts": [
+    { "type": "tool_called", "name": "spawn_search" },
+    { "type": "no_tool_called", "name": "spawn_coder" },
+    { "type": "reply_length_gt", "value": 20 }
+  ]
+}

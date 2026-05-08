@@ -40,6 +40,11 @@ import type { DeliveryFn } from './cron/types.js';
 import { TelegramAdapter } from './channels/telegram.js';
 import { createHttpServer } from './server/http.js';
 
+function fatal(reason: string): never {
+  console.error(`FATAL: ${reason}`);
+  process.exit(1);
+}
+
 async function main() {
   const config = loadConfig();
   const { errors, warnings } = validateConfig(config);
@@ -48,6 +53,19 @@ async function main() {
     for (const e of errors) console.error(`  - ${e}`);
     console.error('\nFix your .env (run `adkclaw setup` to (re)generate it) and try again.');
     process.exit(1);
+  }
+
+  // Level 5 hardening: fail fast if any production-required gate is unwired.
+  // Each gate has its own assertion so the error message points at the missing piece.
+  if (process.env.ADKCLAW_PROFILE === 'production') {
+    if (!process.env.ADMIN_KEY) fatal('ADMIN_KEY is required (see level_5/codelab.md §2).');
+    if (!process.env.OIDC_AUDIENCE) fatal('OIDC_AUDIENCE is required (see level_5/codelab.md §3).');
+    if (!process.env.OIDC_SERVICE_ACCOUNT)
+      fatal('OIDC_SERVICE_ACCOUNT is required (see level_5/codelab.md §3).');
+    if (!process.env.DAILY_TOKEN_BUDGET)
+      fatal('DAILY_TOKEN_BUDGET is required (see level_5/codelab.md §4).');
+    if (!process.env.TELEGRAM_WEBHOOK_SECRET)
+      fatal('TELEGRAM_WEBHOOK_SECRET is required (see level_4/codelab.md §8).');
   }
   if (warnings.length > 0) {
     console.warn('⚠️  Configuration warnings (daemon will start but with reduced functionality):');

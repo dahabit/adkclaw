@@ -24,6 +24,7 @@ Across five levels, you'll build the same autonomous-agent reference implementat
 | **Level 2** | Give it persistent memory and runtime skills | Workspace bootstrap, memory bank taxonomy, compaction at 80%, markdown skills loader |
 | **Level 3** | Spawn sub-agents and make it self-healing | Multi-agent orchestration, isolated sessions, recovery pyramid, cron + heartbeat |
 | **Level 4** | Ship to Google Cloud, talk to it from anywhere | Cloud Run deployment, Firestore, Secret Manager, Cloud Scheduler, Telegram webhook |
+| **Level 5** | Harden it for production | Threat modeling, admin auth, OIDC for Cloud Scheduler, Cloud DLP, Firestore rules, secret rotation, supply-chain hardening |
 
 ## 🛠️ Technology Stack
 
@@ -75,6 +76,7 @@ The instructor materials (slide decks, run-of-show, speaker notes, demo recovery
 | [Level 2 README](level_2/README.md) | Memory bank, compaction at 80%, markdown skills, runtime extensibility |
 | [Level 3 README](level_3/README.md) | Sub-agent profiles, recovery pyramid, cron + heartbeat, admin dashboard |
 | [Level 4 README](level_4/README.md) | Containerize, Firestore migration, Cloud Run deploy, Telegram webhook, Cloud Scheduler |
+| [Level 5 README](level_5/README.md) | Harden the cloud — threat model, OIDC, FATAL gates, Cloud DLP, Firestore rules, secret rotation |
 | [Tech Stack Audit](docs/tech-stack.md) | Google vs open-source dependencies, with rationale per package |
 | [Capabilities Tour](docs/capabilities.md) | What the finished agent can do — 8 wow demos |
 | [API Reference](docs/api.md) | All HTTP endpoints with curl examples |

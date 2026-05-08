@@ -6,11 +6,15 @@ const HELP = `
 🤖 adkclaw — autonomous agent CLI
 
 Usage:
-  adkclaw setup    Interactive: name your agent, configure keys
-  adkclaw start    Start the gateway daemon (Telegram + HTTP)
-  adkclaw chat     Open a terminal REPL connected to the gateway
-  adkclaw check    Pre-flight diagnostics — validate config + ping daemon
-  adkclaw help     Show this message
+  adkclaw setup           Interactive: name your agent, configure keys
+  adkclaw start           Start the gateway daemon (Telegram + HTTP)
+  adkclaw chat            Open a terminal REPL connected to the gateway
+  adkclaw check           Pre-flight diagnostics — validate config + ping daemon
+  adkclaw doctor          Deep health probe (env, Telegram, daemon, Cloud Run)
+  adkclaw audit           Run the Level 5 security audit (gates + rules + threat model)
+  adkclaw rotate <secret> Print the rotation runbook for a secret (gemini, telegram, webhook, admin)
+  adkclaw migrate         Export SQLite sessions in Firestore-import shape (stdout)
+  adkclaw help            Show this message
 
 For development:
   npm run setup    Configure agent (writes .env + workspace/)
@@ -158,9 +162,28 @@ async function main(): Promise<void> {
       return;
     }
     case 'check':
-    case 'doctor':
       await runCheck();
       return;
+    case 'doctor': {
+      const { doctor } = await import('./doctor.js');
+      const code = await doctor();
+      process.exit(code);
+    }
+    case 'rotate': {
+      const { rotate } = await import('./rotate.js');
+      const code = rotate(process.argv[3]);
+      process.exit(code);
+    }
+    case 'migrate': {
+      const { migrate } = await import('./migrate.js');
+      const code = migrate();
+      process.exit(code);
+    }
+    case 'audit': {
+      const { audit } = await import('./audit.js');
+      const code = await audit();
+      process.exit(code);
+    }
     case 'help':
     case '-h':
     case '--help':

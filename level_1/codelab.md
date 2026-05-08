@@ -206,7 +206,10 @@ import { GoogleGenAI, type Content, type FunctionCall, type Part } from '@google
 import type { Config, ToolContext } from '../types/index.js';
 import type { ToolRegistry } from '../tools/registry.js';
 
-const MAX_TOOL_ROUNDS = 15; // safety circuit breaker
+// MAX_TOOL_ROUNDS — caps the loop so a misbehaving model can't ping-pong
+// tools forever. 15 is more than enough for any real task; if you hit it,
+// it's a bug worth investigating, not a value to bump.
+const MAX_TOOL_ROUNDS = 15;
 
 export interface RunRequest {
   sessionKey: string;
@@ -248,29 +251,28 @@ export class AgentRunner {
         },
       });
 
-      const calls: FunctionCall[] = response.functionCalls ?? [];
+      const calls = response.functionCalls ?? [];
 
+      // No tool calls? The model is done — return its text answer.
       if (calls.length === 0) {
         const text = response.text ?? '';
         history.push({ role: 'model', parts: [{ text }] });
         return { reply: text, toolCalls, rounds: round + 1, newHistory: history };
       }
 
-      // Append the model's tool-call request
-      const modelParts: Part[] = calls.map((call) => ({ functionCall: call }));
-      history.push({ role: 'model', parts: modelParts });
+      // Otherwise: log the model's tool-call request, run each tool, append the responses.
+      history.push({
+        role: 'model',
+        parts: calls.map((call) => ({ functionCall: call })),
+      });
 
-      // Run each call and append the response
       const responseParts: Part[] = [];
       for (const call of calls) {
         toolCalls++;
-        const ctx: ToolContext = {
-          sessionKey: req.sessionKey,
-          workspacePath: req.workspacePath,
-        };
-        const result = await this.registry.invoke(call.name ?? '', call.args ?? {}, ctx);
+        const ctx: ToolContext = { sessionKey: req.sessionKey, workspacePath: req.workspacePath };
+        const result = await this.registry.invoke(call.name, call.args ?? {}, ctx);
         responseParts.push({
-          functionResponse: { name: call.name ?? '', response: { result } },
+          functionResponse: { name: call.name, response: { result } },
         });
       }
       history.push({ role: 'user', parts: responseParts });
@@ -370,13 +372,10 @@ export const webSearchTool: AgentTool = {
     required: ['query'],
   },
   async execute({ query }) {
-    // For Gemini's built-in grounding, the search happens server-side via the
-    // googleSearchRetrieval feature. For this MVP we return a stub; the
-    // production version uses the grounding API.
+    // Stub for now — returns hardcoded results so you can see the loop wire
+    // through end-to-end. Level 3 swaps this for Gemini's built-in grounding.
     return {
-      results: [
-        { snippet: `(stub) results for "${query}"`, url: 'https://example.com' },
-      ],
+      results: [{ snippet: `(stub) results for "${query}"`, url: 'https://example.com' }],
     };
   },
 };
@@ -411,10 +410,13 @@ import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
 import { resolve, normalize } from 'node:path';
 import type { AgentTool } from '../types/index.js';
 
+// Security note: confine every filesystem call to the workspace directory.
+// Without this, a tool argument like `../../../etc/passwd` reaches outside.
+// See https://owasp.org/www-community/attacks/Path_Traversal.
 function safePath(workspacePath: string, raw: string): string {
   const target = normalize(resolve(workspacePath, raw));
   if (!target.startsWith(workspacePath)) {
-    throw new Error(`Path escapes workspace: ${raw}`);
+    throw new Error(`Path traversal blocked: ${raw}`);
   }
   return target;
 }

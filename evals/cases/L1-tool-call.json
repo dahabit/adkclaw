@@ -1,0 +1,15 @@
+{
+  "id": "L1-tool-call",
+  "level": 1,
+  "intent": "When the user asks about something time-sensitive, the agent should call web_search.",
+  "preconditions": { "session": "eval-l1-tool-call" },
+  "input": {
+    "userText": "What's the current stable version of Node.js?"
+  },
+  "asserts": [
+    { "type": "tool_called", "name": "web_search" },
+    { "type": "reply_contains", "value": "node" },
+    { "type": "reply_length_gt", "value": 10 },
+    { "type": "reply_length_lt", "value": 2000 }
+  ]
+}

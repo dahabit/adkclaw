@@ -1,0 +1,38 @@
+rules_version = '2';
+
+// AdkClaw Firestore Security Rules — default-deny.
+//
+// IMPORTANT: server-side SDKs (the @google-cloud/firestore client used in
+// Cloud Run) authenticate via IAM and bypass these rules. The rules are
+// defense-in-depth: if anyone disables IAM-bypass or attaches the public
+// client SDK to a browser, no one gets in.
+//
+// Tested via the Firebase Rules emulator — see
+// src/storage/firestore-rules.test.ts.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default: deny everything.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Sessions: written by the runtime SA only; clients have no access.
+    match /sessions/{sessionKey} {
+      allow read, write: if false;
+    }
+
+    match /messages/{messageId} {
+      allow read, write: if false;
+    }
+
+    match /cron_runs/{runId} {
+      allow read, write: if false;
+    }
+
+    match /audit/{auditId} {
+      allow read, write: if false;
+    }
+  }
+}

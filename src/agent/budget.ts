@@ -23,6 +23,29 @@ function utcMidnight(): number {
 }
 
 /**
+ * Validate DAILY_TOKEN_BUDGET at startup. Throws if unset or invalid.
+ *
+ * There is no safe default. A silent fallback (e.g., 500_000) hides the missing
+ * config and produces the $400 surprise bill. Per Level 5 hardening: missing
+ * config is a structural bug, not a runtime quirk.
+ *
+ * Call this once at daemon startup, BEFORE constructing BudgetGuard.
+ */
+export function assertDailyTokenBudget(): number {
+  const raw = process.env.DAILY_TOKEN_BUDGET;
+  if (!raw) {
+    throw new Error(
+      'DAILY_TOKEN_BUDGET is required. Set it explicitly in .env (recommended: 100000 single user, 500000 team).',
+    );
+  }
+  const n = Number(raw);
+  if (!Number.isFinite(n) || n < 1000) {
+    throw new Error(`DAILY_TOKEN_BUDGET must be a number >= 1000, got: ${raw}`);
+  }
+  return n;
+}
+
+/**
  * BudgetGuard — per-sender daily token cap.
  *
  * Inspect the messages table for tokens spent by `senderId` since start-of-day.
