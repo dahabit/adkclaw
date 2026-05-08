@@ -84,14 +84,17 @@ Skim the **Six Pillars**, **Why TypeScript / Why Google ADK**, and **The Request
 # Top-level
 ls
 
-# Each level is a self-contained working tree
-ls level_1/
-ls level_2/
-ls level_3/
-ls level_4/
+# Read the three-repo layout + checkpoint tags doc
+cat ARCHITECTURE.md
 
-# Solutions parallel structure (don't peek yet!)
-ls solutions/
+# The Day-1 starter scaffold — clone-grow-ship
+ls codelab/starter/
+
+# The post-Level-4 reference implementation (study, don't clone)
+ls src/
+
+# Per-level codelab instructions (markdown only)
+ls level_0/ level_1/ level_2/ level_3/ level_4/
 ```
 
 ### 7. Run the pre-flight check
@@ -211,17 +214,15 @@ A **chatbot** has only Brain. A **RAG system** has Brain + retrieval. **Autonomy
 
 | Folder | Contents | Role |
 |--------|----------|------|
-| `level_0/` | This README, architecture diagrams, pre-flight check | Architecture tour |
-| `level_1/` | Self-contained agent + Telegram + sessions | Level 1 working tree |
-| `level_2/` | Adds memory bank, compaction, skills | Level 2 working tree |
-| `level_3/` | Adds sub-agents, healing, cron, dashboard | Level 3 working tree |
-| `level_4/` | Cloud-ready (Dockerfile, deploy scripts, Firestore adapter) | Level 4 working tree |
-| `solutions/level_N/` | Complete answer keys (don't peek until you've tried) | Reference implementations |
-| `scripts/` | `setup.sh`, `setup-infrastructure.sh`, `verify_setup.py` | Shared bootstrap |
-| `docs/` | `teaching-guide.md`, `tech-stack.md`, `capabilities.md`, `api.md` | Reference material |
+| `codelab/starter/` | Day-1 starter scaffold (the canvas you grow) | Clone this, build on it |
+| `level_0/` … `level_4/` | Per-level `codelab.md` + `README.md` + `RESOURCES.md` | Codelab instructions |
+| `src/` | Post-Level-4 reference implementation (the finished agent) | Study as answer key |
+| `scripts/` | `setup.sh`, `preflight.sh` | Shared bootstrap |
+| `docs/` | `tech-stack.md`, `capabilities.md`, `api.md`, `internals.md` | Reference material |
 | `test/` | End-to-end smoke tests | CI verification |
+| `extensions/` | Optional post-workshop projects (Slack, RAG, voice) | Take it further |
 
-Each `level_N/` is a **complete working tree** — you can clone any one and run it standalone without doing previous levels.
+Level checkpoints are git tags (`v1-complete` … `v4-complete`) on the `codelab/starter/` directory — see [`ARCHITECTURE.md`](../ARCHITECTURE.md) for how to fast-forward if you fall behind.
 
 ## 🐛 Troubleshooting
 
@@ -232,6 +233,18 @@ Each `level_N/` is a **complete working tree** — you can clone any one and run
 | `Failed to enable Vertex AI API` | Billing isn't enabled on your project. Visit [Cloud Console → Billing](https://console.cloud.google.com/billing). |
 | `Node version too low` | In Cloud Shell: `nvm install 22 && nvm use 22 && nvm alias default 22` |
 | Pre-flight check shows missing `ALLOWED_SENDERS` | Expected — Level 1 covers Telegram setup |
+
+## 🏁 Ready for Level 1?
+
+Before you continue, verify:
+
+- [ ] `./scripts/preflight.sh` passes all 7 checks
+- [ ] You can name the six pillars without looking
+- [ ] Your `.env` has a real `GEMINI_API_KEY` and `TELEGRAM_BOT_TOKEN` (not the placeholders)
+- [ ] You know your numeric Telegram ID and have it ready for `ALLOWED_SENDERS`
+- [ ] You've cloned the repo and `cd codelab/starter && npm install` completed
+
+If any are red, see [`PREWORK.md`](../PREWORK.md) — Day 0 is supposed to start green.
 
 ## ➡️ Next Level
 

@@ -10,7 +10,7 @@ Students always ask: *"Did you use anything besides Google ADK?"* Here's the hon
 |-------|----------|---------------------------|
 | **LLM** | **Google** — `@google/genai` (ADK + Gemini) | — |
 | **Web search grounding** | **Google** — built into Gemini | — |
-| **Embeddings** (WS3) | **Google** — Vertex AI text-embedding-004 | — |
+| **Embeddings** (WS3) | **Google** — Vertex AI `gemini-embedding-001` | — |
 | **Vector search** (WS3) | **Google** — Vertex AI Vector Search | — |
 | HTTP server | Express (open source) | Yes — Cloud Run native handlers |
 | Telegram bot | telegraf (open source) | Cloud Functions webhook |

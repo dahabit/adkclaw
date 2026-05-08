@@ -1,7 +1,7 @@
 {
   "name": "adkclaw",
   "version": "0.1.0",
-  "description": "Educational TypeScript course for autonomous AI agents on Google ADK. Inspired by OpenClaw.",
+  "description": "Educational TypeScript course for autonomous AI agents on Google ADK + Gemini.",
   "license": "Apache-2.0",
   "type": "module",
   "engines": {
@@ -24,7 +24,7 @@
     "link": "npm run build && npm link"
   },
   "dependencies": {
-    "@google/genai": "^1.0.0",
+    "@google/genai": "^1.52.0",
     "@types/pdfkit": "^0.17.6",
     "better-sqlite3": "^11.3.0",
     "dotenv": "^16.4.5",

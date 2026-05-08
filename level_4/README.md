@@ -227,21 +227,6 @@ if (process.env.TELEGRAM_MODE === 'webhook') {
 }
 ```
 
-## 💰 Cost (real numbers)
-
-At 1000 turns/day usage:
-
-| Service | Free tier | Cost above free tier |
-|---------|-----------|---------------------|
-| Cloud Run | 2M requests/mo | covered for typical workshop traffic |
-| Firestore | 50K reads/20K writes/day | covered (~10K reads, 4K writes/day) |
-| Cloud Storage | 5 GB | covered (<100MB workspace) |
-| Secret Manager | 6 secrets free | covered (3 secrets) |
-| Cloud Scheduler | 3 jobs free | covered (1-2 jobs) |
-| **Vertex AI / Gemini** | (paid) | **dominant cost — $5-15/day** |
-
-**Rule of thumb:** infrastructure is free; Gemini Pro is the dominant cost. Use `DAILY_TOKEN_BUDGET` in `.env` to cap.
-
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
@@ -282,11 +267,22 @@ You've built and shipped an autonomous agent. Where to go from here:
 - **Contribute back:** PRs welcome at the [AdkClaw repo](https://github.com/dahabit/adkclaw).
 - **Teach it:** the curriculum is yours to use. Run your own cohort.
 
+## 🏁 You're done when…
+
+- [ ] Anonymous `curl -X POST $SERVICE_URL/api/cron/fire` returns **401**
+- [ ] Authorised Cloud Scheduler invocation returns **200** and runs the job exactly once
+- [ ] Telegram message routes through the webhook (not polling) — check `getWebhookInfo`
+- [ ] Service scales to **zero** between requests (`gcloud run services describe` shows 0 instances after a minute idle)
+- [ ] `BudgetGuard`, admin auth on `/`, and OIDC on `/api/cron/fire` are **all wired and FATAL on startup if missing**
+- [ ] You can ping the agent from your phone, anywhere
+
+If any are red, do not declare done. Cloud Run with a public unauthenticated cron endpoint is a liability.
+
 ## 🎉 Congratulations
 
 You walked in knowing how to call an LLM. You're walking out knowing how to **build, deploy, and operate an autonomous agent** — on the same Google Cloud stack used by production systems.
 
-The repo is the scaffolding. Now build something with it.
+Next: read [`POST_WORKSHOP.md`](../POST_WORKSHOP.md) for graduation, certificate, extension projects, and how to keep your agent cheap (or kill it cleanly).
 
 ---
 

@@ -330,23 +330,49 @@ In `src/index.ts`:
 const sessions = createSessionStore();
 ```
 
-Initialise Firestore (one-time):
+### Initialise Firestore — must happen before deploy
 
 ```bash
-gcloud firestore databases create --region=$REGION
+# Idempotent: succeeds whether or not the DB already exists.
+gcloud firestore databases describe --region=$REGION >/dev/null 2>&1 || \
+  gcloud firestore databases create --region=$REGION
 ```
+
+> ⚠️ **Do this step before `gcloud run deploy`.** If you deploy first, Cloud Run cold-start will hang waiting for a Firestore database that doesn't exist, and the failure surfaces only as a 503 with no useful logs. We've all done it. Don't.
 
 > **Why Firestore for sessions but Cloud Storage for the bank?** Different access patterns. Sessions need indexed queries (`WHERE channel = 'telegram' AND archivedAt IS NULL`). The bank needs full-text grep. Firestore is great at the first; bad at the second.
 
 ### Test the adapter
 
+The Firestore adapter tests need the **Firestore emulator** running locally — otherwise they silently connect to your real GCP Firestore (slow, costs money, pollutes prod).
+
 ```bash
+# In a SECOND terminal (leave it running):
+gcloud emulators firestore start --host-port=localhost:8080
+
+# In your normal terminal:
+export FIRESTORE_EMULATOR_HOST=localhost:8080
 SESSION_BACKEND=firestore npm test src/sessions/
 ```
 
 Tests verify both adapters pass the same interface tests — that's the point of the adapter pattern.
 
-## 6. Deploy to Cloud Run
+> ⚠️ **Common trap:** if `FIRESTORE_EMULATOR_HOST` is unset, the SDK falls back to your authenticated GCP project. If your test does a `db.collection('sessions').get()`, it pulls real production sessions. Always export the env var in the same shell as `npm test`.
+
+## 6. Pre-flight security checklist (do this before deploy)
+
+Before `gcloud run deploy`, verify all six gates are wired. Each one is **mandatory** for a publicly-reachable agent. If any is missing, fix it before deploying — Cloud Run with `--allow-unauthenticated` amplifies every defect.
+
+- [ ] **Admin auth on `/`** — dashboard route checks an admin key. If not, the route must return 401 unconditionally.
+- [ ] **OIDC verification on `/api/cron/fire`** — the middleware in `src/server/oidc.ts` is wired in your route stack. Test: `curl -X POST $SERVICE_URL/api/cron/fire` should return **401**.
+- [ ] **Telegram webhook secret-token validation** — `setWebhook` was called with a `secret_token`, and your handler rejects mismatching `X-Telegram-Bot-Api-Secret-Token` headers.
+- [ ] **`BudgetGuard` is FATAL on missing config** — daemon refuses to start without a `DAILY_TOKEN_BUDGET`.
+- [ ] **`ALLOWED_SENDERS` is set** to your numeric Telegram ID (and you can list extra IDs comma-separated). Empty = bot rejects everything silently.
+- [ ] **`.gitignore` blocks `.env`, `set_env.sh`, `agent.yaml`, `data/`, `workspace/`** — verify with `git status` showing none of those.
+
+If any are red, the agent is not ready for the public internet. Fix, then deploy.
+
+## 7. Deploy to Cloud Run
 
 The big moment:
 
@@ -441,7 +467,7 @@ Now you visit the dashboard with `curl -H "x-admin-key: $(gcloud secrets version
 
 > **Cost-runaway guard:** even with `--max-instances=2 --concurrency=5`, a buggy agent looping on `spawn_agent` can chew through Gemini tokens fast. Keep the L1 `BudgetGuard` (`DAILY_TOKEN_BUDGET=100000`) wired in production, and set a Cloud Billing budget alert at $20 so you find out before you find a $400 bill.
 
-## 7. Switch Telegram to webhook mode (with secret token)
+## 8. Switch Telegram to webhook mode (with secret token)
 
 Long-polling is for development; webhooks are for production. Telegram supports a per-webhook **secret token** — every inbound POST carries an `X-Telegram-Bot-Api-Secret-Token` header that telegraf validates automatically. Set it.
 
@@ -487,7 +513,7 @@ Send a message on Telegram. Your Cloud Run logs should show the inbound update w
 
 > **Common pitfall**: forgetting to clear the previous webhook before changing it. Telegram allows one webhook per bot. Run `setWebhook` again to overwrite. To check current state: `curl https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/getWebhookInfo`.
 
-## 8. Schedule cron via Cloud Scheduler
+## 9. Schedule cron via Cloud Scheduler
 
 `node-cron` runs in-process. On Cloud Run, the process dies when it scales to zero. Cloud Scheduler is the external trigger:
 
@@ -565,7 +591,7 @@ For multiple schedules (e.g., different jobs), create one Cloud Scheduler entry 
 
 > **Why Cloud Scheduler instead of running `node-cron`?** Cloud Run scales to zero. There's nothing to run cron in. Cloud Scheduler triggers a fresh HTTPS request, which spins up an instance, runs the work, and lets it scale back down.
 
-## 9. Cloud Logging — structured JSON with PII redaction
+## 10. Cloud Logging — structured JSON with PII redaction
 
 Replace `console.log` in `src/index.ts` with a structured logger that **redacts PII before logging**. Cloud Logging is searchable; an email or phone number in a tool result will sit there indexed for 30 days. Redact at the boundary.
 
@@ -623,7 +649,7 @@ gcloud logging read 'resource.type="cloud_run_revision"' --limit=20 --format=jso
 
 > **Cost note**: Cloud Logging is free up to 50 GiB/month per project. Workshop traffic stays under 1 GiB easily.
 
-## 10. (Optional) Custom domain
+## 11. (Optional) Custom domain
 
 If you have a domain (e.g., `adkclaw.dev`), map a subdomain:
 
@@ -654,7 +680,7 @@ curl -F "url=https://agent.adkclaw.dev/api/telegram" \
 
 > **Why custom domain?** Branded URLs are easier to share. SSL is auto-provisioned and free.
 
-## 11. The global moment
+## 12. The global moment
 
 Open Telegram on your phone:
 
@@ -672,7 +698,7 @@ Bot: Of course. I'm not on your laptop anymore.
 
 Cold start ~2–3 seconds the first message after idle. Subsequent messages instant.
 
-## 12. Cost reality check
+## 13. Cost reality check
 
 At typical workshop usage:
 
@@ -688,7 +714,7 @@ At typical workshop usage:
 
 **Rule of thumb**: infrastructure is free; Gemini is the dominant cost. Cap with `DAILY_TOKEN_BUDGET` in your env vars (`L1.budget.ts` enforces it).
 
-## 13. Light up your Level 4 badge (the final pillar)
+## 14. Light up your Level 4 badge (the final pillar)
 
 **Trigger**: deployment completes and `gcloud run services describe` returns a public HTTPS URL. The agent calls `mark_level_complete` with `level: 4`, `region`, and `publicAgentUrl` so the platform can verify and display your live URL on `adkclaw.dev/u/<your-username>`.
 

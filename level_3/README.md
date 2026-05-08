@@ -179,15 +179,6 @@ try {
 }
 ```
 
-## 💰 Cost
-
-| Component | Cost |
-|-----------|------|
-| Gemini Pro turns | ~$1 |
-| Sub-agent Flash turns | ~$0.20 |
-| Healing/recovery (test) | ~$0.30 |
-| **Total per participant** | **~$2** |
-
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
@@ -209,6 +200,18 @@ try {
 | `src/cron/heartbeat.ts` | Periodic self-check + quiet hours |
 | `src/server/http.ts` | `DASHBOARD_HTML` constant + admin route |
 | `bin/adkclaw` | `bg`/`stop`/`status`/`logs`/`open` commands |
+
+## 🏁 Ready for Level 4?
+
+Before you continue, verify:
+
+- [ ] A sub-agent returned a real result to the parent (test: parent calls `spawn_researcher({task: "..."})`, gets a structured reply)
+- [ ] Cron fired at least twice without double-running — check `cron_runs` table for unique keys
+- [ ] Heartbeat is publishing every 30 minutes (check `workspace/HEARTBEAT.md` mtime)
+- [ ] Healing engine retried at least one transient error — check logs for `[healing] retry attempt=2`
+- [ ] Admin dashboard at `localhost:3000/` shows live state
+
+If sub-agent isolation is broken (parent context leaking), do not proceed to L4. Cloud Run amplifies cost mistakes.
 
 ## ➡️ Next Level
 

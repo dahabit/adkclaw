@@ -151,6 +151,14 @@ export class ContextEngine {
   private cacheKey: string | null = null;
   private cached: BootstrapResult | null = null;
 
+  // Stub returns [] for now; implemented at the end of Section 4 (MemoryBank).
+  // Without this stub, the snippet you just pasted won't compile — and that's
+  // intentional: the codelab grows method-by-method with you.
+  private bankIndexSections(): BootstrapSection[] { return []; }
+
+  // Stub returns [] for now; implemented at the end of Section 6 (SkillsLoader).
+  private skillsIndexSections(): BootstrapSection[] { return []; }
+
   bootstrap(): BootstrapResult {
     const fingerprint = this.fingerprint();
     if (this.cacheKey === fingerprint && this.cached) return this.cached;
@@ -173,10 +181,11 @@ export class ContextEngine {
       });
     }
 
-    // Append the bank index (Section 4 — implement after MemoryBank)
+    // Append the bank index — placeholder until Section 4 builds MemoryBank.
+    // Returns [] today; you'll wire it up at the end of Section 4.
     sections.push(...this.bankIndexSections());
 
-    // Append skills index (Section 6 — implement after SkillsLoader)
+    // Append skills index — placeholder until Section 6 builds SkillsLoader.
     sections.push(...this.skillsIndexSections());
 
     // Append HEARTBEAT.md (live tasks)
@@ -278,7 +287,19 @@ The summarisation call is **structural overhead**, not user-facing reasoning. Fl
 
 ### Implement `src/context/compaction.ts`
 
+> **Note:** the snippet below uses `estimateTokensInMessages` from `src/context/token-counter.ts`. That helper is small and provided in the starter — open it once so the cost-of-tokens math isn't a black box:
+> ```typescript
+> // src/context/token-counter.ts (already in starter)
+> export function estimateTokensInMessages(messages: Message[]): number {
+>   // Approximation: ~4 chars per token for English. Good enough for compaction thresholds.
+>   return messages.reduce((sum, m) => sum + Math.ceil(m.content.length / 4), 0);
+> }
+> ```
+> If you want exact counts later, swap in `client.models.countTokens({ model, contents })`.
+
 ```typescript
+import { estimateTokensInMessages } from './token-counter.js';
+
 export const PRESERVATION_RULES = `
 PRESERVATION RULES — when you summarize, you MUST preserve:
 - All task IDs, URLs, file paths, opaque identifiers

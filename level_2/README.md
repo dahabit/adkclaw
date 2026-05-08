@@ -193,15 +193,6 @@ when_to_invoke: User says "research X", "look into Y", "find sources on Z"
 5. Return structured summary with citations
 ```
 
-## 💰 Cost
-
-| Component | Approximate Cost |
-|-----------|-----------------|
-| Gemini Pro turns (~30 testing) | ~$0.50 |
-| Compaction LLM calls (~5) | ~$0.20 |
-| Cloud Shell time (free) | $0 |
-| **Total per participant** | **~$1** |
-
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
@@ -224,6 +215,18 @@ when_to_invoke: User says "research X", "look into Y", "find sources on Z"
 | `src/skills/loader.ts` | Markdown skill loader | `load()` |
 | `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` tools | All execute methods |
 | `src/tools/skills.ts` | `load_skill`, `list_skills` tools | All execute methods |
+
+## 🏁 Ready for Level 3?
+
+Before you continue, verify:
+
+- [ ] Memory bank has at least one fact you saved (`workspace/bank/facts/*.md` exists)
+- [ ] Compaction has fired at least once — check the daemon logs for `[compaction] tokensBefore=...`
+- [ ] At least one custom skill file in `workspace/skills/` is being picked up at runtime
+- [ ] Restart the daemon and the agent recalls something from a previous session
+- [ ] You can explain when grep beats embeddings and when it doesn't
+
+If compaction never fires, your test conversation is too short. Have ~50 turns with the agent before validating.
 
 ## ➡️ Next Level
 

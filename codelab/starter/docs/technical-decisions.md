@@ -138,7 +138,7 @@ The complete record of **what** is in AdkClaw, **why** we chose it, and **what w
 **What it is:** Google Cloud's enterprise AI platform.
 
 **What we use it for:**
-- **Embeddings** (`text-embedding-004`) — semantic search over memory bank
+- **Embeddings** (`gemini-embedding-001`) — semantic search over memory bank
 - **Vector Search** — when bank > 10K entries, SQLite cosine search graduates here
 - **Cloud-mode Gemini** — when running in Cloud Run, use Vertex over Gemini API for IAM integration
 

@@ -41,26 +41,30 @@ Across five levels, you'll build the same autonomous-agent reference implementat
 
 ### For Workshop Participants
 
-1. **Open Cloud Shell** at [console.cloud.google.com](https://console.cloud.google.com) and click the terminal icon (top-right).
+1. **Read [PREWORK.md](PREWORK.md)** — 7-day prep guide covering accounts, tools, and the 5-minute preflight check. Do this before Day 1.
 
-2. **Clone and bootstrap:**
+2. **Open Cloud Shell** at [console.cloud.google.com](https://console.cloud.google.com) and click the terminal icon (top-right). Or work locally with Node.js 22+.
+
+3. **Clone and bootstrap:**
    ```bash
-   git clone https://github.com/<your-org>/adkclaw.git
+   git clone https://github.com/dahabit/adkclaw.git
    cd adkclaw
-   ./scripts/setup.sh
+   ./scripts/preflight.sh    # 5-minute environment check
+   ./scripts/setup.sh        # interactive: paste keys, pick username
    ```
 
-3. **Start with Level 0 (the architecture tour):**
+4. **Start with Level 0 (the architecture tour):**
    ```bash
-   cd level_0
-   cat README.md
+   cat level_0/README.md
    ```
 
-4. **Follow the codelab:** [Level 0 Instructions](https://codelabs.developers.google.com/adkclaw-level-0/instructions)
+5. **Build, level by level**, in `codelab/starter/` — that's the canonical scaffold. See [ARCHITECTURE.md](ARCHITECTURE.md) for the three-repo layout and level checkpoint tags.
+
+6. **Follow the codelab:** [Level 0 Instructions](https://codelabs.developers.google.com/adkclaw-level-0/instructions)
 
 ### For Workshop Hosts
 
-See the [Workshop Hosting Guide](#-workshop-hosting-guide) below for running your own cohort with Google Cloud credits.
+The instructor materials (slide decks, run-of-show, speaker notes, demo recovery) live in the private `dahabit/adkclaw-instructor` repo. Request access if you're delivering a cohort.
 
 ## 📚 Documentation
 
@@ -74,7 +78,9 @@ See the [Workshop Hosting Guide](#-workshop-hosting-guide) below for running you
 | [Tech Stack Audit](docs/tech-stack.md) | Google vs open-source dependencies, with rationale per package |
 | [Capabilities Tour](docs/capabilities.md) | What the finished agent can do — 8 wow demos |
 | [API Reference](docs/api.md) | All HTTP endpoints with curl examples |
-| [Architecture File Map](docs/architecture-file-map.md) | Every source file mapped to its role and workshop |
+| [Architecture File Map](ARCHITECTURE.md) | Three-repo layout (public / instructor / platform) + level checkpoint tags |
+| [Pre-workshop guide](PREWORK.md) | 7-day prep: accounts, tools, preflight |
+| [Post-workshop guide](POST_WORKSHOP.md) | Graduation, certificate, extension projects |
 
 ## 🏗️ Architecture Overview
 
@@ -162,16 +168,15 @@ Source it before running any level: `source ~/adkclaw/set_env.sh`
 
 ## 🎓 Workshop Hosting Guide
 
-### Before the Workshop
+The full hosting playbook (slide decks, run-of-show, speaker notes, demo recovery, cohort comms, 24-hour preflight) lives in the private `dahabit/adkclaw-instructor` repo. Request access if you're delivering a cohort.
 
-1. **Provision Google Cloud credits** for participants ($25 covers a participant through all 5 levels with margin).
-2. **Deploy a sandbox event** — students can run levels independently against the public sandbox.
-3. **Create an event code** in your admin panel:
-   ```bash
-   ./scripts/create_event.py --code "your-event-2026" --name "Your Workshop Name"
-   ```
-4. **Test the full flow** with a sample participant from start to finish.
-5. **Generate the QR codes / invite links** pointing to the event setup page.
+### Public-side basics
+
+1. **Provision Google Cloud credits** for participants — the workshop fits comfortably inside Gemini's free tier with Cloud Run scaling to zero.
+2. **Deploy a sandbox event** so students can run levels independently against the public sandbox.
+3. **Create an event code** via the admin panel in the platform repo (`dahabit/adkclaw-platform`).
+4. **Test the full flow** end-to-end with a sample participant before going live.
+5. **Generate QR codes / invite links** pointing to the event setup page.
 
 ### During the Workshop
 
@@ -181,18 +186,9 @@ Source it before running any level: `source ~/adkclaw/set_env.sh`
 4. Monitor the live dashboard: `https://adkclaw.dev/e/your-event-2026`
 5. Each level activates a new "pillar" badge on each participant's profile — celebrate completions in real time.
 
-### Cost Estimates
+### Stay within free tier
 
-| Component | Approximate Cost (per participant, all 5 levels) |
-|-----------|------------------------------------------------|
-| Level 0 (architecture tour, no API calls) | $0 |
-| Level 1 (basic agent + tools) | ~$0.50 (Gemini Pro turns) |
-| Level 2 (memory + compaction LLM calls) | ~$1.50 |
-| Level 3 (sub-agents + healing demos) | ~$2 |
-| Level 4 (Cloud Run deploy + 1h runtime) | ~$1 (most components scale to zero) |
-| **Total per participant** | **~$5** |
-
-Cloud Run scales to zero between sessions; participants don't burn money when idle.
+Cloud Run scales to zero between sessions and Gemini's free tier covers the workshop comfortably. Participants don't burn budget when idle. For workshop hosts running large cohorts, see the cohort sizing notes in the private instructor materials.
 
 ## 🤝 Contributing
 
@@ -201,20 +197,23 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submit
 ### Development Setup
 
 ```bash
-# Clone the repo
-git clone https://github.com/<your-org>/adkclaw.git
-cd adkclaw
-
-# Each level is self-contained — pick one
-cd level_1
+git clone https://github.com/dahabit/adkclaw.git
+cd adkclaw/codelab/starter
 npm install
-cp .env.example .env  # add your keys
+cp .env.example .env       # add your keys
 npm run dev
 ```
 
-### Solutions
+### Level checkpoints
 
-Each level has a parallel `solutions/level_N/` folder with the complete implementation. Use it as the answer key when teaching.
+The starter scaffold grows level by level. If you fall behind or want to skip ahead, use the git tags:
+
+```bash
+git checkout v2-complete -- codelab/starter/   # post-Level 2 baseline
+git checkout v3-complete -- codelab/starter/   # post-Level 3 baseline
+```
+
+The full reference implementation (post-Level 4 finished agent with all 21 tools) lives at `src/` in this repo. Study it as the answer key.
 
 ## 📄 License
 

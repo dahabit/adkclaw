@@ -118,9 +118,6 @@ By contributing, you agree your code is licensed under [Apache 2.0](LICENSE).
 
 ## Thanks
 
-AdkClaw stands on the shoulders of:
-- [Google Agent Development Kit](https://google.github.io/adk-docs/)
-- [OpenClaw](https://paperclip.ing) — the production-grade agent system that inspired the curriculum
-- [Way Back Home](https://github.com/gca-americas/way-back-home) — Google Developer Champions Americas — the codelab pattern we follow
+AdkClaw is built on the [Google Agent Development Kit](https://google.github.io/adk-docs/) and [Gemini](https://deepmind.google/technologies/gemini/).
 
 If you want to contribute but aren't sure where to start, look for issues labeled `good first issue` or `help wanted`.

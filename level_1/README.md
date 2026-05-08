@@ -239,17 +239,6 @@ embrace it warmly. Your real name is whatever they call you.
 
 The `ContextEngine.bootstrap()` reads this on every turn (cached by mtime — edit lands on next turn, no daemon restart).
 
-## 💰 Cost
-
-| Component | Approximate Cost |
-|-----------|-----------------|
-| Gemini Pro turns (~30 turns of testing) | ~$0.30 |
-| `web_search` grounding (~5 calls) | ~$0.05 |
-| Cloud Shell time (free) | $0 |
-| **Total per participant** | **~$0.50** |
-
-Cloud Shell quota: free 50 hours/week. Plenty of headroom.
-
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
@@ -277,6 +266,19 @@ Cloud Shell quota: free 50 hours/week. Plenty of headroom.
 | `src/channels/telegram.ts` | Telegraf adapter | `bot.start()` handler, `handleMessage()` |
 | `src/server/http.ts` | Express server | `POST /api/chat` route |
 | `src/index.ts` | Wire-up | The `main()` that constructs everything |
+
+## 🏁 Ready for Level 2?
+
+Before you continue, verify:
+
+- [ ] Agent replies on Telegram (test: `/start`, then a real message)
+- [ ] Agent uses your name in the reply (proves personality + memory work end-to-end)
+- [ ] At least one tool call worked end-to-end (`web_search` or `filesystem`)
+- [ ] You can restart the daemon and the agent remembers your name
+- [ ] You can explain *why* `MAX_TOOL_ROUNDS` exists in your own words
+- [ ] `npm test` passes
+
+If any are red, drop in `#adkclaw-support` before moving on. L2 builds on a solid L1; skipping ahead with a broken loop is painful.
 
 ## ➡️ Next Level
 
