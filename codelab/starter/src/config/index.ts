@@ -66,8 +66,8 @@ export function loadConfig(): Config {
     },
     gemini: {
       apiKey: readEnv('GEMINI_API_KEY'),
-      defaultModel: readEnv('DEFAULT_MODEL', 'gemini-2.5-pro'),
-      fallbackModel: readEnv('FALLBACK_MODEL', 'gemini-2.5-flash'),
+      defaultModel: readEnv('DEFAULT_MODEL', 'gemini-3.1-pro-preview'),
+      fallbackModel: readEnv('FALLBACK_MODEL', 'gemini-3-flash-preview'),
     },
     telegram: {
       botToken: readEnv('TELEGRAM_BOT_TOKEN'),

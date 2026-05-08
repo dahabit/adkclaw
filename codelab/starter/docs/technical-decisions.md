@@ -109,27 +109,29 @@ The complete record of **what** is in AdkClaw, **why** we chose it, and **what w
 
 **Files that touch it:** **only** `src/agent/runner.ts`. Single place where Gemini is called. Everything else is wrapping logic.
 
-### Gemini 2.5 Pro (`gemini-2.5-pro`)
+### Gemini Pro (default: `gemini-3.1-pro-preview`)
 
 **What it is:** Google's flagship multimodal LLM with 1M-token context.
 
 **Why default model:**
 - **1M-token context** — massive headroom for memory experiments
 - **Strong reasoning** — handles multi-step tool plans
-- **Native grounding** — Google Search via `googleSearchRetrieval`
-- **Multimodal** — image understanding, audio coming soon
+- **Native grounding** — Google Search built into the model
+- **Multimodal** — text, images, audio
 
-**Cost per turn (rough):** ~$0.005 / 1K input tokens, ~$0.020 / 1K output tokens.
+**Currency note (2026-05-08):** legacy `gemini-2.5-pro` is on a deprecation path with Oct 16, 2026 shutdown. New builds pin `gemini-3.1-pro-preview`.
 
-### Gemini 2.5 Flash (`gemini-2.5-flash`)
+### Gemini Flash (default: `gemini-3-flash-preview`)
 
 **What it is:** the smaller, faster, cheaper sibling.
 
 **Why fallback model + sub-agent default:**
-- **~10× cheaper** than Pro (~$0.0005 / 1K input tokens)
+- **~10× cheaper** than Pro
 - **Faster** — lower latency for simple tasks
 - **Sufficient** for specialized sub-agents (search, single-tool work)
 - **Used as Pro's fallback** when Pro returns 5xx
+
+**Currency note (2026-05-08):** legacy `gemini-2.5-flash` follows the same Oct 16, 2026 deprecation; new builds pin `gemini-3-flash-preview`. The voice-tutor extension uses `gemini-3.1-flash-live-preview` for the bidirectional Live API.
 
 **HealingEngine pattern:** primary call uses Pro, on retryable error falls back to Flash. Students rarely notice the swap.
 
@@ -213,7 +215,7 @@ In-context history → Daily notes (raw) → Memory bank (structured)
 - **Two tiers (history + bank):** you'd dump every fact into the bank — bloat
 - **Three tiers:** raw events stay raw (daily notes), curated facts get promoted (bank), context window stays manageable (compaction)
 
-This pattern is from OpenClaw — both they and Paperclip independently arrived at it. Two-witness rule = adopt.
+Two independent production agent systems converged on this pattern — strong empirical signal. Adopt.
 
 ### File-based memory (markdown files in `workspace/`)
 
@@ -246,7 +248,7 @@ workspace/bank/
 - More categories = harder for the LLM to pick the right one
 - Fewer = bloat in one bucket
 
-**Pattern source:** OpenClaw's `bank/` structure. Validated in production for 2+ years.
+**Pattern provenance:** validated in production agent systems for 2+ years.
 
 ### Compaction at 80% (BRD §6.4 + §19)
 
@@ -263,7 +265,7 @@ workspace/bank/
 - Task status (in-progress, blocked, done)
 - Key facts the user shared
 
-**Pattern source:** OpenClaw. Empirically the right threshold.
+**Pattern provenance:** empirically validated threshold across multiple production systems.
 
 ### Mtime-based cache invalidation
 
@@ -315,7 +317,7 @@ interface AgentTool {
 - In v1, `ask` auto-approves with a console warning (single-user trust model)
 - In production, `ask` becomes a UI prompt (web/Telegram/Slack)
 
-**Pattern source:** OpenClaw's permission model + Paperclip's "approval gates."
+**Pattern provenance:** convergent permission-model + approval-gate design from production agent systems.
 
 ### 21 tools registered
 
@@ -361,7 +363,7 @@ interface AgentTool {
 - Passing full history → parent's secrets/decisions leak to children
 - Passing full history → child confused about its own role
 
-**Pattern source:** OpenClaw + Paperclip. Both projects independently enforce this.
+**Pattern provenance:** convergent enforcement across multiple production agent systems.
 
 ### 4 specialized profiles (Search, Researcher, Communicator, Coder)
 
@@ -382,7 +384,7 @@ interface AgentTool {
 
 **What it is:** chain from the highest-level mission down to the immediate task, passed to every sub-agent.
 
-**Pattern source:** Paperclip's "goal ancestry."
+**Pattern provenance:** "goal ancestry" pattern from production agent systems.
 
 **Why:**
 - Sub-agent knows *why* it's working, not just *what*
@@ -406,7 +408,7 @@ interface AgentTool {
 **Why this exact pyramid:**
 - Each tier is independent and observable in logs
 - Caller can pick which tiers apply (some operations have no fallback)
-- Inspired by [Erlang's "Let it crash"](https://erlang.org/) but with explicit tiers instead of supervisor trees
+- Echoes the "let it crash" recovery philosophy from process-supervisor designs, but with explicit tiers instead of supervisor trees
 
 ### Error classification (`src/healing/classifier.ts`)
 
@@ -567,7 +569,7 @@ cron_runs            -- append-only fired-job log (idempotency)
 - Without dedup, the missed tick double-fires
 - Minute-bucket key prevents this — same minute = same key = INSERT fails silently
 
-**Pattern source:** Cloud Scheduler's idempotency model + Paperclip's "atomic execution."
+**Pattern provenance:** Cloud Scheduler's idempotency model + atomic-execution patterns from production agent systems.
 
 ### Heartbeat (every 30 min)
 

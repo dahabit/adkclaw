@@ -419,8 +419,8 @@ const result = await healing.withRetry(
 
 // Try primary, fall back to alternative on failure
 const { result, usedFallback } = await healing.withFallback(
-  () => callGemini('gemini-2.5-pro', contents),
-  () => callGemini('gemini-2.5-flash', contents),
+  () => callGemini('gemini-3.1-pro-preview', contents),
+  () => callGemini('gemini-3-flash-preview', contents),
   { context: 'model-fallback' }
 );
 
@@ -445,8 +445,8 @@ const { result } = await healing.protect(primary, fallback, opts);
 | `GEMINI_API_KEY` * | — | From https://aistudio.google.com/apikey |
 | `TELEGRAM_BOT_TOKEN` * | — | From @BotFather |
 | `ALLOWED_SENDERS` * | — | Comma-separated Telegram user IDs. **Empty = reject all** |
-| `DEFAULT_MODEL` | `gemini-2.5-pro` | Primary model |
-| `FALLBACK_MODEL` | `gemini-2.5-flash` | Used by HealingEngine on server errors |
+| `DEFAULT_MODEL` | `gemini-3.1-pro-preview` | Primary model |
+| `FALLBACK_MODEL` | `gemini-3-flash-preview` | Used by HealingEngine on server errors |
 | `MAX_TOOL_ROUNDS` | `15` | Caps the agent loop per turn |
 | `COMPACTION_THRESHOLD` | `0.8` | Fire compaction at 80% context |
 | `HEARTBEAT_INTERVAL_MS` | `1800000` | 30 min; `0` = disabled |

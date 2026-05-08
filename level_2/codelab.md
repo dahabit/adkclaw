@@ -44,7 +44,7 @@ The default path below assumes self-study. Branch points are flagged with **(In-
 - The Level 1 codebase (yours from yesterday or fresh from `codelab/starter/`)
 - A free [Gemini API key](https://aistudio.google.com/apikey) (already in your `.env` from L1)
 - A [Telegram bot token](https://t.me/BotFather) (already in your `.env` from L1)
-- ~30 testing turns of Gemini Pro (~$0.50) and ~5 compaction calls (~$0.20) — total **~$1**
+- A handful of Gemini Pro testing turns and a few compaction calls — comfortably inside the free tier
 
 ## Introduction
 
@@ -76,7 +76,7 @@ By the end of this codelab, you will have:
 
 ## 1. Scaffold and verify
 
-If you skipped Level 1 or want a clean slate, branch from `solutions/level_1` (the answer key for L1) instead of your own copy.
+If you skipped Level 1 or want a clean slate, fast-forward to the post-L1 baseline: `git checkout v1-complete -- codelab/starter/`.
 
 ### Continue your L1 codebase
 
@@ -849,19 +849,7 @@ Level 3 turns this single agent into a **team**. You'll add:
 | `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` | Tool execute methods |
 | `src/tools/skills.ts` | `load_skill`, `list_skills` | Tool execute methods |
 
-## Appendix B — Cost estimate (Level 2)
-
-| Component | Approximate cost |
-|-----------|-----------------|
-| Gemini Pro turns (~30 testing) | ~$0.50 |
-| Compaction LLM calls (~5, on Flash) | ~$0.20 |
-| Consolidator LLM call (~1, on Flash) | ~$0.05 |
-| Cloud Shell time (free) | $0 |
-| **Total per participant** | **~$1** |
-
-Cumulative through L0–L2: ~$2 per participant.
-
-## Appendix C — Troubleshooting
+## Appendix B — Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
@@ -872,7 +860,7 @@ Cumulative through L0–L2: ~$2 per participant.
 | Consolidator returns 0 saved entries | Gemini wrapped the JSON in markdown fences. Verify your `parseJsonLoose` strips them. |
 | `MAX_TOOL_ROUNDS` hit during research-topic skill | Skill body too aggressive. Cap web_fetch calls to 3 in the steps. |
 
-## Appendix D — Where each concept lives in the production code
+## Appendix C — Where each concept lives in the production code
 
 The starter scaffold is intentionally simplified. The production reference under `src/` adds:
 

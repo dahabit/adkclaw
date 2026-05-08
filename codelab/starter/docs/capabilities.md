@@ -140,7 +140,7 @@ Live dashboard auto-refreshes every 8 seconds: active sessions, total tokens, ch
 
 ---
 
-## Always-on operation (24/7 like OpenClaw)
+## Always-on operation (24/7)
 
 You no longer need to babysit `npm run dev`. Three ways to run forever:
 

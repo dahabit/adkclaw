@@ -21,7 +21,7 @@ gcloud run services update adkclaw \
 echo 'DAILY_TOKEN_BUDGET=200000' >> .env
 ```
 
-Watch your spend in [console.cloud.google.com/billing](https://console.cloud.google.com/billing). Set a budget alert at $5 — overshoot means a bug, not a feature.
+Watch your spend in [console.cloud.google.com/billing](https://console.cloud.google.com/billing). Set a budget alert at a low threshold — any overshoot means a bug, not a feature.
 
 ## Decommission cleanly (if you want to)
 
@@ -43,11 +43,11 @@ When your agent registers Level 4 completion at [adkclaw.dev](https://adkclaw.de
 
 Three optional projects, ranked by difficulty. Pick one (or none — finishing is also a complete experience).
 
-| Project | Difficulty | Time | What you'll learn |
-|---|---|---|---|
-| [`extensions/slack-channel/`](extensions/slack-channel/README.md) | Medium | 3–4 h | Plug a second channel into the same agent — Slack instead of Telegram |
-| [`extensions/researcher-rag/`](extensions/researcher-rag/README.md) | Hard | 6–8 h | Embed your own PDFs/docs into Vertex AI Vector Search; agent answers from your private corpus |
-| [`extensions/voice-tutor/`](extensions/voice-tutor/README.md) | Medium | 4–5 h | Bidirectional voice chat with Gemini Live API |
+| Project | Difficulty | What you'll learn |
+|---|---|---|
+| [`extensions/slack-channel/`](extensions/slack-channel/README.md) | Medium | Plug a second channel into the same agent — Slack instead of Telegram |
+| [`extensions/researcher-rag/`](extensions/researcher-rag/README.md) | Hard | Embed your own PDFs/docs into Vertex AI Vector Search; agent answers from your private corpus |
+| [`extensions/voice-tutor/`](extensions/voice-tutor/README.md) | Medium | Bidirectional voice chat with Gemini Live API |
 
 Each scaffold has a README, a starter, two passing tests, three failing tests you fix to graduate, and clear success criteria.
 

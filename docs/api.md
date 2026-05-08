@@ -46,7 +46,7 @@ Returns runtime status: agent name, active sessions, token usage, uptime.
   "ok": true,
   "uptimeSec": 3600,
   "agentName": "Aria",
-  "defaultModel": "gemini-2.5-pro",
+  "defaultModel": "gemini-3.1-pro-preview",
   "activeSessionCount": 2,
   "totalSessionCount": 15,
   "totalTokensAllTime": 48290,
@@ -136,7 +136,7 @@ List all sessions (active and archived, limited to 200).
     "createdAt": 1746300000000,
     "updatedAt": 1746304400000,
     "lastMessageAt": 1746304400000,
-    "model": "gemini-2.5-pro",
+    "model": "gemini-3.1-pro-preview",
     "totalTokens": 2100,
     "isArchived": false
   }

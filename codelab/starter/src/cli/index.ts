@@ -90,7 +90,7 @@ async function runCheck(): Promise<void> {
       }
     }
 
-    const model = env['DEFAULT_MODEL'] || 'gemini-2.5-pro';
+    const model = env['DEFAULT_MODEL'] || 'gemini-3.1-pro-preview';
     console.log(`  ✓ DEFAULT_MODEL: ${model}`);
 
     const budget = Number(env['DAILY_TOKEN_BUDGET'] ?? 500000);

@@ -42,10 +42,10 @@ The default path below assumes self-study. Branch points are flagged with **(In-
 ### What you will need
 
 - A computer with **Node.js 22+** installed
-- The Level 2 codebase (yours, or `solutions/level_2/` as a clean baseline)
+- The Level 2 codebase (yours, or fast-forward via `git checkout v2-complete -- codelab/starter/`)
 - A free [Gemini API key](https://aistudio.google.com/apikey) (already in `.env`)
 - A [Telegram bot token](https://t.me/BotFather) (already in `.env`)
-- ~$2 of Gemini Pro + Flash usage across the level
+- A handful of Gemini Pro + Flash testing turns — comfortably inside the free tier
 
 ## Introduction
 
@@ -367,8 +367,8 @@ The runner wraps every Gemini call in `protect()`:
 
 ```typescript
 const { result, usedFallback } = await healing.protect(
-  () => client.models.generateContent({ model: 'gemini-2.5-pro', contents }),
-  () => client.models.generateContent({ model: 'gemini-2.5-flash', contents }),
+  () => client.models.generateContent({ model: 'gemini-3.1-pro-preview', contents }),
+  () => client.models.generateContent({ model: 'gemini-3-flash-preview', contents }),
   { maxAttempts: 3 },
 );
 ```
@@ -653,19 +653,7 @@ Level 4 ships your agent to **Google Cloud** so it survives losing your laptop. 
 | `src/tools/spawn.ts` | Spawn tools | `makeSpawnSearchTool`, etc. |
 | `src/tools/cron.ts` | Cron tools | `makeCronAddTool`, etc. |
 
-## Appendix B — Cost estimate (Level 3)
-
-| Component | Approximate cost |
-|-----------|-----------------|
-| Gemini Pro turns (~30 testing) | ~$1.00 |
-| Sub-agent Flash turns | ~$0.20 |
-| Healing/recovery test turns | ~$0.30 |
-| Cron + heartbeat (idle) | ~$0.20 |
-| **Total per participant** | **~$2** |
-
-Cumulative through L0–L3: ~$4 per participant.
-
-## Appendix C — Troubleshooting
+## Appendix B — Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
@@ -676,9 +664,9 @@ Cumulative through L0–L3: ~$4 per participant.
 | Dashboard empty | The `/api/admin/status` endpoint isn't wired or the `<script>` fetch URL is wrong. |
 | Sub-agent uses parent tools it shouldn't | `toolAllowlist` not enforced. Check `runner.run()` filters function declarations by allowlist. |
 
-## Appendix D — Where each concept lives in the production code
+## Appendix C — Where each concept lives in the production code
 
-- **Goal ancestry chain** — full paperclip-style chain in `src/multi-agent/profiles/index.ts`
+- **Goal ancestry chain** — full hierarchical chain in `src/multi-agent/profiles/index.ts`
 - **Cron run audit** — `cron_runs` table in `src/sessions/store.ts` migration
 - **Dashboard real-time** — production version uses SSE (`/api/admin/stream`), not polling. See `src/server/http.ts` full
 - **Healing telemetry** — production logs `usedFallback` to Cloud Logging in L4

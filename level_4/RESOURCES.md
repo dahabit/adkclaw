@@ -161,9 +161,9 @@ Quick reference for instructors during Q&A.
 | "Can I use Cloud SQL instead of Firestore?" | Adapter pattern | "Yes — implement `SessionStore` for postgres. Add `SESSION_BACKEND=postgres`. ~200 LOC, same shape." |
 | "How do I deploy from CI?" | GitHub Actions + Workload Identity Federation | "Set up WIF, no service-account JSON keys. Build + deploy on push. Phase 2 stretch." |
 | "What about Vertex AI Agent Builder for production?" | Vertex AI Agents | "Great for workflows. AdkClaw teaches the underlying pattern. You can migrate to Agent Builder once your shape is stable." |
-| "Costs at scale?" | Cloud Run + Gemini calculator | "Infra is ~$0.50/1M requests. Gemini Pro is the dominant cost — use Flash for sub-agents." |
+| "Costs at scale?" | Cloud Run + Gemini calculator | "Infra cost is negligible per request. Gemini Pro is the dominant variable cost — route sub-agents to Flash." |
 | "Can I serve from multiple regions?" | Cloud Load Balancer | "Yes — deploy to two regions, put a global LB in front. Phase 2." |
-| "What's the cold-start time?" | Cloud Run gen2 | "~2–3 seconds for our 1 GB image. Set `--min-instances=1` ($15/mo) to keep it warm." |
+| "What's the cold-start time?" | Cloud Run gen2 | "~2–3 seconds for our 1 GB image. Set `--min-instances=1` to keep it warm (note: warm instances bill continuously)." |
 | "Can I run multiple agents from one service?" | Multi-tenant routing | "Yes — namespace by `senderId` in `SessionStore`. Phase 4 multi-tenant feature in roadmap." |
 | "Is HTTPS automatic?" | Cloud Run TLS | "Yes — `.run.app` and custom domains both auto-provision SSL via Google's CA." |
 | "Where does Logs Explorer keep my logs?" | Cloud Logging retention | "30 days free retention. Export to BigQuery for longer." |

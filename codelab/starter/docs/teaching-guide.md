@@ -93,7 +93,7 @@ Everything in `src/` is custom code. Specifically:
 | `src/multi-agent/orchestrator.ts` | Sub-agent spawning | We let an agent spawn another agent in an isolated session. The SDK has no concept of a sub-agent — that's our pattern. |
 | `src/sessions/store.ts` | Conversation persistence | The SDK is stateless. Every call is independent. We hold a SQLite-backed session store keyed by `<channel>:<senderId>`. |
 | `src/cron/engine.ts` | Scheduled jobs | Agents that only react aren't autonomous. Cron + heartbeat let the agent *initiate* — wake up at 9 a.m. and check for news. |
-| `src/skills/loader.ts` | Markdown skills | A teaching pattern from OpenClaw: drop a `.md` file in `workspace/skills/`, agent learns it. No code, no redeploy. |
+| `src/skills/loader.ts` | Markdown skills | A practical teaching pattern: drop a `.md` file in `workspace/skills/`, agent learns it. No code, no redeploy. |
 | `src/channels/telegram.ts` | Telegram adapter | Pure plumbing: receive update → normalize → call agent → reply. ~150 lines. |
 | `src/server/http.ts` | Express server | `/api/chat`, `/api/status`, audit endpoints, admin dashboard. |
 | `src/cli/` | CLI entry points | `setup` (wizard), `start` (daemon), `chat` (REPL), `check` (diagnostics). |
@@ -224,7 +224,7 @@ User types "what's my Flutter version?" on Telegram
 │  while (true):                                                   │
 │    response = HealingEngine.wrap(() =>                          │
 │      client.models.generateContent({                             │
-│        model: 'gemini-2.5-pro',                                  │
+│        model: 'gemini-3.1-pro-preview',                                  │
 │        contents: history,                                        │
 │        config: { systemInstruction, tools }                      │
 │      })                                                          │
@@ -271,7 +271,7 @@ async function runTurn(message: string): Promise<string> {
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const response = await client.models.generateContent({
-      model: 'gemini-2.5-pro',
+      model: 'gemini-3.1-pro-preview',
       contents: history,
       config: { systemInstruction, tools: registry.toFunctionDeclarations() },
     });

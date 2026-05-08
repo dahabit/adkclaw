@@ -1,6 +1,6 @@
 # Extension — Voice tutor (Gemini Live API)
 
-**Difficulty:** Medium · **Time:** 4–5 hours · **What you'll learn:** stream bidirectional voice between a browser and your agent using Gemini Live.
+**Difficulty:** Medium · **What you'll learn:** stream bidirectional voice between a browser and your agent using Gemini Live.
 
 ## Why this matters
 
@@ -28,18 +28,27 @@ import { GoogleGenAI, Modality } from '@google/genai';
 
 const client = new GoogleGenAI();
 
-export async function startSession() {
+export async function startSession(handlers: {
+  onAudio: (chunk: Buffer) => void;
+  onClose: () => void;
+}) {
   return await client.live.connect({
-    model: 'gemini-2.5-flash',
+    model: 'gemini-3.1-flash-live-preview',
     config: {
       responseModalities: [Modality.AUDIO],
       systemInstruction: 'You are a friendly voice tutor. Keep replies under 30 seconds.',
+    },
+    callbacks: {
+      onopen:    () => { /* session ready */ },
+      onmessage: (msg) => { if (msg.audio) handlers.onAudio(msg.audio); },
+      onerror:   (err) => { console.error('[voice] live error', err); },
+      onclose:   () => { handlers.onClose(); },
     },
   });
 }
 ```
 
-The `live.connect()` returns a duplex stream. Send audio chunks in, receive audio chunks out.
+The `live.connect()` returns a duplex stream. The `callbacks` object is **required** — the SDK uses it for lifecycle and message events. Send audio chunks in via the returned session, receive audio chunks out via `onmessage`.
 
 ### 2. Build the WebSocket bridge
 

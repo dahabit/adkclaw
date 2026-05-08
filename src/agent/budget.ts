@@ -23,7 +23,7 @@ function utcMidnight(): number {
 }
 
 /**
- * BudgetGuard — per-sender daily token cap (Paperclip pattern).
+ * BudgetGuard — per-sender daily token cap.
  *
  * Inspect the messages table for tokens spent by `senderId` since start-of-day.
  * If over budget, refuse the turn with a clear message — no silent failure.

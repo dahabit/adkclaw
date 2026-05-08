@@ -15,9 +15,9 @@ In Levels 1–3 your agent has lived on your laptop. When the laptop sleeps, the
 
 **PLEASE READ:** This codelab requires real Google Cloud usage and assumes you have:
 
-1. A **Google Cloud project** with billing enabled (free tier covers nearly everything)
+1. A **Google Cloud project** with billing enabled (free tier covers the workshop comfortably)
 2. The **`gcloud` CLI** authenticated and project set
-3. ~$5 of Cloud credit headroom (you'll likely use $0–2)
+3. The L1 `BudgetGuard` wired in production (caps Gemini token spend per day)
 
 ### Prerequisites
 
@@ -26,7 +26,7 @@ In Levels 1–3 your agent has lived on your laptop. When the laptop sleeps, the
 - `gcloud` CLI authenticated: `gcloud auth login` && `gcloud config set project YOUR_PROJECT_ID`
 - A working terminal and editor
 
-> **Before you start — verify model IDs:** the deploy command below pins `gemini-2.5-pro` and `gemini-2.5-flash`. Google deprecates older Gemini generations on a published cadence. Check [the current stable model IDs](https://ai.google.dev/gemini-api/docs/models) before running the cohort and update `workshop.config.json` + the `--set-env-vars` block accordingly. The API surface is stable across generations — only the model strings change.
+> **Before you start — verify model IDs:** the deploy command below pins `gemini-3.1-pro-preview` and `gemini-3-flash-preview` (current as of 2026-05-08). Google deprecates older Gemini generations on a published cadence (`gemini-2.5-pro/flash` shut down Oct 16, 2026). Check [the current stable model IDs](https://ai.google.dev/gemini-api/docs/models) before running the cohort and update `workshop.config.json` + the `--set-env-vars` block accordingly. The API surface is stable across generations — only the model strings change.
 
 ### What you will learn
 
@@ -49,7 +49,7 @@ In Levels 1–3 your agent has lived on your laptop. When the laptop sleeps, the
 - A Google Cloud project (`gcloud projects list` to verify)
 - A free [Gemini API key](https://aistudio.google.com/apikey)
 - A [Telegram bot token](https://t.me/BotFather)
-- ~$1 budget for the Cloud Run + Firestore usage during the level
+- Cloud Run + Firestore usage stays inside the free tier for typical workshop traffic
 
 ## Introduction
 
@@ -386,7 +386,7 @@ gcloud run deploy $SERVICE \
   --concurrency=10 \
   --allow-unauthenticated \
   --set-secrets=GEMINI_API_KEY=gemini-api-key:latest,TELEGRAM_BOT_TOKEN=telegram-bot-token:latest,ALLOWED_SENDERS=allowed-senders:latest \
-  --set-env-vars=SESSION_BACKEND=firestore,WORKSPACE_BUCKET=$BUCKET,WORKSPACE_PATH=/workspace,TELEGRAM_MODE=webhook,DEFAULT_MODEL=gemini-2.5-pro,FALLBACK_MODEL=gemini-2.5-flash
+  --set-env-vars=SESSION_BACKEND=firestore,WORKSPACE_BUCKET=$BUCKET,WORKSPACE_PATH=/workspace,TELEGRAM_MODE=webhook,DEFAULT_MODEL=gemini-3.1-pro-preview,FALLBACK_MODEL=gemini-3-flash-preview
 ```
 
 `--source=.` triggers Cloud Build to:
@@ -465,7 +465,7 @@ gcloud run services update $SERVICE --region=$REGION --update-secrets=ADMIN_KEY=
 
 Now you visit the dashboard with `curl -H "x-admin-key: $(gcloud secrets versions access latest --secret=admin-key)" $SERVICE_URL/` (or paste it as a header in your browser via an extension). Telegram and `/api/cron/fire` are unaffected — those have their own verification (next sections).
 
-> **Cost-runaway guard:** even with `--max-instances=2 --concurrency=5`, a buggy agent looping on `spawn_agent` can chew through Gemini tokens fast. Keep the L1 `BudgetGuard` (`DAILY_TOKEN_BUDGET=100000`) wired in production, and set a Cloud Billing budget alert at $20 so you find out before you find a $400 bill.
+> **Cost-runaway guard:** even with `--max-instances=2 --concurrency=5`, a buggy agent looping on `spawn_agent` can chew through Gemini tokens fast. Keep the L1 `BudgetGuard` (`DAILY_TOKEN_BUDGET=100000`) wired in production, and set a Cloud Billing budget alert at a level that's painful to ignore so you find out before the bill becomes the lesson.
 
 ## 8. Switch Telegram to webhook mode (with secret token)
 
@@ -698,21 +698,21 @@ Bot: Of course. I'm not on your laptop anymore.
 
 Cold start ~2–3 seconds the first message after idle. Subsequent messages instant.
 
-## 13. Cost reality check
+## 13. Stay inside the free tier
 
-At typical workshop usage:
+At typical workshop usage, every Google Cloud service used here sits inside the free tier:
 
-| Service | Free tier | Your usage | Cost |
-|---------|-----------|------------|------|
-| Cloud Run | 2 M requests/mo | ~5K | $0 |
-| Firestore | 50K reads/20K writes/day | ~10K reads, 4K writes | $0 |
-| Cloud Storage | 5 GB | <100 MB | $0 |
-| Secret Manager | 6 secrets free | 3 secrets | $0 |
-| Cloud Scheduler | 3 jobs free | 1–2 jobs | $0 |
-| Cloud Logging | 50 GiB/mo | <1 GiB | $0 |
-| **Vertex AI / Gemini** | (paid) | ~30 turns | **~$0.50** |
+| Service | Free tier (typical workshop usage stays well below) |
+|---------|---|
+| Cloud Run | 2 M requests / month |
+| Firestore | 50K reads / 20K writes per day |
+| Cloud Storage | 5 GB |
+| Secret Manager | 6 secrets |
+| Cloud Scheduler | 3 jobs |
+| Cloud Logging | 50 GiB / month |
+| Vertex AI / Gemini | Free tier covers normal testing; cap with `DAILY_TOKEN_BUDGET` |
 
-**Rule of thumb**: infrastructure is free; Gemini is the dominant cost. Cap with `DAILY_TOKEN_BUDGET` in your env vars (`L1.budget.ts` enforces it).
+**Rule of thumb**: infrastructure is free at workshop scale; Gemini is the dominant variable cost. Cap with `DAILY_TOKEN_BUDGET` in your env vars (`L1.budget.ts` enforces it).
 
 ## 14. Light up your Level 4 badge (the final pillar)
 
@@ -749,7 +749,7 @@ You finished the foundation. Where to go from here:
 
 ## Congratulations
 
-From `console.log` to globally-reachable autonomous agent in 9.5 hours. You're ready to build.
+From `console.log` to globally-reachable autonomous agent across the workshop. You're ready to build.
 
 ---
 
@@ -769,25 +769,11 @@ From `console.log` to globally-reachable autonomous agent in 9.5 hours. You're r
 | `src/storage/gcs.ts` | (optional) Cloud Storage SDK adapter | Optional helper |
 | `src/lib/logger.ts` | Structured JSON logger for Cloud Logging | New |
 
-## Appendix B — Cost estimate (Level 4)
-
-| Component | Approximate cost |
-|-----------|-----------------|
-| Cloud Run (deploy + 5K requests) | $0 (free tier) |
-| Firestore (10K reads, 4K writes) | $0 (free tier) |
-| Cloud Storage (~100 MB) | $0 (free tier) |
-| Secret Manager (3 secrets) | $0 (free tier) |
-| Cloud Scheduler (1–2 jobs) | $0 (free tier) |
-| Gemini Pro (~30 turns) | ~$1.00 |
-| **Total per participant** | **~$1** |
-
-Cumulative through L0–L4: **~$5 per participant** — matching the README cost table.
-
-## Appendix C — Troubleshooting
+## Appendix B — Troubleshooting
 
 | Issue | Fix |
 |-------|-----|
-| Cold start 10s+ | Set `--min-instances=1` (~$15/month per warm instance) for production |
+| Cold start 10s+ | Set `--min-instances=1` for production — warm instances bill continuously, so size to demand |
 | Telegram delivers nothing | Webhook URL not set or pointing at wrong host. Re-run `setWebhook`. |
 | Cloud Scheduler returns 401 | OIDC service account missing `roles/run.invoker`. Grant it. |
 | Firestore reads spike cost | Audit dump missing `limit()`. Add pagination. |
@@ -796,7 +782,7 @@ Cumulative through L0–L4: **~$5 per participant** — matching the README cost
 | Build fails: "Playwright base too large" | Cloud Build region doesn't have it cached. Switch to `us-central1` or `europe-west1`. |
 | Memory hits 2 GB | Playwright + a heavy `web_fetch` can spike. Bump to `--memory=4Gi`. |
 
-## Appendix D — Production hardening (Phase 2)
+## Appendix C — Production hardening (Phase 2)
 
 After the workshop, before you ship to real users:
 

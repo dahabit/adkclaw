@@ -110,7 +110,7 @@ You'll see:
 ```
 🤖 AdkClaw starting...
    Agent: Dudu (tone: friendly)
-   Model: gemini-2.5-pro (fallback: gemini-2.5-flash)
+   Model: gemini-3.1-pro-preview (fallback: gemini-3-flash-preview)
    HTTP: http://localhost:3000
    Telegram: bot is online
 🤖 AdkClaw is online.

@@ -135,7 +135,7 @@ async function main() {
 
   const client = new GoogleGenAI({ apiKey });
   const response = await client.models.generateContent({
-    model: 'gemini-2.5-pro',
+    model: 'gemini-3.1-pro-preview',
     contents: 'Hello, what is your name?',
   });
 

@@ -40,7 +40,7 @@ By the end of this level, you will have:
 - ✅ **Level 3 completed** — agent runs locally with sub-agents, healing, cron
 - ✅ Google Cloud project with **billing enabled** (this level uses paid services, but free tier covers it)
 - ✅ `gcloud` CLI authenticated and project set
-- ✅ ~$5 of Cloud credits headroom (free tier should cover, but billing must be active)
+- ✅ Cloud credits / billing active (free tier covers the workshop comfortably; billing must be enabled to call paid APIs)
 
 ## 🚀 Quick Start
 
@@ -231,7 +231,7 @@ if (process.env.TELEGRAM_MODE === 'webhook') {
 
 | Issue | Solution |
 |-------|----------|
-| Cold start takes 10s | Set `--min-instances=1` (~$15/month per warm instance) |
+| Cold start takes 10s | Set `--min-instances=1` to keep one warm — warm instances bill continuously, so size to demand |
 | Telegram silently delivers nothing | Webhook URL not registered. Re-run `setWebhook`. |
 | Cloud Scheduler returns 401 | OIDC service account missing role. Grant `run.invoker` to the SA. |
 | Firestore reads spiking cost | Pagination missing in audit dump. Add `limit()` to the query. |

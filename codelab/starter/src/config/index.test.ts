@@ -31,8 +31,8 @@ describe('config', () => {
     expect(c.server.port).toBe(3000);
     expect(c.agent.maxToolRounds).toBe(15);
     expect(c.agent.compactionThreshold).toBe(0.8);
-    expect(c.gemini.defaultModel).toBe('gemini-2.5-pro');
-    expect(c.gemini.fallbackModel).toBe('gemini-2.5-flash');
+    expect(c.gemini.defaultModel).toBe('gemini-3.1-pro-preview');
+    expect(c.gemini.fallbackModel).toBe('gemini-3-flash-preview');
     expect(c.vertex.project).toBeNull();
   });
 

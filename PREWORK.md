@@ -23,7 +23,7 @@ If `./scripts/preflight.sh` ends with `✅ All checks passed!` you are ready for
    - Sign in / create an account at [console.cloud.google.com](https://console.cloud.google.com).
    - Create a project (or reuse an existing one). Note the **project ID** — you'll use it everywhere.
    - Enable billing on the project — required to call Gemini, even though the workshop fits inside the free tier. Step-by-step: [console.cloud.google.com/billing](https://console.cloud.google.com/billing).
-   - First-time users get $300 in free credits.
+   - First-time users get free starter credits when they enable billing.
 
 2. **Gemini API key**
    - Go to [aistudio.google.com/apikey](https://aistudio.google.com/apikey).

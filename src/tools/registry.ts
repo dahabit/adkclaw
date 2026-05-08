@@ -20,7 +20,7 @@ export interface ToolRegistryOptions {
 /**
  * ToolRegistry holds the agent's runtime tool catalog and dispatches calls.
  *
- * Permission model (BRD §11.2 + Paperclip approval gate concept):
+ * Permission model (BRD §11.2 — three-tier approval gates):
  *   - allow: execute immediately
  *   - ask:   defer to approvalGate (or auto-approve in dev with a warning)
  *   - deny:  refuse

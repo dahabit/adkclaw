@@ -1,6 +1,6 @@
 # Extension — Slack channel adapter
 
-**Difficulty:** Medium · **Time:** 3–4 hours · **What you'll learn:** plug a second channel into the same agent.
+**Difficulty:** Medium · **What you'll learn:** plug a second channel into the same agent.
 
 ## Why this matters
 

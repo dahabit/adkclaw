@@ -24,7 +24,7 @@
     "link": "npm run build && npm link"
   },
   "dependencies": {
-    "@google/genai": "^1.52.0",
+    "@google/genai": "^2.0.0",
     "@types/pdfkit": "^0.17.6",
     "better-sqlite3": "^11.3.0",
     "dotenv": "^16.4.5",

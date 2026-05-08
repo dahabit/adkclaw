@@ -17,7 +17,7 @@ const fakeSession: Session = {
   createdAt: Date.now(),
   updatedAt: Date.now(),
   lastMessageAt: null,
-  model: 'gemini-2.5-pro',
+  model: 'gemini-3.1-pro-preview',
   totalTokens: 0,
   isArchived: false,
 };

@@ -50,7 +50,7 @@ export interface SpawnRequest {
   parentSessionKey: string;
   /** Named profile to use ('search' | 'communicator' | 'researcher' | 'coder'). Omit for ad-hoc spawn. */
   profileId?: string;
-  /** Goal ancestry — chain from highest-level mission down to the immediate task (Paperclip pattern). */
+  /** Goal ancestry — chain from highest-level mission down to the immediate task. */
   goalChain?: string[];
   /** Override the profile's default model. */
   model?: string;

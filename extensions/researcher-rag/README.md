@@ -1,6 +1,6 @@
 # Extension — Researcher + Vertex AI Vector Search (RAG)
 
-**Difficulty:** Hard · **Time:** 6–8 hours · **What you'll learn:** turn your agent into a researcher that answers from your private corpus.
+**Difficulty:** Hard · **What you'll learn:** turn your agent into a researcher that answers from your private corpus.
 
 ## Why this matters
 
@@ -55,12 +55,14 @@ const client = new GoogleGenAI();
 
 export async function embed(texts: string[]): Promise<number[][]> {
   const result = await client.models.embedContent({
-    model: 'gemini-embedding-001',
+    model: 'gemini-embedding-2',   // multimodal; legacy text-only: gemini-embedding-001
     contents: texts,
   });
   return result.embeddings.map(e => e.values);
 }
 ```
+
+`gemini-embedding-2` is multimodal (text, images, audio). Stick with `gemini-embedding-001` if you only need text and want the smallest dependency surface.
 
 ### 3. Build the ingest tool
 
@@ -104,7 +106,7 @@ echo "What does the sample document say about agent loops? Use rag_search." | np
 ## Stretch
 
 - Hybrid search (lexical + semantic) — boost exact-term hits
-- Reranking with `gemini-2.5-flash` to filter top 20 down to top 5
+- Reranking with `gemini-3-flash-preview` to filter top 20 down to top 5
 - Per-user namespaces (multi-tenant RAG)
 - Streaming partial results from the search tool
 

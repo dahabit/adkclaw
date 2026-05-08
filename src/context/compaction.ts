@@ -21,7 +21,7 @@ export interface CompactorOptions {
   thresholdTokens: number;
   /** Fraction of oldest messages to summarize (default 0.6). */
   summarizeFraction?: number;
-  /** Cheaper model used for summarization (e.g. gemini-2.5-flash). */
+  /** Cheaper model used for summarization (e.g. gemini-3-flash-preview). */
   summarizerModel: string;
 }
 
@@ -42,7 +42,7 @@ export interface CompactionResult {
  *   4. Persist a CompactionCheckpoint that links the summary to the messages it replaces.
  *   5. Future loads splice the summary in place of the summarized messages.
  *
- * Messages are NEVER deleted — the audit trail is intact (Paperclip pattern).
+ * Messages are NEVER deleted — the audit trail is intact.
  * The summary is just a lens that lets the agent stay under context limit.
  */
 export class Compactor {

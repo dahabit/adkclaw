@@ -10,7 +10,7 @@ Students always ask: *"Did you use anything besides Google ADK?"* Here's the hon
 |-------|----------|---------------------------|
 | **LLM** | **Google** — `@google/genai` (ADK + Gemini) | — |
 | **Web search grounding** | **Google** — built into Gemini | — |
-| **Embeddings** (WS3) | **Google** — Vertex AI `gemini-embedding-001` | — |
+| **Embeddings** (WS3) | **Google** — Vertex AI `gemini-embedding-2` (multimodal) or `gemini-embedding-001` (text-only legacy) | — |
 | **Vector search** (WS3) | **Google** — Vertex AI Vector Search | — |
 | HTTP server | Express (open source) | Yes — Cloud Run native handlers |
 | Telegram bot | telegraf (open source) | Cloud Functions webhook |
@@ -25,6 +25,18 @@ Students always ask: *"Did you use anything besides Google ADK?"* Here's the hon
 | Test runner | vitest (open source) | None — testing is local |
 
 **The agent's brain is 100% Google.** Everything else is open-source plumbing that connects the brain to the world. Workshop 4 (cloud) replaces the operational pieces (DB, cron, secrets, hosting) with their Google Cloud equivalents.
+
+### Model + SDK currency (verified 2026-05-08)
+
+| Pin | Current value | Notes |
+|---|---|---|
+| `@google/genai` | `^2.0.0` | Official JS SDK; the legacy `@google/generative-ai` package is EOL |
+| Default Pro model | `gemini-3.1-pro-preview` | Replaces `gemini-2.5-pro` (deprecates Oct 16, 2026) |
+| Default Flash model | `gemini-3-flash-preview` | Replaces `gemini-2.5-flash` (deprecates Oct 16, 2026) |
+| Live API (voice) | `gemini-3.1-flash-live-preview` | Used in the voice-tutor extension; `callbacks` parameter is required |
+| Embeddings | `gemini-embedding-2` (multimodal) or `gemini-embedding-001` (text-only legacy) | `text-embedding-004` is deprecated as of Jan 2026 |
+
+If you're running a cohort *before* the Oct 16, 2026 cutoff, `gemini-2.5-pro/flash` will still work — but new projects should pin the 3.x replacements above to avoid mid-cohort breakage.
 
 ---
 
@@ -48,8 +60,10 @@ Students always ask: *"Did you use anything besides Google ADK?"* Here's the hon
 
 ### Gemini models
 
-- **Default**: `gemini-2.5-pro` — 1M-token context, strong reasoning, built-in grounding
-- **Fallback**: `gemini-2.5-flash` — ~10× cheaper, fast, used for sub-agents and 5xx fallback
+- **Default**: `gemini-3.1-pro-preview` — 1M-token context, strong reasoning, built-in grounding
+- **Fallback**: `gemini-3-flash-preview` — much cheaper, fast, used for sub-agents and 5xx fallback
+- **Live API (voice extension)**: `gemini-3.1-flash-live-preview`
+- **Embeddings**: `gemini-embedding-2` (multimodal) or `gemini-embedding-001` (text-only legacy)
 
 ### Vertex AI (Workshop 3)
 
