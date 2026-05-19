@@ -93,6 +93,13 @@ npm test                       # all L3 tests must still pass
 npm run typecheck
 ```
 
+> **Verified reference.** The Level 4 starter is tagged `v4-complete`.
+> `git checkout v4-complete -- codelab/starter/` gives this level's end state,
+> and `git diff v3-complete v4-complete -- codelab/starter/` is the
+> implementation diff. Note: Level 4 is verified by `npm run build` +
+> `npm run typecheck` only — the Firestore / Cloud Run / OIDC paths need a GCP
+> project and the Firestore emulator to exercise at runtime.
+
 Set up your Google Cloud variables:
 
 ```bash
@@ -364,7 +371,7 @@ Tests verify both adapters pass the same interface tests — that's the point of
 Before `gcloud run deploy`, verify all six gates are wired. Each one is **mandatory** for a publicly-reachable agent. If any is missing, fix it before deploying — Cloud Run with `--allow-unauthenticated` amplifies every defect.
 
 - [ ] **Admin auth on `/`** — dashboard route checks an admin key. If not, the route must return 401 unconditionally.
-- [ ] **OIDC verification on `/api/cron/fire`** — the middleware in `src/server/oidc.ts` is wired in your route stack. Test: `curl -X POST $SERVICE_URL/api/cron/fire` should return **401**.
+- [ ] **OIDC verification on `/api/cron/fire`** — the middleware in `src/server/middleware/verify-oidc.ts` is wired in your route stack. Test: `curl -X POST $SERVICE_URL/api/cron/fire` should return **401**.
 - [ ] **Telegram webhook secret-token validation** — `setWebhook` was called with a `secret_token`, and your handler rejects mismatching `X-Telegram-Bot-Api-Secret-Token` headers.
 - [ ] **`BudgetGuard` is FATAL on missing config** — daemon refuses to start without a `DAILY_TOKEN_BUDGET`.
 - [ ] **`ALLOWED_SENDERS` is set** to your numeric Telegram ID (and you can list extra IDs comma-separated). Empty = bot rejects everything silently.
@@ -527,7 +534,7 @@ gcloud scheduler jobs create http adkclaw-heartbeat \
   --message-body='{"jobId":"heartbeat"}'
 ```
 
-In `src/server/middleware/oidc.ts`, implement the OIDC verifier — **do not skip this**, an unverified `/api/cron/fire` is a public RCE-on-cron endpoint:
+In `src/server/middleware/verify-oidc.ts`, implement the OIDC verifier — **do not skip this**, an unverified `/api/cron/fire` is a public RCE-on-cron endpoint:
 
 ```typescript
 import { OAuth2Client } from 'google-auth-library';
@@ -560,7 +567,7 @@ export async function verifyOidc(req: Request, res: Response, next: NextFunction
 Then in `src/server/http.ts`:
 
 ```typescript
-import { verifyOidc } from './middleware/oidc.js';
+import { verifyOidc } from './middleware/verify-oidc.js';
 
 app.post('/api/cron/fire', verifyOidc, async (req, res) => {
   const { jobId } = req.body as { jobId: string };

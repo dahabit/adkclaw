@@ -15,6 +15,13 @@ You finished Level 4. Your agent is on Cloud Run, reachable from Telegram, persi
 
 This codelab closes nine specific gaps. By the end, the daemon **refuses to start** without each gate wired and configured. That's structural enforcement, not policy hope.
 
+> **Verified reference.** The Level 5 starter is tagged `v5-complete`.
+> `git checkout v5-complete -- codelab/starter/` gives this level's end state
+> (`npm run build` + `npm run typecheck` clean, 127 tests passing);
+> `git diff v4-complete v5-complete -- codelab/starter/` is the implementation
+> diff. The DLP and Firestore-rules paths need GCP or the emulator for full
+> runtime verification.
+
 ### Prerequisites
 
 - Completed [Level 4 — Ship to the Cloud](../level_4/codelab.md)
