@@ -3,6 +3,24 @@ import Database, { type Database as DB } from 'better-sqlite3';
 import type { Content } from '@google/genai';
 import type { Session, SessionKind } from '../types/index.js';
 
+// SessionStore is an interface so the runtime can swap backends — SQLite for
+// local dev, Firestore for Cloud Run (see firestore-store.ts + store-factory.ts).
+export interface SessionStore {
+  ensureSession(
+    key: string,
+    channel: string | null,
+    senderId: string | null,
+    model: string,
+    kind?: SessionKind,
+    parentKey?: string | null,
+  ): Session;
+  archiveSession(key: string): void;
+  listSessions(model?: string): Session[];
+  history(sessionKey: string): Content[];
+  appendAll(sessionKey: string, contents: Content[]): void;
+  replaceWithSummary(sessionKey: string, count: number, summary: string): void;
+}
+
 interface SessionRow {
   key: string;
   channel: string | null;
@@ -14,8 +32,6 @@ interface SessionRow {
   updated_at: number;
 }
 
-// DDL run statement-by-statement on startup. SQLite's CREATE ... IF NOT
-// EXISTS makes this idempotent — safe to run on every boot.
 const SCHEMA = [
   `CREATE TABLE IF NOT EXISTS sessions (
      key TEXT PRIMARY KEY,
@@ -35,33 +51,6 @@ const SCHEMA = [
      created_at INTEGER NOT NULL
    )`,
   `CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_key)`,
-  `CREATE TABLE IF NOT EXISTS cron_jobs (
-     id TEXT PRIMARY KEY,
-     name TEXT,
-     schedule_kind TEXT NOT NULL DEFAULT 'cron',
-     schedule TEXT NOT NULL,
-     task TEXT NOT NULL,
-     session_key TEXT,
-     channel TEXT,
-     target TEXT,
-     enabled INTEGER NOT NULL DEFAULT 1,
-     idempotency_key TEXT,
-     created_at INTEGER NOT NULL,
-     updated_at INTEGER NOT NULL,
-     last_run_at INTEGER,
-     next_run_at INTEGER
-   )`,
-  `CREATE TABLE IF NOT EXISTS cron_runs (
-     id INTEGER PRIMARY KEY AUTOINCREMENT,
-     job_id TEXT NOT NULL,
-     fired_at INTEGER NOT NULL,
-     completed_at INTEGER,
-     status TEXT NOT NULL,
-     result TEXT,
-     error TEXT,
-     idempotency_key TEXT
-   )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_cron_runs_idem ON cron_runs(idempotency_key)`,
 ];
 
 function rowToSession(row: SessionRow, model: string): Session {
@@ -81,28 +70,18 @@ function rowToSession(row: SessionRow, model: string): Session {
   };
 }
 
-export class SessionStore {
+/** SQLite-backed SessionStore — the local-dev / single-host backend. */
+export class SqliteSessionStore implements SessionStore {
   private readonly db: DB;
 
   constructor(databasePath: string) {
     this.db = new Database(databasePath);
     this.db.pragma('journal_mode = WAL');
-    this.migrate();
-  }
-
-  private migrate(): void {
     for (const statement of SCHEMA) {
       this.db.prepare(statement).run();
     }
   }
 
-  /** The underlying better-sqlite3 handle — shared with the CronEngine. */
-  getDatabase(): DB {
-    return this.db;
-  }
-
-  // Session keys are `<channel>:<senderId>`. `kind` is 'main' for top-level
-  // conversations and 'isolated' for sub-agent children (linked via parentKey).
   ensureSession(
     key: string,
     channel: string | null,
@@ -119,17 +98,14 @@ export class SessionStore {
          VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
       )
       .run(key, channel, senderId, kind, parentKey, now, now);
-
     const row = this.db.prepare(`SELECT * FROM sessions WHERE key = ?`).get(key) as SessionRow;
     return rowToSession(row, model);
   }
 
-  /** Mark a session archived — used to retire sub-agent children after spawn. */
   archiveSession(key: string): void {
     this.db.prepare(`UPDATE sessions SET archived = 1 WHERE key = ?`).run(key);
   }
 
-  /** Active (non-archived) sessions, most-recently-updated first — for the dashboard. */
   listSessions(model = ''): Session[] {
     const rows = this.db
       .prepare(`SELECT * FROM sessions WHERE archived = 0 ORDER BY updated_at DESC LIMIT 50`)
@@ -158,8 +134,6 @@ export class SessionStore {
     tx();
   }
 
-  // Compaction: delete the oldest `count` messages and insert one summary
-  // message in the oldest slot, so chronological history order is preserved.
   replaceWithSummary(sessionKey: string, count: number, summary: string): void {
     const rows = this.db
       .prepare(`SELECT id FROM messages WHERE session_key = ? ORDER BY id ASC LIMIT ?`)

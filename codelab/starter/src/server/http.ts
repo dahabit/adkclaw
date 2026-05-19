@@ -6,6 +6,8 @@ import type { Compactor } from '../context/compaction.js';
 import type { CronEngine } from '../cron/engine.js';
 import type { SessionStore } from '../sessions/store.js';
 import type { Config } from '../types/index.js';
+import { adminAuth } from './middleware/admin-auth.js';
+import { verifyOidc } from './middleware/verify-oidc.js';
 
 const DASHBOARD_HTML = `<!doctype html>
 <meta charset="utf-8" />
@@ -20,10 +22,12 @@ const DASHBOARD_HTML = `<!doctype html>
 <div class="card"><h2>Active sessions</h2><pre id="sessions">loading…</pre></div>
 <div class="card"><h2>Cron jobs</h2><pre id="cron">loading…</pre></div>
 <script>
-  fetch('/api/admin/status').then((r) => r.json()).then((s) => {
-    document.getElementById('sessions').textContent = JSON.stringify(s.sessions, null, 2);
-    document.getElementById('cron').textContent = JSON.stringify(s.cron, null, 2);
-  });
+  fetch('/api/admin/status', { headers: { 'x-admin-key': localStorage.getItem('adkclaw-admin-key') || '' } })
+    .then((r) => r.json())
+    .then((s) => {
+      document.getElementById('sessions').textContent = JSON.stringify(s.sessions, null, 2);
+      document.getElementById('cron').textContent = JSON.stringify(s.cron, null, 2);
+    });
 </script>`;
 
 export function createHttpServer(
@@ -41,12 +45,12 @@ export function createHttpServer(
     res.json({ ok: true });
   });
 
-  // Live admin dashboard — a static auto-refreshing page, no build step.
-  app.get('/', (_req, res) => {
+  // Admin surfaces — gated by the x-admin-key header (see admin-auth.ts).
+  app.get('/', adminAuth, (_req, res) => {
     res.type('html').send(DASHBOARD_HTML);
   });
 
-  app.get('/api/admin/status', (_req, res) => {
+  app.get('/api/admin/status', adminAuth, (_req, res) => {
     res.json({
       sessions: sessions.listSessions().map((s) => ({
         key: s.key,
@@ -58,6 +62,18 @@ export function createHttpServer(
         ? cronEngine.list().map((j) => ({ id: j.id, schedule: j.schedule, enabled: j.enabled }))
         : [],
     });
+  });
+
+  // Cloud Scheduler trigger — only Google-authenticated callers (verified OIDC)
+  // may fire a cron job. An unverified endpoint here would be a public RCE.
+  app.post('/api/cron/fire', verifyOidc, async (req, res) => {
+    const { jobId } = req.body as { jobId?: string };
+    if (!jobId || !cronEngine || !cronEngine.has(jobId)) {
+      res.status(404).json({ error: 'unknown jobId' });
+      return;
+    }
+    const result = await cronEngine.fireNow(jobId);
+    res.json({ ok: result.success, result: result.result });
   });
 
   app.post('/api/chat', async (req, res) => {

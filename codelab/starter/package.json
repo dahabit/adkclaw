@@ -24,11 +24,13 @@
     "link": "npm run build && npm link"
   },
   "dependencies": {
+    "@google-cloud/firestore": "^7.11.6",
     "@google/genai": "^2.0.0",
     "@types/pdfkit": "^0.17.6",
     "better-sqlite3": "^11.3.0",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
+    "google-auth-library": "^10.6.2",
     "node-cron": "^3.0.3",
     "pdfkit": "^0.18.0",
     "playwright": "^1.59.1",

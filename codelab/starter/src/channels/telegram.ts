@@ -75,11 +75,24 @@ export class TelegramAdapter {
     }
   }
 
+  // Long-poll mode (local dev). In webhook mode (Cloud Run) this is a no-op —
+  // mount webhookCallback() on the HTTP server instead.
   async launch(): Promise<void> {
+    if (process.env['TELEGRAM_MODE'] === 'webhook') {
+      console.log('[telegram] webhook mode — mount webhookCallback() on the HTTP server');
+      return;
+    }
     // bot.launch() resolves only when the bot stops — start it in the
     // background so the daemon keeps booting.
     void this.bot.launch();
-    console.log('[telegram] bot online');
+    console.log('[telegram] bot online (long-poll)');
+  }
+
+  // Express middleware for webhook mode. telegraf validates the
+  // X-Telegram-Bot-Api-Secret-Token header against the secret given here.
+  webhookCallback(path: string) {
+    const secret = process.env['TELEGRAM_WEBHOOK_SECRET'];
+    return this.bot.webhookCallback(path, secret ? { secretToken: secret } : undefined);
   }
 
   // Push a message to a chat unprompted — used by cron jobs and the heartbeat.
