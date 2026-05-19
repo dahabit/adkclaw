@@ -77,7 +77,7 @@ In the **terminal**, run:
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/codelab/starter
+cd adkclaw/level_1/starter
 ```
 
 ### Install dependencies and verify the toolchain
@@ -98,6 +98,26 @@ A clean exit means the four pre-filled folders compile. You are ready.
 
 **Tip:** if `npm install` is slow, `node_modules` is ~600 MB (Playwright is the bulk). For Level 1 you do not strictly need Playwright; set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` to skip the browser binaries.
 
+### Verify the starter compiles and tests pass
+
+Before you write any code, verify that the starter's type checks and tests pass. The starter comes with `//REPLACE-*` markers standing in for code you will write in the chapters ahead.
+
+```bash
+npm run verify
+```
+
+**Example output**:
+
+```
+> adkclaw@0.1.0 verify
+> tsc --noEmit && vitest run
+
+✓ src/config/index.test.ts (1 test)
+✓ src/cli/setup.test.ts (2 tests)
+```
+
+The verify step type-checks the project (`tsc --noEmit`) and runs the test suite offline (`vitest run` — no Gemini key or network needed). A green pass at this stage confirms the starter skeleton compiles and the pre-filled modules are correct. As you fill in the `//REPLACE-*` markers in each chapter, `npm run verify` is your checkpoint — it should stay green.
+
 ### Configure the wizard
 
 ```bash
@@ -110,20 +130,22 @@ The wizard writes `.env`, `agent.yaml`, and a populated `workspace/` from the te
 
 ### Section recap
 
-- The starter has 4 pre-filled folders under `src/` (types, config, cli, index stub) — everything else you will create.
+- The starter has 4 pre-filled folders under `src/` (types, config, cli, index stub) — everything else you will fill in by replacing `//REPLACE-*` markers in existing files.
 - `npm install && npm run typecheck` is the green-light check before writing any code.
+- `npm run verify` is your per-section checkpoint — it runs type-checks and tests offline (no Gemini key needed).
+- The starter compiles green with all markers standing in, ready for you to fill in chapters 2–6.
 - Reference: [`docs/teaching-guide.md`](https://github.com/dahabit/adkclaw/blob/main/docs/teaching-guide.md) explains why each pre-filled file is what it is.
 
 ## 2. Make your first Gemini call
 
 Prove the SDK works before adding any complexity.
 
-### Replace `src/index.ts` with a minimal API call
+### Create a scratch file and test the Gemini API
 
-In your **editor**, open `src/index.ts` and replace the stub with this:
+In your **editor**, create a new file `src/hello-gemini.ts` with this content:
 
 ```typescript
-// src/index.ts
+// src/hello-gemini.ts
 import 'dotenv/config';
 import { GoogleGenAI } from '@google/genai';
 
@@ -151,7 +173,7 @@ main().catch((err) => {
 In the **terminal**, run:
 
 ```bash
-npm run dev
+npx tsx src/hello-gemini.ts
 ```
 
 **Example output** (yours may be a little different):
@@ -161,9 +183,20 @@ I am an AI assistant created by Google. I do not have a personal name in
 the human sense — but I am here to help. What can I do for you today?
 ```
 
-That works. But it is not an agent — it is a one-shot function call. There is no loop, no tools, no memory. The next chapter wraps this single call in **the loop** that turns it into an agent.
+That works. But it is not an agent — it is a one-shot function call. There is no loop, no tools, no memory. The next chapter wraps a single call in **the loop** that turns it into an agent.
 
 **Important:** if you got `Error: API key is invalid`, re-check your `.env`. The wizard might have appended a stray newline; open `.env` in your editor and verify the key has no leading/trailing whitespace.
+
+### Clean up
+
+Delete the scratch file — you no longer need it. The real entry point is `src/index.ts` (which you'll complete in §6 by replacing the `//REPLACE-MAIN-ENTRY` marker).
+
+```bash
+rm src/hello-gemini.ts
+npm run verify
+```
+
+The verify should still pass green.
 
 ### Section recap
 
@@ -190,49 +223,11 @@ function calls?         │
 
 The LLM may emit **tool calls** instead of text. The runtime runs each call, appends the result back to the conversation, then calls the LLM again. The loop ends when the model emits text instead of more tool calls.
 
-### Create `src/agent/runner.ts`
+### Open `src/agent/runner.ts` and fill the agent loop
 
-In the **terminal**:
-
-```bash
-mkdir -p src/agent
-```
-
-In your **editor**, create `src/agent/runner.ts`:
+In your **editor**, open `src/agent/runner.ts`. You will see the class skeleton with an `async run()` method marked with `//REPLACE-AGENT-LOOP`. Replace the marker and the throwing stub with this implementation:
 
 ```typescript
-// src/agent/runner.ts
-import { GoogleGenAI, type Content, type FunctionCall, type Part } from '@google/genai';
-import type { Config, Session, ToolContext } from '../types/index.js';
-import type { ToolRegistry } from '../tools/registry.js';
-
-// MAX_TOOL_ROUNDS caps the loop so a misbehaving model can't ping-pong tools
-// forever. 15 is more than enough for any real task — hitting it is a bug
-// worth investigating, not a value to bump.
-const MAX_TOOL_ROUNDS = 15;
-
-export interface RunRequest {
-  session: Session;
-  systemPrompt: string;
-  history: Content[];
-  userText: string;
-}
-
-export interface RunResult {
-  reply: string;
-  toolCalls: number;
-  rounds: number;
-  newHistory: Content[];
-}
-
-export class AgentRunner {
-  constructor(
-    private readonly client: GoogleGenAI,
-    private readonly registry: ToolRegistry,
-    private readonly config: Config,
-  ) {}
-
-  async run(req: RunRequest): Promise<RunResult> {
     const history: Content[] = [
       ...req.history,
       { role: 'user', parts: [{ text: req.userText }] },
@@ -284,49 +279,23 @@ export class AgentRunner {
       rounds: MAX_TOOL_ROUNDS,
       newHistory: history,
     };
-  }
-}
 ```
 
-### Create `src/tools/registry.ts`
+### Open `src/tools/registry.ts` and fill the registry methods
 
-```bash
-mkdir -p src/tools
-```
+In your **editor**, open `src/tools/registry.ts`. You will see the class skeleton with a `//REPLACE-TOOL-REGISTRY` marker over the `toFunctionDeclarations()` and `invoke()` methods. Replace both method bodies (after the comment, before the closing brace of each) with these implementations:
 
+**For `toFunctionDeclarations()`**:
 ```typescript
-// src/tools/registry.ts
-import type { AgentTool, ToolContext, ToolResult } from '../types/index.js';
-
-export class ToolRegistry {
-  private readonly tools = new Map<string, AgentTool>();
-
-  register(tool: AgentTool): void {
-    if (this.tools.has(tool.name)) {
-      throw new Error(`Tool already registered: ${tool.name}`);
-    }
-    this.tools.set(tool.name, tool);
-  }
-
-  get(name: string): AgentTool | undefined {
-    return this.tools.get(name);
-  }
-
-  list(): AgentTool[] {
-    return [...this.tools.values()];
-  }
-
-  // Gemini FunctionDeclaration-shaped objects. `parameters` is widened to
-  // `object` so the agent's JsonSchema flows into the SDK without friction.
-  toFunctionDeclarations(): Array<{ name: string; description: string; parameters: object }> {
     return this.list().map((t) => ({
       name: t.name,
       description: t.description,
       parameters: t.parameters,
     }));
-  }
+```
 
-  async invoke(name: string, args: unknown, ctx: ToolContext): Promise<ToolResult> {
+**For `async invoke()`**:
+```typescript
     const tool = this.tools.get(name);
     if (!tool) {
       return { error: `Unknown tool: ${name}` };
@@ -339,11 +308,19 @@ export class ToolRegistry {
     } catch (err) {
       return { error: err instanceof Error ? err.message : String(err) };
     }
-  }
-}
 ```
 
 **Tip:** the `MAX_TOOL_ROUNDS = 15` constant is your safety circuit breaker. If a tool description is wrong or the model misbehaves, the agent could loop forever. The cap is a non-negotiable guard rail.
+
+### Verify your progress
+
+In the **terminal**, run:
+
+```bash
+npm run verify
+```
+
+The type-checker confirms the loop and registry compile correctly. Tests still pass.
 
 ### Section recap
 
@@ -356,24 +333,12 @@ export class ToolRegistry {
 
 An agent without tools is a chatbot. Here are the three minimums.
 
-### Create `src/tools/web.ts`
+### Open `src/tools/web.ts` and fill both tool implementations
 
+In your **editor**, open `src/tools/web.ts`. You will see the tool skeletons with a `//REPLACE-TOOL-WEB` marker. Replace the `async execute` body of **both** `webSearchTool` and `webFetchTool` with these implementations:
+
+**For `webSearchTool.execute()`**:
 ```typescript
-// src/tools/web.ts
-import type { AgentTool } from '../types/index.js';
-
-export const webSearchTool: AgentTool = {
-  name: 'web_search',
-  description:
-    'Search the web for current, factual information. Use for news, recent ' +
-    'events, version numbers, or anything time-sensitive.',
-  permission: 'allow',
-  parameters: {
-    type: 'object',
-    properties: { query: { type: 'string' } },
-    required: ['query'],
-  },
-  async execute(args) {
     const query = String(args.query ?? '');
     if (!query) return { error: 'query is required' };
     // Stub for now — returns a placeholder so you can see the loop wire
@@ -382,67 +347,23 @@ export const webSearchTool: AgentTool = {
       success: true,
       result: `(stub) search results for "${query}". Level 3 wires real grounding.`,
     };
-  },
-};
+```
 
-export const webFetchTool: AgentTool = {
-  name: 'web_fetch',
-  description:
-    'Fetch the contents of a public URL and return them as plain text. Use ' +
-    'when the user gives you a URL to summarize or extract data from.',
-  permission: 'allow',
-  parameters: {
-    type: 'object',
-    properties: { url: { type: 'string' } },
-    required: ['url'],
-  },
-  async execute(args) {
+**For `webFetchTool.execute()`**:
+```typescript
     const url = String(args.url ?? '');
     if (!url) return { error: 'url is required' };
     const res = await fetch(url);
     if (!res.ok) return { error: `HTTP ${res.status} for ${url}` };
     const text = await res.text();
     return { success: true, result: text.slice(0, 16_000) };
-  },
-};
 ```
 
-### Create `src/tools/filesystem.ts`
+### Open `src/tools/filesystem.ts` and fill the filesystem tool
+
+In your **editor**, open `src/tools/filesystem.ts`. You will see the tool skeleton with a `//REPLACE-TOOL-FILESYSTEM` marker. Replace the `async execute` body with this implementation:
 
 ```typescript
-// src/tools/filesystem.ts
-import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
-import { resolve, normalize } from 'node:path';
-import type { AgentTool } from '../types/index.js';
-
-// Confine every filesystem call to the workspace directory. Without this, a
-// tool argument like `../../../etc/passwd` reaches outside the sandbox.
-// See https://owasp.org/www-community/attacks/Path_Traversal.
-function safePath(workspacePath: string, raw: string): string {
-  const root = normalize(workspacePath);
-  const target = normalize(resolve(root, raw));
-  if (!target.startsWith(root)) {
-    throw new Error(`Path traversal blocked: ${raw}`);
-  }
-  return target;
-}
-
-export const filesystemTool: AgentTool = {
-  name: 'filesystem',
-  description:
-    'Read, write, or list files inside the workspace directory. Use for ' +
-    'persistent notes, drafts, and reference files. Cannot reach outside the workspace.',
-  permission: 'ask',
-  parameters: {
-    type: 'object',
-    properties: {
-      action: { type: 'string', enum: ['read', 'write', 'list'] },
-      path: { type: 'string' },
-      content: { type: 'string' },
-    },
-    required: ['action', 'path'],
-  },
-  async execute(args, ctx) {
     const action = String(args.action ?? '');
     const target = safePath(ctx.workspacePath, String(args.path ?? ''));
 
@@ -462,23 +383,20 @@ export const filesystemTool: AgentTool = {
       return { success: true, result: lines.join('\n') || '(empty)' };
     }
     return { error: `Unknown action: ${action}` };
-  },
-};
 ```
 
-### Create `src/tools/index.ts`
+Note: the `safePath()` helper is already defined in the file — it prevents directory-traversal attacks by ensuring all operations stay inside the workspace.
+
+
+
+### Open `src/tools/index.ts` and fill the tool registration
+
+In your **editor**, open `src/tools/index.ts`. You will see the `registerCoreTools()` function with a `//REPLACE-TOOL-REGISTER` marker. Replace the function body with this implementation:
 
 ```typescript
-// src/tools/index.ts
-import type { ToolRegistry } from './registry.js';
-import { webSearchTool, webFetchTool } from './web.js';
-import { filesystemTool } from './filesystem.js';
-
-export function registerCoreTools(registry: ToolRegistry) {
   registry.register(webSearchTool);
   registry.register(webFetchTool);
   registry.register(filesystemTool);
-}
 ```
 
 **Important:** the tool's `description` field is the **only signal** the LLM has when picking which tool to call. Compare:
@@ -487,6 +405,16 @@ export function registerCoreTools(registry: ToolRegistry) {
 - ✅ `"description": "Run shell commands inside the workspace directory. Returns stdout, stderr, and exit code as JSON."` — clear scope, output shape, and constraints
 
 Spend more time on descriptions than feels necessary. Bad descriptions are the #1 reason agents pick the wrong tool.
+
+### Verify your progress
+
+In the **terminal**, run:
+
+```bash
+npm run verify
+```
+
+The type-checker confirms all three tools compile and wire together correctly. Tests still pass.
 
 ### Section recap
 
@@ -510,10 +438,33 @@ The `workspace/` directory is your agent's brain on disk. Each turn, the runtime
 | `MEMORY.md` | Long-term curated memory (cap ~20 K tokens — Level 2 grows this) |
 | `agent.yaml` | Machine-readable identity (`name`, `tone`, `traits`) |
 
-The wizard you ran in Chapter 1 already populated these from the `workspace.example/` templates. Open them in your editor and customize.
+The wizard you ran in Chapter 1 already populated these from the `workspace.example/` templates. You will now customize them using one of two approaches: the Hybrid AI-Studio path (optional) or hand-writing.
 
-### Open `workspace/SOUL.md`
+### Customize `workspace/SOUL.md` and `IDENTITY.md` — Two Paths
 
+#### Path 1: Hybrid AI-Studio (Optional)
+
+If you want the AI to help draft your agent's personality, paste this prompt into **[Gemini at aistudio.google.com](https://aistudio.google.com/)** (with your Gemini API key already added):
+
+```
+I am building an agent named [YOUR_AGENT_NAME] with tone [YOUR_TONE].
+My name is [YOUR_NAME].
+
+Draft two markdown files:
+
+1. SOUL.md — [YOUR_AGENT_NAME]'s voice, personality, and philosophy (tone, quirks, what it values)
+2. IDENTITY.md — [YOUR_AGENT_NAME]'s origin story, context, and role (who it is, what it does)
+
+Each file should be 50–100 words. Use a conversational, direct voice. No placeholders.
+```
+
+Copy the output, paste it into `workspace/SOUL.md` and `workspace/IDENTITY.md` in your editor, and skip to "Verify your progress" below.
+
+#### Path 2: Write It Yourself (Fallback)
+
+In your **editor**, open `workspace/SOUL.md` and `workspace/IDENTITY.md`. The starter shipped templates — they look like this:
+
+**SOUL.md**:
 ```markdown
 # {{AGENT_NAME}}'s Soul
 
@@ -525,37 +476,13 @@ You are warm, direct, and honest about uncertainty. Use humor sparingly. When
 you do not know something, say so and offer to find out.
 ```
 
-The wizard substituted `{{AGENT_NAME}}` and `{{USER_NAME}}` based on your answers. Edit this file to match your agent's voice. The next turn picks up the change — no restart.
+Replace the templates with your own voice. The `{{AGENT_NAME}}` and `{{USER_NAME}}` placeholders are hints — rewrite them as actual names or remove them. Make it sound like your agent talking to you. The next turn picks up the change — no restart needed.
 
-### Build the context engine
+### Open `src/context/manager.ts` and fill the context engine
 
-In the **terminal**:
-
-```bash
-mkdir -p src/context
-```
-
-Create `src/context/manager.ts`:
+In your **editor**, open `src/context/manager.ts`. You will see the `ContextEngine` class with a `//REPLACE-CONTEXT-BOOTSTRAP` marker over the `bootstrap()` method. Replace the method body with this implementation:
 
 ```typescript
-// src/context/manager.ts
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
-
-const CORE_FILES = [
-  'IDENTITY.md',
-  'USER.md',
-  'SOUL.md',
-  'AGENTS.md',
-  'MEMORY.md',
-];
-
-export class ContextEngine {
-  private cache: { fingerprint: string; prompt: string } | null = null;
-
-  constructor(private readonly workspacePath: string) {}
-
-  bootstrap(): string {
     const fingerprint = this.computeFingerprint();
     if (this.cache?.fingerprint === fingerprint) {
       return this.cache.prompt;
@@ -572,130 +499,46 @@ export class ContextEngine {
     const prompt = sections.join('\n\n---\n\n');
     this.cache = { fingerprint, prompt };
     return prompt;
-  }
-
-  private computeFingerprint(): string {
-    const parts: string[] = [];
-    for (const file of CORE_FILES) {
-      const path = resolve(this.workspacePath, file);
-      if (!existsSync(path)) continue;
-      parts.push(`${file}:${statSync(path).mtimeMs}`);
-    }
-    return parts.join('|');
-  }
-}
 ```
 
-The mtime fingerprint means an edit to a workspace file invalidates the cache on the next turn — no restart needed.
+The `computeFingerprint()` helper is already defined. The mtime fingerprint means an edit to a workspace file invalidates the cache on the next turn — no restart needed.
+
+### Verify your progress
+
+In the **terminal**, run:
+
+```bash
+npm run verify
+```
+
+The type-checker confirms the context engine compiles correctly. Tests still pass.
 
 ### Section recap
 
 - Personality lives in `workspace/*.md` files, not in source code.
-- `ContextEngine.bootstrap()` reads them in fixed order on every turn (cached by mtime).
-- The first turn after editing a workspace file picks up the change automatically.
+- You customized `SOUL.md` and `IDENTITY.md` either via AI Studio or by hand.
+- `ContextEngine.bootstrap()` reads personality files in fixed order on every turn (cached by mtime).
+- The first turn after editing a workspace file picks up the change automatically — no restart.
 - Reference: [`src/context/manager.ts`](https://github.com/dahabit/adkclaw/blob/main/src/context/manager.ts) (production version reads more files for Level 2's bank + skills).
 
 ## 6. Sessions and channels — Telegram + CLI
 
 An agent in your terminal is not autonomous. Telegram puts it in your pocket.
 
-### Create `src/sessions/store.ts`
+### Open `src/sessions/store.ts` and fill the session storage methods
 
-```bash
-mkdir -p src/sessions
-```
+In your **editor**, open `src/sessions/store.ts`. You will see the class skeleton with a `//REPLACE-SESSION-STORE` marker over the `history()` and `appendAll()` methods. Replace both method bodies with these implementations:
 
+**For `history()`**:
 ```typescript
-// src/sessions/store.ts
-import Database, { type Database as DB } from 'better-sqlite3';
-import type { Content } from '@google/genai';
-import type { Session } from '../types/index.js';
-
-interface SessionRow {
-  key: string;
-  channel: string | null;
-  sender_id: string | null;
-  created_at: number;
-  updated_at: number;
-}
-
-// DDL run statement-by-statement on startup. SQLite's CREATE ... IF NOT
-// EXISTS makes this idempotent — safe to run on every boot.
-const SCHEMA = [
-  `CREATE TABLE IF NOT EXISTS sessions (
-     key TEXT PRIMARY KEY,
-     channel TEXT,
-     sender_id TEXT,
-     created_at INTEGER NOT NULL,
-     updated_at INTEGER NOT NULL
-   )`,
-  `CREATE TABLE IF NOT EXISTS messages (
-     id INTEGER PRIMARY KEY AUTOINCREMENT,
-     session_key TEXT NOT NULL,
-     role TEXT NOT NULL,
-     content_json TEXT NOT NULL,
-     created_at INTEGER NOT NULL
-   )`,
-  `CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_key)`,
-];
-
-export class SessionStore {
-  private readonly db: DB;
-
-  constructor(databasePath: string) {
-    this.db = new Database(databasePath);
-    this.db.pragma('journal_mode = WAL');
-    this.migrate();
-  }
-
-  private migrate(): void {
-    for (const statement of SCHEMA) {
-      this.db.prepare(statement).run();
-    }
-  }
-
-  // Session keys are `<channel>:<senderId>` — same agent, multiple users,
-  // no leakage between them.
-  ensureSession(
-    key: string,
-    channel: string | null,
-    senderId: string | null,
-    model: string,
-  ): Session {
-    const now = Date.now();
-    this.db
-      .prepare(
-        `INSERT OR IGNORE INTO sessions (key, channel, sender_id, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?)`,
-      )
-      .run(key, channel, senderId, now, now);
-
-    const row = this.db.prepare(`SELECT * FROM sessions WHERE key = ?`).get(key) as SessionRow;
-
-    return {
-      key: row.key,
-      kind: 'main',
-      parentKey: null,
-      channel: row.channel,
-      target: row.sender_id,
-      senderId: row.sender_id,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-      lastMessageAt: null,
-      model,
-      totalTokens: 0,
-      isArchived: false,
-    };
-  }
-
-  history(sessionKey: string): Content[] {
     const rows = this.db
       .prepare(`SELECT content_json FROM messages WHERE session_key = ? ORDER BY id ASC`)
       .all(sessionKey) as Array<{ content_json: string }>;
     return rows.map((r) => JSON.parse(r.content_json) as Content);
-  }
+```
 
-  appendAll(sessionKey: string, contents: Content[]): void {
+**For `appendAll()`**:
+```typescript
     const stmt = this.db.prepare(
       `INSERT INTO messages (session_key, role, content_json, created_at) VALUES (?, ?, ?, ?)`,
     );
@@ -707,52 +550,15 @@ export class SessionStore {
       this.db.prepare(`UPDATE sessions SET updated_at = ? WHERE key = ?`).run(now, sessionKey);
     });
     tx();
-  }
-}
 ```
 
 Session keys are `<channel>:<senderId>` — same agent, multiple users, no leakage. SQLite via `better-sqlite3` is synchronous, embedded, and zero-config.
 
-### Create `src/channels/telegram.ts`
+### Open `src/channels/telegram.ts` and fill the Telegram handler
 
-```bash
-mkdir -p src/channels
-```
+In your **editor**, open `src/channels/telegram.ts`. You will see the class skeleton with a `//REPLACE-CHANNEL-TELEGRAM` marker over the `handleMessage()` method. Replace the method body with this implementation:
 
 ```typescript
-// src/channels/telegram.ts
-import { Telegraf, type Context } from 'telegraf';
-import type { AgentRunner } from '../agent/runner.js';
-import type { ContextEngine } from '../context/manager.js';
-import type { SessionStore } from '../sessions/store.js';
-import type { Config } from '../types/index.js';
-
-const MAX_MESSAGE_LENGTH = 4000;
-
-export class TelegramAdapter {
-  private readonly bot: Telegraf;
-
-  constructor(
-    private readonly config: Config,
-    private readonly runner: AgentRunner,
-    private readonly contextEngine: ContextEngine,
-    private readonly sessions: SessionStore,
-  ) {
-    this.bot = new Telegraf(config.telegram.botToken);
-
-    // The /start command — students send this to discover their numeric ID.
-    this.bot.start(async (ctx) => {
-      const id = ctx.from?.id;
-      await ctx.reply(
-        `Welcome! Your Telegram numeric ID is ${id}.\n\n` +
-          `Add it to ALLOWED_SENDERS in your .env, restart, and I will talk back.`,
-      );
-    });
-
-    this.bot.on('message', (ctx) => this.handleMessage(ctx));
-  }
-
-  private async handleMessage(ctx: Context): Promise<void> {
     const senderId = ctx.from?.id;
     if (!senderId) return;
     const senderIdStr = String(senderId);
@@ -790,39 +596,15 @@ export class TelegramAdapter {
       await ctx.reply(reply.slice(0, MAX_MESSAGE_LENGTH));
       reply = reply.slice(MAX_MESSAGE_LENGTH);
     }
-  }
-
-  async launch(): Promise<void> {
-    // bot.launch() resolves only when the bot stops — start it in the
-    // background so the daemon keeps booting.
-    void this.bot.launch();
-    console.log('[telegram] bot online');
-  }
-}
 ```
 
 **Important:** `ALLOWED_SENDERS` must contain **numeric IDs**, not `@username`. Telegram's API only sends numeric IDs to bots. Setting `ALLOWED_SENDERS=dahabdev` looks right but silently rejects every message.
 
-### Create `src/server/http.ts`
+### Open `src/server/http.ts` and fill the HTTP server
 
-```bash
-mkdir -p src/server
-```
+In your **editor**, open `src/server/http.ts`. You will see the `createHttpServer()` function with a `//REPLACE-SERVER-HTTP` marker. Replace the function body with this implementation:
 
 ```typescript
-// src/server/http.ts
-import express, { type Express } from 'express';
-import type { AgentRunner } from '../agent/runner.js';
-import type { ContextEngine } from '../context/manager.js';
-import type { SessionStore } from '../sessions/store.js';
-import type { Config } from '../types/index.js';
-
-export function createHttpServer(
-  config: Config,
-  runner: AgentRunner,
-  contextEngine: ContextEngine,
-  sessions: SessionStore,
-): Express {
   const app = express();
   app.use(express.json({ limit: '256kb' }));
 
@@ -864,25 +646,13 @@ export function createHttpServer(
   });
 
   return app;
-}
 ```
 
-### Wire it all together — replace `src/index.ts` with the full version
+### Open `src/index.ts` and fill the main entry point
+
+In your **editor**, open `src/index.ts`. You will see the main function with a `//REPLACE-MAIN-ENTRY` marker. Replace the function body with this implementation:
 
 ```typescript
-// src/index.ts
-import 'dotenv/config';
-import { GoogleGenAI } from '@google/genai';
-import { loadConfig, validateConfig } from './config/index.js';
-import { ContextEngine } from './context/manager.js';
-import { ToolRegistry } from './tools/registry.js';
-import { registerCoreTools } from './tools/index.js';
-import { AgentRunner } from './agent/runner.js';
-import { SessionStore } from './sessions/store.js';
-import { TelegramAdapter } from './channels/telegram.js';
-import { createHttpServer } from './server/http.js';
-
-async function main(): Promise<void> {
   const config = loadConfig();
   const { errors, warnings } = validateConfig(config);
   for (const w of warnings) console.warn(`[config] ${w}`);
@@ -909,14 +679,18 @@ async function main(): Promise<void> {
     await tg.launch();
   }
 
-  console.log(`🤖 ${config.agent.name} is online.`);
-}
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+  console.log(`Agent ${config.agent.name} is online.`);
 ```
+
+### Verify your progress
+
+In the **terminal**, run:
+
+```bash
+npm run verify
+```
+
+The type-checker confirms all modules wire together. Tests still pass.
 
 ### Run it
 
@@ -931,7 +705,7 @@ npm run dev
 ```
 [http] listening on http://localhost:3000
 [telegram] bot online
-🤖 Dudu is online.
+Agent Dudu is online.
 ```
 
 ### Test on Telegram
