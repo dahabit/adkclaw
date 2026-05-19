@@ -30,44 +30,11 @@ export class TelegramAdapter {
     this.bot.on('message', (ctx) => this.handleMessage(ctx));
   }
 
+  //REPLACE-CHANNEL-TELEGRAM
   private async handleMessage(ctx: Context): Promise<void> {
-    const senderId = ctx.from?.id;
-    if (!senderId) return;
-    const senderIdStr = String(senderId);
-
-    // ALLOWED_SENDERS holds numeric IDs only — silently reject everyone else.
-    if (!this.config.telegram.allowedSenders.includes(senderIdStr)) {
-      console.log(`[telegram] rejected sender ${senderIdStr}`);
-      return;
-    }
-
-    const message = ctx.message;
-    const text = message && 'text' in message ? message.text : '';
-    if (!text) return;
-
-    const session = this.sessions.ensureSession(
-      `telegram:${senderIdStr}`,
-      'telegram',
-      senderIdStr,
-      this.config.gemini.defaultModel,
-    );
-    const history = this.sessions.history(session.key);
-
-    const result = await this.runner.run({
-      session,
-      systemPrompt: this.contextEngine.bootstrap(),
-      history,
-      userText: text,
-    });
-
-    this.sessions.appendAll(session.key, result.newHistory.slice(history.length));
-
-    // Telegram caps messages at ~4000 chars — chunk if needed.
-    let reply = result.reply || '(no reply)';
-    while (reply.length > 0) {
-      await ctx.reply(reply.slice(0, MAX_MESSAGE_LENGTH));
-      reply = reply.slice(MAX_MESSAGE_LENGTH);
-    }
+    // Extract the message, check permissions, call the agent, save history, and reply.
+    // Fill this in from level_1/codelab.md §6.
+    throw new Error('REPLACE-CHANNEL-TELEGRAM not implemented — see level_1/codelab.md §6');
   }
 
   async launch(): Promise<void> {
