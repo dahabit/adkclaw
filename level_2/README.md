@@ -42,11 +42,13 @@ By the end of this level, you will have:
 ### 1. Clone and bootstrap
 
 ```bash
-cd ~/adkclaw/level_2
+cd ~/adkclaw/codelab/starter  # Level 2 is being migrated from the monolithic starter
 source ~/adkclaw/set_env.sh
 npm install
 npm run typecheck
 ```
+
+**Note:** Level 1 is now live in the new per-level-starter format (`level_1/starter/`). Levels 2–5 are being migrated and currently still follow this traditional monolithic starter + git-tag-checkpoint model.
 
 ### 2. Implement the context bootstrap
 

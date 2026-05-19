@@ -21,45 +21,80 @@ adkclaw/
 ├── POST_WORKSHOP.md          ← graduation + extension projects
 ├── workshop.config.json      ← shared metadata (model IDs, level durations)
 │
-├── codelab/starter/          ← Day-1 starter scaffold (clone this, build on it)
+├── level_0/                  ← Architecture tour (presentation, no code)
+│   ├── README.md
+│   ├── codelab.md
+│   └── RESOURCES.md
+├── level_1/                  ← Build the Brain (NEW per-level-starter model)
+│   ├── starter/              ← self-contained Level 1 starter (own package.json, src/)
+│   │   ├── package.json
+│   │   ├── src/
+│   │   ├── workspace.example/
+│   │   ├── docs/teaching-guide.md
+│   │   └── scripts/verify.ts (offline checkpoint)
+│   ├── codelab.md (anchored to starter/ markers)
+│   └── README.md
+├── level_2/ … level_5/       ← Per-level codelab.md, README.md, RESOURCES.md (migrating to per-level starters)
+│
+├── solutions/
+│   ├── level_1/              ← complete answer key (generated from v1-complete tag)
+│   │   ├── package.json, src/, workspace/
+│   │   ├── docs/teaching-guide.md
+│   │   └── README.md
+│
+├── codelab/starter/          ← legacy monolithic starter (still used by L2–L5)
 │   ├── package.json
 │   ├── src/
 │   ├── workspace.example/
 │   └── docs/
 │
-├── level_0/                  ← Architecture tour (presentation, no code)
-│   ├── README.md
-│   ├── codelab.md
-│   └── RESOURCES.md
-├── level_1/ … level_5/       ← Per-level codelab.md + README.md + RESOURCES.md
-│
 ├── src/                      ← Reference implementation (post-L4 finished agent)
 │                              study this; don't clone it as your starting point
-├── docs/                     ← Tech stack, capabilities, internals
+├── docs/                     ← Tech stack, capabilities, internals, teaching-guide.md
 ├── scripts/                  ← setup.sh, preflight.sh
 └── extensions/               ← Optional post-workshop projects (Slack, RAG, voice)
 ```
 
 ### Where students start
 
-**Always `codelab/starter/`** — that's the canonical Day-1 scaffold. Each codelab walks students through growing it incrementally:
+**Level 1** (new model):
+```bash
+cd level_1/starter
+npm install
+npm run setup      # interactive: pick agent name, paste keys
+npm run verify     # offline checkpoint (tsc + vitest)
+```
 
+**Levels 2–5** (being migrated, currently traditional):
 ```bash
 cd codelab/starter
 npm install
-npm run setup      # interactive: pick agent name, paste keys
-# follow level_0/codelab.md, then 1, 2, 3, 4
+npm run setup
+# follow level_2/codelab.md through level_5/codelab.md
 ```
 
-If a student falls behind, they can fast-forward to a level checkpoint via git tags (see *Level checkpoints* below).
+If a student falls behind, they can fast-forward via git tags (see *Level checkpoints* below) for Levels 2–5. Level 1 students can also reference `solutions/level_1/` as an answer key.
 
 ### What `src/` is for
 
 `src/` at the repo root is the **finished reference implementation** — the agent after Level 4 with all 21 tools, multi-agent orchestration, healing, cron, Firestore adapter. Treat it as the answer key to study, not the starter to clone.
 
-## Level checkpoints (git tags)
+## Level checkpoints
 
-Students who get stuck in Level 3 don't need to redo Levels 1–2 from scratch. The repo ships tagged checkpoints of `codelab/starter/` at each level boundary:
+### Level 1 (new model)
+
+**Offline checkpoints** via `npm run verify`:
+- Runs `tsc --noEmit` + `vitest run` — no Gemini key, no network
+- Type-checks and tests the student's marker fills per section
+- Deterministic pass/fail within 10 seconds
+
+**Answer keys** in `solutions/level_1/`:
+- Complete, runnable finished Level 1 (generated from `v1-complete` git tag)
+- Students can diff their work: `diff ~/adkclaw/level_1/starter/src/ ~/adkclaw/solutions/level_1/src/`
+
+### Levels 2–5 (traditional git-tag model, being migrated)
+
+The repo ships tagged checkpoints of `codelab/starter/` at each level boundary:
 
 | Tag | State of `codelab/starter/` |
 |---|---|
@@ -78,7 +113,7 @@ git checkout v2-complete -- codelab/starter/
 # you now have a fresh L2 baseline; continue from L3
 ```
 
-These tags are maintained against the same `codelab/starter/` directory — there is no separate `level_N/` working tree.
+These tags are maintained against the same `codelab/starter/` directory.
 
 ## What's in `dahabit/adkclaw-instructor` (private)
 
