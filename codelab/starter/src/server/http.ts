@@ -4,6 +4,7 @@ import type { AgentRunner } from '../agent/runner.js';
 import type { ContextEngine } from '../context/manager.js';
 import type { Compactor } from '../context/compaction.js';
 import type { CronEngine } from '../cron/engine.js';
+import type { BudgetGuard } from '../agent/budget.js';
 import type { SessionStore } from '../sessions/store.js';
 import type { Config } from '../types/index.js';
 import { adminAuth } from './middleware/admin-auth.js';
@@ -36,6 +37,7 @@ export function createHttpServer(
   contextEngine: ContextEngine,
   sessions: SessionStore,
   compactor: Compactor,
+  budget: BudgetGuard,
   cronEngine?: CronEngine,
 ): Express {
   const app = express();
@@ -85,6 +87,13 @@ export function createHttpServer(
     };
     if (!sessionKey || !message) {
       res.status(400).json({ error: 'sessionKey and message are required' });
+      return;
+    }
+
+    // Level 5 — refuse the turn if the sender is over their daily token cap.
+    const verdict = budget.check(senderId ?? null);
+    if (!verdict.ok) {
+      res.json({ text: verdict.refusalText ?? 'Daily token budget reached.', toolCallCount: 0 });
       return;
     }
 

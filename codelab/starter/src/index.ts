@@ -27,6 +27,9 @@ import {
   makeMessageUserTool,
 } from './tools/cron.js';
 import { AgentRunner } from './agent/runner.js';
+import { assertDailyTokenBudget, BudgetGuard } from './agent/budget.js';
+import { assertAdminKey } from './server/middleware/admin-auth.js';
+import { assertOidcConfig } from './server/middleware/verify-oidc.js';
 import { createSessionStore } from './sessions/store-factory.js';
 import { TelegramAdapter } from './channels/telegram.js';
 import { createHttpServer } from './server/http.js';
@@ -43,6 +46,13 @@ async function main(): Promise<void> {
     for (const e of errors) console.error(`[config] ${e}`);
     throw new Error('Invalid configuration — see errors above.');
   }
+
+  // Level 5 hardening — the daemon refuses to start unless every security
+  // gate is configured. A throw here exits the process (see main().catch).
+  const dailyTokenBudget = assertDailyTokenBudget();
+  assertAdminKey();
+  assertOidcConfig();
+  const budget = new BudgetGuard({ dailyTokenBudget });
 
   const client = new GoogleGenAI({ apiKey: config.gemini.apiKey });
   const healing = new HealingEngine();
@@ -110,7 +120,15 @@ async function main(): Promise<void> {
   cronEngine.start();
   heartbeat.start();
 
-  const app = createHttpServer(config, runner, contextEngine, sessions, compactor, cronEngine);
+  const app = createHttpServer(
+    config,
+    runner,
+    contextEngine,
+    sessions,
+    compactor,
+    budget,
+    cronEngine,
+  );
 
   if (config.telegram.botToken) {
     telegram = new TelegramAdapter(config, runner, contextEngine, sessions, compactor);
