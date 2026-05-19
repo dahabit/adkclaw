@@ -65,7 +65,7 @@ By the end of this codelab, you will have:
 - A Telegram bot that talks to your agent from your phone
 - A populated `workspace/` (your agent's personality on disk)
 - An HTTP API at `localhost:3000` powering the `adkclaw chat` terminal REPL
-- A passing `npm test` (50+ tests across the runner, registry, sessions, context engine)
+- A clean `npm run build` and `npm run typecheck`, with the pre-filled `npm test` suites still green
 
 ## 1. Scaffold and verify
 
@@ -203,20 +203,19 @@ In your **editor**, create `src/agent/runner.ts`:
 ```typescript
 // src/agent/runner.ts
 import { GoogleGenAI, type Content, type FunctionCall, type Part } from '@google/genai';
-import type { Config, ToolContext } from '../types/index.js';
+import type { Config, Session, ToolContext } from '../types/index.js';
 import type { ToolRegistry } from '../tools/registry.js';
 
-// MAX_TOOL_ROUNDS — caps the loop so a misbehaving model can't ping-pong
-// tools forever. 15 is more than enough for any real task; if you hit it,
-// it's a bug worth investigating, not a value to bump.
+// MAX_TOOL_ROUNDS caps the loop so a misbehaving model can't ping-pong tools
+// forever. 15 is more than enough for any real task — hitting it is a bug
+// worth investigating, not a value to bump.
 const MAX_TOOL_ROUNDS = 15;
 
 export interface RunRequest {
-  sessionKey: string;
+  session: Session;
   systemPrompt: string;
   history: Content[];
   userText: string;
-  workspacePath: string;
 }
 
 export interface RunResult {
@@ -238,20 +237,20 @@ export class AgentRunner {
       ...req.history,
       { role: 'user', parts: [{ text: req.userText }] },
     ];
-
     let toolCalls = 0;
+
+    const sdkTools: Array<{ functionDeclarations: object[] }> = [
+      { functionDeclarations: this.registry.toFunctionDeclarations() },
+    ];
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
       const response = await this.client.models.generateContent({
-        model: this.config.agent.defaultModel,
+        model: this.config.gemini.defaultModel,
         contents: history,
-        config: {
-          systemInstruction: req.systemPrompt,
-          tools: [{ functionDeclarations: this.registry.toFunctionDeclarations() }],
-        },
+        config: { systemInstruction: req.systemPrompt, tools: sdkTools },
       });
 
-      const calls = response.functionCalls ?? [];
+      const calls: FunctionCall[] = response.functionCalls ?? [];
 
       // No tool calls? The model is done — return its text answer.
       if (calls.length === 0) {
@@ -260,19 +259,20 @@ export class AgentRunner {
         return { reply: text, toolCalls, rounds: round + 1, newHistory: history };
       }
 
-      // Otherwise: log the model's tool-call request, run each tool, append the responses.
-      history.push({
-        role: 'model',
-        parts: calls.map((call) => ({ functionCall: call })),
-      });
+      // Otherwise: record the request, run each tool, append the responses.
+      history.push({ role: 'model', parts: calls.map((call) => ({ functionCall: call })) });
 
       const responseParts: Part[] = [];
       for (const call of calls) {
         toolCalls++;
-        const ctx: ToolContext = { sessionKey: req.sessionKey, workspacePath: req.workspacePath };
-        const result = await this.registry.invoke(call.name, call.args ?? {}, ctx);
+        const ctx: ToolContext = {
+          session: req.session,
+          workspacePath: this.config.paths.workspace,
+          config: this.config,
+        };
+        const result = await this.registry.invoke(call.name ?? '', call.args ?? {}, ctx);
         responseParts.push({
-          functionResponse: { name: call.name, response: { result } },
+          functionResponse: { name: call.name ?? '', response: { result } },
         });
       }
       history.push({ role: 'user', parts: responseParts });
@@ -316,7 +316,9 @@ export class ToolRegistry {
     return [...this.tools.values()];
   }
 
-  toFunctionDeclarations() {
+  // Gemini FunctionDeclaration-shaped objects. `parameters` is widened to
+  // `object` so the agent's JsonSchema flows into the SDK without friction.
+  toFunctionDeclarations(): Array<{ name: string; description: string; parameters: object }> {
     return this.list().map((t) => ({
       name: t.name,
       description: t.description,
@@ -363,19 +365,22 @@ import type { AgentTool } from '../types/index.js';
 export const webSearchTool: AgentTool = {
   name: 'web_search',
   description:
-    'Search Google for current, factual information. Use for news, recent ' +
-    'events, version numbers, or anything time-sensitive. Returns cited results.',
+    'Search the web for current, factual information. Use for news, recent ' +
+    'events, version numbers, or anything time-sensitive.',
   permission: 'allow',
   parameters: {
     type: 'object',
     properties: { query: { type: 'string' } },
     required: ['query'],
   },
-  async execute({ query }) {
-    // Stub for now — returns hardcoded results so you can see the loop wire
-    // through end-to-end. Level 3 swaps this for Gemini's built-in grounding.
+  async execute(args) {
+    const query = String(args.query ?? '');
+    if (!query) return { error: 'query is required' };
+    // Stub for now — returns a placeholder so you can see the loop wire
+    // through end-to-end. Level 3 swaps this for Gemini search grounding.
     return {
-      results: [{ snippet: `(stub) results for "${query}"`, url: 'https://example.com' }],
+      success: true,
+      result: `(stub) search results for "${query}". Level 3 wires real grounding.`,
     };
   },
 };
@@ -383,21 +388,21 @@ export const webSearchTool: AgentTool = {
 export const webFetchTool: AgentTool = {
   name: 'web_fetch',
   description:
-    'Fetch the contents of a public URL and return them as plain text. ' +
-    'Use this when the user gives you a URL to summarize or extract data from.',
+    'Fetch the contents of a public URL and return them as plain text. Use ' +
+    'when the user gives you a URL to summarize or extract data from.',
   permission: 'allow',
   parameters: {
     type: 'object',
     properties: { url: { type: 'string' } },
     required: ['url'],
   },
-  async execute({ url }) {
-    const res = await fetch(String(url));
-    if (!res.ok) {
-      return { error: `HTTP ${res.status} for ${url}` };
-    }
+  async execute(args) {
+    const url = String(args.url ?? '');
+    if (!url) return { error: 'url is required' };
+    const res = await fetch(url);
+    if (!res.ok) return { error: `HTTP ${res.status} for ${url}` };
     const text = await res.text();
-    return { text: text.slice(0, 16_000) }; // cap response
+    return { success: true, result: text.slice(0, 16_000) };
   },
 };
 ```
@@ -410,12 +415,13 @@ import { readFile, writeFile, readdir, mkdir } from 'node:fs/promises';
 import { resolve, normalize } from 'node:path';
 import type { AgentTool } from '../types/index.js';
 
-// Security note: confine every filesystem call to the workspace directory.
-// Without this, a tool argument like `../../../etc/passwd` reaches outside.
+// Confine every filesystem call to the workspace directory. Without this, a
+// tool argument like `../../../etc/passwd` reaches outside the sandbox.
 // See https://owasp.org/www-community/attacks/Path_Traversal.
 function safePath(workspacePath: string, raw: string): string {
-  const target = normalize(resolve(workspacePath, raw));
-  if (!target.startsWith(workspacePath)) {
+  const root = normalize(workspacePath);
+  const target = normalize(resolve(root, raw));
+  if (!target.startsWith(root)) {
     throw new Error(`Path traversal blocked: ${raw}`);
   }
   return target;
@@ -424,9 +430,8 @@ function safePath(workspacePath: string, raw: string): string {
 export const filesystemTool: AgentTool = {
   name: 'filesystem',
   description:
-    'Read, write, or list files inside the workspace directory. Use this for ' +
-    'persistent notes, drafts, and reference files. Cannot reach files outside ' +
-    'the workspace.',
+    'Read, write, or list files inside the workspace directory. Use for ' +
+    'persistent notes, drafts, and reference files. Cannot reach outside the workspace.',
   permission: 'ask',
   parameters: {
     type: 'object',
@@ -437,25 +442,24 @@ export const filesystemTool: AgentTool = {
     },
     required: ['action', 'path'],
   },
-  async execute({ action, path, content }, ctx) {
-    const target = safePath(ctx.workspacePath, String(path));
+  async execute(args, ctx) {
+    const action = String(args.action ?? '');
+    const target = safePath(ctx.workspacePath, String(args.path ?? ''));
+
     if (action === 'read') {
       const text = await readFile(target, 'utf8');
-      return { text };
+      return { success: true, result: text };
     }
     if (action === 'write') {
       await mkdir(resolve(target, '..'), { recursive: true });
-      await writeFile(target, String(content ?? ''), 'utf8');
-      return { ok: true, bytes: String(content ?? '').length };
+      const content = String(args.content ?? '');
+      await writeFile(target, content, 'utf8');
+      return { success: true, result: `Wrote ${content.length} bytes.` };
     }
     if (action === 'list') {
       const entries = await readdir(target, { withFileTypes: true });
-      return {
-        entries: entries.map((e) => ({
-          name: e.name,
-          kind: e.isDirectory() ? 'dir' : 'file',
-        })),
-      };
+      const lines = entries.map((e) => `${e.isDirectory() ? 'dir ' : 'file'}  ${e.name}`);
+      return { success: true, result: lines.join('\n') || '(empty)' };
     }
     return { error: `Unknown action: ${action}` };
   },
@@ -605,6 +609,35 @@ mkdir -p src/sessions
 // src/sessions/store.ts
 import Database, { type Database as DB } from 'better-sqlite3';
 import type { Content } from '@google/genai';
+import type { Session } from '../types/index.js';
+
+interface SessionRow {
+  key: string;
+  channel: string | null;
+  sender_id: string | null;
+  created_at: number;
+  updated_at: number;
+}
+
+// DDL run statement-by-statement on startup. SQLite's CREATE ... IF NOT
+// EXISTS makes this idempotent — safe to run on every boot.
+const SCHEMA = [
+  `CREATE TABLE IF NOT EXISTS sessions (
+     key TEXT PRIMARY KEY,
+     channel TEXT,
+     sender_id TEXT,
+     created_at INTEGER NOT NULL,
+     updated_at INTEGER NOT NULL
+   )`,
+  `CREATE TABLE IF NOT EXISTS messages (
+     id INTEGER PRIMARY KEY AUTOINCREMENT,
+     session_key TEXT NOT NULL,
+     role TEXT NOT NULL,
+     content_json TEXT NOT NULL,
+     created_at INTEGER NOT NULL
+   )`,
+  `CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_key)`,
+];
 
 export class SessionStore {
   private readonly db: DB;
@@ -615,29 +648,20 @@ export class SessionStore {
     this.migrate();
   }
 
-  private migrate() {
-    this.db.exec(`
-      CREATE TABLE IF NOT EXISTS sessions (
-        key TEXT PRIMARY KEY,
-        channel TEXT NOT NULL,
-        sender_id TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        updated_at INTEGER NOT NULL
-      );
-      CREATE TABLE IF NOT EXISTS messages (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        session_key TEXT NOT NULL,
-        role TEXT NOT NULL,
-        content_json TEXT NOT NULL,
-        created_at INTEGER NOT NULL,
-        FOREIGN KEY (session_key) REFERENCES sessions(key)
-      );
-      CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_key);
-    `);
+  private migrate(): void {
+    for (const statement of SCHEMA) {
+      this.db.prepare(statement).run();
+    }
   }
 
-  ensureSession(channel: string, senderId: string): string {
-    const key = `${channel}:${senderId}`;
+  // Session keys are `<channel>:<senderId>` — same agent, multiple users,
+  // no leakage between them.
+  ensureSession(
+    key: string,
+    channel: string | null,
+    senderId: string | null,
+    model: string,
+  ): Session {
     const now = Date.now();
     this.db
       .prepare(
@@ -645,31 +669,42 @@ export class SessionStore {
          VALUES (?, ?, ?, ?, ?)`,
       )
       .run(key, channel, senderId, now, now);
-    return key;
+
+    const row = this.db.prepare(`SELECT * FROM sessions WHERE key = ?`).get(key) as SessionRow;
+
+    return {
+      key: row.key,
+      kind: 'main',
+      parentKey: null,
+      channel: row.channel,
+      target: row.sender_id,
+      senderId: row.sender_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      lastMessageAt: null,
+      model,
+      totalTokens: 0,
+      isArchived: false,
+    };
   }
 
   history(sessionKey: string): Content[] {
     const rows = this.db
-      .prepare(
-        `SELECT content_json FROM messages WHERE session_key = ? ORDER BY id ASC`,
-      )
+      .prepare(`SELECT content_json FROM messages WHERE session_key = ? ORDER BY id ASC`)
       .all(sessionKey) as Array<{ content_json: string }>;
     return rows.map((r) => JSON.parse(r.content_json) as Content);
   }
 
   appendAll(sessionKey: string, contents: Content[]): void {
     const stmt = this.db.prepare(
-      `INSERT INTO messages (session_key, role, content_json, created_at)
-       VALUES (?, ?, ?, ?)`,
+      `INSERT INTO messages (session_key, role, content_json, created_at) VALUES (?, ?, ?, ?)`,
     );
     const now = Date.now();
     const tx = this.db.transaction(() => {
       for (const c of contents) {
         stmt.run(sessionKey, c.role ?? 'user', JSON.stringify(c), now);
       }
-      this.db
-        .prepare(`UPDATE sessions SET updated_at = ? WHERE key = ?`)
-        .run(now, sessionKey);
+      this.db.prepare(`UPDATE sessions SET updated_at = ? WHERE key = ?`).run(now, sessionKey);
     });
     tx();
   }
@@ -705,56 +740,62 @@ export class TelegramAdapter {
   ) {
     this.bot = new Telegraf(config.telegram.botToken);
 
-    // The /start command — students send this to discover their numeric ID
+    // The /start command — students send this to discover their numeric ID.
     this.bot.start(async (ctx) => {
       const id = ctx.from?.id;
       await ctx.reply(
-        `Welcome! Your Telegram numeric ID is *${id}*.\n\n` +
+        `Welcome! Your Telegram numeric ID is ${id}.\n\n` +
           `Add it to ALLOWED_SENDERS in your .env, restart, and I will talk back.`,
-        { parse_mode: 'Markdown' },
       );
     });
 
-    this.bot.on('text', (ctx) => this.handleMessage(ctx));
+    this.bot.on('message', (ctx) => this.handleMessage(ctx));
   }
 
-  private async handleMessage(ctx: Context) {
+  private async handleMessage(ctx: Context): Promise<void> {
     const senderId = ctx.from?.id;
     if (!senderId) return;
-
     const senderIdStr = String(senderId);
+
+    // ALLOWED_SENDERS holds numeric IDs only — silently reject everyone else.
     if (!this.config.telegram.allowedSenders.includes(senderIdStr)) {
       console.log(`[telegram] rejected sender ${senderIdStr}`);
-      return; // silent reject
+      return;
     }
 
-    const text = (ctx.message as { text?: string })?.text ?? '';
+    const message = ctx.message;
+    const text = message && 'text' in message ? message.text : '';
     if (!text) return;
 
-    const sessionKey = this.sessions.ensureSession('telegram', senderIdStr);
-    const history = this.sessions.history(sessionKey);
+    const session = this.sessions.ensureSession(
+      `telegram:${senderIdStr}`,
+      'telegram',
+      senderIdStr,
+      this.config.gemini.defaultModel,
+    );
+    const history = this.sessions.history(session.key);
 
     const result = await this.runner.run({
-      sessionKey,
+      session,
       systemPrompt: this.contextEngine.bootstrap(),
       history,
       userText: text,
-      workspacePath: this.config.workspacePath,
     });
 
-    this.sessions.appendAll(sessionKey, result.newHistory.slice(history.length));
+    this.sessions.appendAll(session.key, result.newHistory.slice(history.length));
 
-    // Telegram caps messages at ~4000 chars — chunk if needed
+    // Telegram caps messages at ~4000 chars — chunk if needed.
     let reply = result.reply || '(no reply)';
     while (reply.length > 0) {
-      const chunk = reply.slice(0, MAX_MESSAGE_LENGTH);
-      await ctx.reply(chunk);
+      await ctx.reply(reply.slice(0, MAX_MESSAGE_LENGTH));
       reply = reply.slice(MAX_MESSAGE_LENGTH);
     }
   }
 
-  async launch() {
-    await this.bot.launch();
+  async launch(): Promise<void> {
+    // bot.launch() resolves only when the bot stops — start it in the
+    // background so the daemon keeps booting.
+    void this.bot.launch();
     console.log('[telegram] bot online');
   }
 }
@@ -785,30 +826,40 @@ export function createHttpServer(
   const app = express();
   app.use(express.json({ limit: '256kb' }));
 
-  app.get('/api/health', (_req, res) => res.json({ ok: true }));
+  app.get('/api/health', (_req, res) => {
+    res.json({ ok: true });
+  });
 
   app.post('/api/chat', async (req, res) => {
-    const { senderId, text } = req.body as { senderId?: string; text?: string };
-    if (!senderId || !text) {
-      return res.status(400).json({ error: 'senderId and text required' });
+    const { sessionKey, message, channel, senderId } = req.body as {
+      sessionKey?: string;
+      message?: string;
+      channel?: string;
+      senderId?: string;
+    };
+    if (!sessionKey || !message) {
+      res.status(400).json({ error: 'sessionKey and message are required' });
+      return;
     }
 
-    const sessionKey = sessions.ensureSession('cli', senderId);
-    const history = sessions.history(sessionKey);
-
     try {
-      const result = await runner.run({
+      const session = sessions.ensureSession(
         sessionKey,
+        channel ?? 'cli',
+        senderId ?? 'cli',
+        config.gemini.defaultModel,
+      );
+      const history = sessions.history(session.key);
+      const result = await runner.run({
+        session,
         systemPrompt: contextEngine.bootstrap(),
         history,
-        userText: text,
-        workspacePath: config.workspacePath,
+        userText: message,
       });
-      sessions.appendAll(sessionKey, result.newHistory.slice(history.length));
-      res.json({ reply: result.reply, toolCalls: result.toolCalls });
+      sessions.appendAll(session.key, result.newHistory.slice(history.length));
+      res.json({ text: result.reply, toolCallCount: result.toolCalls });
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      res.status(500).json({ error: msg });
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
     }
   });
 
@@ -822,7 +873,7 @@ export function createHttpServer(
 // src/index.ts
 import 'dotenv/config';
 import { GoogleGenAI } from '@google/genai';
-import { loadConfig } from './config/index.js';
+import { loadConfig, validateConfig } from './config/index.js';
 import { ContextEngine } from './context/manager.js';
 import { ToolRegistry } from './tools/registry.js';
 import { registerCoreTools } from './tools/index.js';
@@ -831,20 +882,26 @@ import { SessionStore } from './sessions/store.js';
 import { TelegramAdapter } from './channels/telegram.js';
 import { createHttpServer } from './server/http.js';
 
-async function main() {
-  const config = loadConfig({ cwd: process.cwd() });
+async function main(): Promise<void> {
+  const config = loadConfig();
+  const { errors, warnings } = validateConfig(config);
+  for (const w of warnings) console.warn(`[config] ${w}`);
+  if (errors.length > 0) {
+    for (const e of errors) console.error(`[config] ${e}`);
+    throw new Error('Invalid configuration — see errors above.');
+  }
 
   const client = new GoogleGenAI({ apiKey: config.gemini.apiKey });
   const registry = new ToolRegistry();
   registerCoreTools(registry);
 
-  const sessions = new SessionStore(config.databasePath);
-  const contextEngine = new ContextEngine(config.workspacePath);
+  const sessions = new SessionStore(config.paths.database);
+  const contextEngine = new ContextEngine(config.paths.workspace);
   const runner = new AgentRunner(client, registry, config);
 
   const app = createHttpServer(config, runner, contextEngine, sessions);
   app.listen(config.server.port, () => {
-    console.log(`[http] listening on http://localhost:${config.server.port}`);
+    console.log(`[http] listening on http://${config.server.host}:${config.server.port}`);
   });
 
   if (config.telegram.botToken) {
