@@ -88,4 +88,3 @@ venv/
 
 # === Private-repo stragglers (never belong in the public repo) ===
 platform/
-solutions/
