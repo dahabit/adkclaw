@@ -43,17 +43,17 @@ By the end of this level, you will have:
 ### 1. Set Up Environment
 
 ```bash
-cd ~/adkclaw/level_1
+cd ~/adkclaw/level_1/starter
 source ~/adkclaw/set_env.sh
 
 # Install Node dependencies
 npm install
 
-# Verify the toolchain
-npm run typecheck
+# Verify the toolchain (offline checkpoint: tsc + vitest)
+npm run verify
 ```
 
-**Expected**: `tsc --noEmit` exits cleanly.
+**Expected**: All tests pass (type-check + unit tests run without Gemini key).
 
 ### 2. Configure Your Agent
 
@@ -66,41 +66,49 @@ Follow the prompts. Pick a name (`AdkClaw`, `Dudu`, `Coco` — anything you like
 
 The wizard writes `.env`, `agent.yaml`, and a populated `workspace/`.
 
-### 3. Implement the Agent Loop
+### 3. Implement the Agent Loop (fill the markers)
 
-Open `src/agent/runner.ts` and find the `// REPLACE` markers. Implement:
+Open `src/agent/runner.ts` and find the `// REPLACE-*` markers. Each section is pre-scaffolded with a throwing stub. Replace it with the actual code:
 
-| Section | What to write |
-|---------|---------------|
-| `callGemini()` | The single call to `client.models.generateContent({...})` |
-| `run()` — main loop | The `for (let round...)` body that extracts tool calls, dispatches via the registry, and appends results |
-| Function call extraction | Read `response.functionCalls` and convert to executable form |
-| History append | After tool execution, push `{role: 'function', parts: [{functionResponse: ...}]}` |
+| Marker | Section | What to write |
+|--------|---------|---------------|
+| `// REPLACE: callGemini` | Line ~42 | The single call to `client.models.generateContent({...})` |
+| `// REPLACE: runTurn loop` | Line ~X | The `for (let round...)` body that extracts tool calls, executes via registry, appends results |
+| `// REPLACE: function call extraction` | Line ~Y | Read `response.functionCalls` and convert to executable form |
+| `// REPLACE: history append` | Line ~Z | Push `{role: 'function', parts: [{functionResponse: ...}]}` after tool execution |
+
+The starter type-checks before any marker is filled — run `npm run verify` after each section to validate your implementation.
 
 The runner uses **dependency injection** — `ContextEngine`, `ToolRegistry`, `SessionStore` are passed in. Don't import them directly.
 
-### 4. Implement the Three Tools
+### 4. Implement the Three Tools (fill the markers)
 
-Open and complete:
-
-| File | Tool | What to implement |
-|------|------|-------------------|
-| `src/tools/web.ts` | `web_search` | Use Gemini's built-in `googleSearchRetrieval` for grounded search |
-| `src/tools/web.ts` | `web_fetch` | `fetch(url)` then strip HTML to plain markdown |
-| `src/tools/filesystem.ts` | `filesystem` | `read` / `write` / `list` inside `workspace/` with path-traversal blocking |
+| File | Marker | Tool | What to implement |
+|------|--------|------|-------------------|
+| `src/tools/web.ts` | `// REPLACE: web_search` | `web_search` | Use Gemini's built-in `googleSearchRetrieval` for grounded search |
+| `src/tools/web.ts` | `// REPLACE: web_fetch` | `web_fetch` | `fetch(url)` then strip HTML to plain markdown |
+| `src/tools/filesystem.ts` | `// REPLACE: filesystem` | `filesystem` | `read` / `write` / `list` inside `workspace/` with path-traversal blocking |
 
 **Tip:** the tool's `description` field is the LLM's only signal for tool selection. Spend time on it. *"Run commands"* is bad. *"Execute shell commands inside the workspace directory. Returns stdout, stderr, and exit code."* is good.
 
-### 5. Wire Telegram
+### 5. Wire Telegram (fill the markers)
 
 Open `src/channels/telegram.ts` and complete the `TelegramAdapter`:
 
-| Method | What to implement |
-|--------|-------------------|
-| `bot.start()` handler | Reply with the user's numeric ID (the `/start` discovery pattern) |
-| `handleMessage()` | Allowlist check → normalize → call `runner.run()` → reply chunked |
+| Marker | Method | What to implement |
+|--------|--------|-------------------|
+| `// REPLACE: bot.start handler` | `bot.start()` handler | Reply with the user's numeric ID (the `/start` discovery pattern) |
+| `// REPLACE: handleMessage` | `handleMessage()` | Allowlist check → normalize → call `runner.run()` → reply chunked |
 
-### 6. Run Your Agent
+### 6. Verify Your Implementation (offline checkpoint)
+
+```bash
+npm run verify
+```
+
+This runs `tsc --noEmit` (type-check) + `vitest run` (unit tests). No Gemini key needed. All tests should pass before you move to step 7.
+
+### 7. Run Your Agent
 
 ```bash
 npm run dev
@@ -116,7 +124,7 @@ You'll see:
 🤖 AdkClaw is online.
 ```
 
-### 7. Test on Telegram
+### 8. Test on Telegram
 
 1. Open Telegram, find your bot, send `/start`. It replies with your numeric ID.
 2. Edit `.env`: set `ALLOWED_SENDERS=<your-numeric-id>` (no `@username`).
@@ -126,16 +134,26 @@ You'll see:
 5. Send: *"What's the latest stable Flutter version?"*
    It calls `web_search` and returns the version with a citation URL.
 
-### 8. Test the REPL too
+### 9. Test the REPL too
 
 In a second Cloud Shell tab:
 ```bash
-cd ~/adkclaw/level_1
+cd ~/adkclaw/level_1/starter
 source ~/adkclaw/set_env.sh
 npm run chat
 ```
 
 Same agent, terminal interface. Same memory. Same personality.
+
+### Stuck? Compare against the answer key
+
+The complete Level 1 implementation is in `solutions/level_1/`:
+
+```bash
+diff ~/adkclaw/level_1/starter/src/agent/runner.ts ~/adkclaw/solutions/level_1/src/agent/runner.ts
+```
+
+This shows exactly where your implementation diverges from the expected solution.
 
 ## 🏆 Light Up Your Level 1 Badge
 

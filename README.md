@@ -89,7 +89,11 @@ Build the same framework yourself, level by level.
    cat level_0/README.md
    ```
 
-5. **Build, level by level**, in `codelab/starter/` — that's the canonical scaffold. See [ARCHITECTURE.md](ARCHITECTURE.md) for the three-repo layout and level checkpoint tags.
+5. **Build, level by level.** Each level has its own starter:
+   - **Level 1** is now live in the new format: `level_1/starter/` (self-contained, with `npm run verify` offline checkpoint)
+   - **Levels 2–5** are being migrated and currently follow the traditional flow: grow `codelab/starter/`, checkpoint via git tags
+   
+   See [ARCHITECTURE.md](ARCHITECTURE.md) for the three-repo layout and level checkpoint tags.
 
 6. **Follow the codelab:** [Level 0 Instructions](https://codelabs.developers.google.com/adkclaw-level-0/instructions)
 
@@ -228,6 +232,18 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submit
 
 ### Development Setup
 
+**For Level 1 (new per-level-starter format):**
+
+```bash
+git clone https://github.com/dahabit/adkclaw.git
+cd adkclaw/level_1/starter
+npm install
+cp .env.example .env       # add your keys
+npm run dev
+```
+
+**For Levels 2–5 (traditional monolithic starter, being migrated):**
+
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
 cd adkclaw/codelab/starter
@@ -238,7 +254,11 @@ npm run dev
 
 ### Level checkpoints
 
-The starter scaffold grows level by level. If you fall behind or want to skip ahead, use the git tags:
+**Level 1** now uses offline checkpoints and answer keys:
+- `npm run verify` (offline: `tsc --noEmit + vitest run`)
+- Reference: `solutions/level_1/`
+
+**Levels 2–5** use git tags:
 
 ```bash
 git checkout v2-complete -- codelab/starter/   # post-Level 2 baseline
