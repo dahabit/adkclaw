@@ -100,4 +100,30 @@ export class SessionStore {
     });
     tx();
   }
+
+  // Compaction: delete the oldest `count` messages and insert one summary
+  // message in the oldest slot, so chronological history order is preserved.
+  replaceWithSummary(sessionKey: string, count: number, summary: string): void {
+    const rows = this.db
+      .prepare(`SELECT id FROM messages WHERE session_key = ? ORDER BY id ASC LIMIT ?`)
+      .all(sessionKey, count) as Array<{ id: number }>;
+    if (rows.length === 0) return;
+    const summaryId = rows[0]?.id;
+    if (summaryId === undefined) return;
+
+    const summaryContent: Content = {
+      role: 'user',
+      parts: [{ text: `[Summary of earlier turns]\n${summary}` }],
+    };
+    const now = Date.now();
+    const del = this.db.prepare(`DELETE FROM messages WHERE id = ?`);
+    const ins = this.db.prepare(
+      `INSERT INTO messages (id, session_key, role, content_json, created_at) VALUES (?, ?, ?, ?, ?)`,
+    );
+    const tx = this.db.transaction(() => {
+      for (const r of rows) del.run(r.id);
+      ins.run(summaryId, sessionKey, 'user', JSON.stringify(summaryContent), now);
+    });
+    tx();
+  }
 }

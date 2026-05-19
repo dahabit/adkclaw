@@ -2,6 +2,7 @@
 import express, { type Express } from 'express';
 import type { AgentRunner } from '../agent/runner.js';
 import type { ContextEngine } from '../context/manager.js';
+import type { Compactor } from '../context/compaction.js';
 import type { SessionStore } from '../sessions/store.js';
 import type { Config } from '../types/index.js';
 
@@ -10,6 +11,7 @@ export function createHttpServer(
   runner: AgentRunner,
   contextEngine: ContextEngine,
   sessions: SessionStore,
+  compactor: Compactor,
 ): Express {
   const app = express();
   app.use(express.json({ limit: '256kb' }));
@@ -37,10 +39,11 @@ export function createHttpServer(
         senderId ?? 'cli',
         config.gemini.defaultModel,
       );
+      await compactor.maybeCompact(session.key);
       const history = sessions.history(session.key);
       const result = await runner.run({
         session,
-        systemPrompt: contextEngine.bootstrap(),
+        systemPrompt: contextEngine.bootstrap().systemPrompt,
         history,
         userText: message,
       });

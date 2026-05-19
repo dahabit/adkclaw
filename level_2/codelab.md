@@ -71,7 +71,7 @@ By the end of this codelab, you will have:
 - A `Consolidator` that promotes daily notes into bank entries via Gemini-as-curator
 - A `SkillsLoader` that lists and loads markdown skills from `workspace/skills/`
 - Five new tools on the agent: `memory_save`, `memory_recall`, `daily_append`, `load_skill`, `list_skills`
-- A passing `npm test` (~85 tests across the new modules)
+- A clean `npm run build` + `npm run typecheck`, with `npm test` green across the new memory, daily-notes, and skills-loader modules
 - A wow demo: tell your agent something, restart the daemon, ask it back.
 
 ## 1. Scaffold and verify
@@ -287,18 +287,38 @@ The summarisation call is **structural overhead**, not user-facing reasoning. Fl
 
 ### Implement `src/context/compaction.ts`
 
-> **Note:** the snippet below uses `estimateTokensInMessages` from `src/context/token-counter.ts`. That helper is small and provided in the starter — open it once so the cost-of-tokens math isn't a black box:
+> **Note:** the `Compactor` below uses `estimateTokensInHistory` from
+> `src/context/token-counter.ts`. Create that small helper first — the
+> cost-of-tokens math, no black box:
+>
 > ```typescript
-> // src/context/token-counter.ts (already in starter)
-> export function estimateTokensInMessages(messages: Message[]): number {
->   // Approximation: ~4 chars per token for English. Good enough for compaction thresholds.
->   return messages.reduce((sum, m) => sum + Math.ceil(m.content.length / 4), 0);
+> // src/context/token-counter.ts
+> import type { Content } from '@google/genai';
+>
+> export function estimateTokens(text: string | null | undefined): number {
+>   if (!text) return 0;
+>   return Math.ceil(text.length / 4); // ~4 chars per token for English
+> }
+>
+> export function estimateTokensInHistory(history: Content[]): number {
+>   let total = 0;
+>   for (const c of history) {
+>     for (const part of c.parts ?? []) {
+>       if (typeof part.text === 'string') total += estimateTokens(part.text);
+>       if (part.functionCall) total += estimateTokens(JSON.stringify(part.functionCall));
+>       if (part.functionResponse) total += estimateTokens(JSON.stringify(part.functionResponse));
+>     }
+>   }
+>   return total;
 > }
 > ```
-> If you want exact counts later, swap in `client.models.countTokens({ model, contents })`.
+> For exact counts later, swap in `client.models.countTokens({ model, contents })`.
 
 ```typescript
-import { estimateTokensInMessages } from './token-counter.js';
+// src/context/compaction.ts
+import type { GoogleGenAI, Content } from '@google/genai';
+import type { SessionStore } from '../sessions/store.js';
+import { estimateTokensInHistory } from './token-counter.js';
 
 export const PRESERVATION_RULES = `
 PRESERVATION RULES — when you summarize, you MUST preserve:
@@ -311,29 +331,74 @@ PRESERVATION RULES — when you summarize, you MUST preserve:
 Discard chitchat, restated context, and repeated information.
 `.trim();
 
+export interface CompactorOptions {
+  client: GoogleGenAI;
+  sessions: SessionStore;
+  thresholdTokens: number;
+  summarizerModel: string;
+  summarizeFraction?: number;
+}
+
+export interface CompactionResult {
+  tokensBefore: number;
+  tokensAfter: number;
+  summary: string;
+  summarizedMessageCount: number;
+}
+
+function contentToLine(c: Content): string {
+  const role = c.role ?? 'user';
+  const text = (c.parts ?? [])
+    .map((p) => {
+      if (typeof p.text === 'string') return p.text;
+      if (p.functionCall) return `[tool call: ${p.functionCall.name}]`;
+      if (p.functionResponse) return `[tool result]`;
+      return '';
+    })
+    .filter(Boolean)
+    .join(' ');
+  return `${role}: ${text}`;
+}
+
 export class Compactor {
+  private readonly client: GoogleGenAI;
+  private readonly sessions: SessionStore;
+  private readonly thresholdTokens: number;
+  private readonly summarizerModel: string;
+  private readonly summarizeFraction: number;
+
+  constructor(opts: CompactorOptions) {
+    this.client = opts.client;
+    this.sessions = opts.sessions;
+    this.thresholdTokens = opts.thresholdTokens;
+    this.summarizerModel = opts.summarizerModel;
+    this.summarizeFraction = opts.summarizeFraction ?? 0.6;
+  }
+
   async maybeCompact(sessionKey: string): Promise<CompactionResult | null> {
-    const messages = this.sessions.list(sessionKey);
-    const tokensBefore = estimateTokensInMessages(messages);
-    if (tokensBefore < this.thresholdTokens) return null;
+    const history = this.sessions.history(sessionKey);
+    const tokensBefore = estimateTokensInHistory(history);
+    if (tokensBefore < this.thresholdTokens || history.length < 4) return null;
 
-    const fraction = this.summarizeFraction ?? 0.6;
-    const cutoff = Math.floor(messages.length * fraction);
-    const oldest = messages.slice(0, cutoff);
-    const recent = messages.slice(cutoff);
+    const cutoff = Math.max(1, Math.floor(history.length * this.summarizeFraction));
+    const oldest = history.slice(0, cutoff);
+    const transcript = oldest.map(contentToLine).join('\n');
 
-    const transcript = oldest
-      .map((m) => `${m.role}: ${m.content}`)
-      .join('\n');
-    const response = await this.client.models.generateContent({
-      model: this.summarizerModel,
-      contents: `${PRESERVATION_RULES}\n\nCONVERSATION TO SUMMARIZE:\n${transcript}`,
-    });
-    const summary = response.text ?? '';
+    let summary = '';
+    try {
+      const response = await this.client.models.generateContent({
+        model: this.summarizerModel,
+        contents: `${PRESERVATION_RULES}\n\nCONVERSATION TO SUMMARIZE:\n${transcript}`,
+      });
+      summary = (response.text ?? '').trim();
+    } catch (e) {
+      summary = `[Compaction failed: ${e instanceof Error ? e.message : String(e)}]`;
+    }
+    if (!summary) return null;
 
-    this.sessions.replaceWithSummary(sessionKey, oldest.length, summary);
-    const tokensAfter = estimateTokensInMessages(this.sessions.list(sessionKey));
-    return { tokensBefore, tokensAfter, summary, summarizedMessageCount: oldest.length };
+    this.sessions.replaceWithSummary(sessionKey, cutoff, summary);
+    const tokensAfter = estimateTokensInHistory(this.sessions.history(sessionKey));
+    return { tokensBefore, tokensAfter, summary, summarizedMessageCount: cutoff };
   }
 }
 ```
@@ -446,8 +511,24 @@ export class MemoryBank {
   }
 
   async list(category?: BankCategory): Promise<BankSummary[]> {
-    // Walk one or all categories, parse frontmatter, return summaries sorted by mtime desc
-    // (See full implementation in level_2/snapshots/)
+    const out: BankSummary[] = [];
+    const cats = category ? [category] : BANK_CATEGORIES;
+    for (const cat of cats) {
+      const dir = join(this.bankRoot, cat);
+      if (!existsSync(dir)) continue;
+      for (const f of await readdir(dir)) {
+        if (!f.endsWith('.md')) continue;
+        const path = join(dir, f);
+        const raw = await readFile(path, 'utf8');
+        const body = raw.replace(/^---\n[\s\S]*?\n---\n+/, '');
+        const preview = body.split('\n').slice(0, 2).join(' ').slice(0, 200);
+        const s = await stat(path);
+        const slug = f.replace(/\.md$/, '');
+        const name = raw.match(/^name:\s*(.+)$/m)?.[1]?.trim() ?? slug;
+        out.push({ category: cat, slug, name, preview, updatedAt: s.mtimeMs });
+      }
+    }
+    return out.sort((a, b) => b.updatedAt - a.updatedAt);
   }
 
   async recall(query: string, opts?: { category?: BankCategory; limit?: number }): Promise<BankSummary[]> {
