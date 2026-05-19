@@ -462,7 +462,7 @@ Copy the output, paste it into `workspace/SOUL.md` and `workspace/IDENTITY.md` i
 
 #### Path 2: Write It Yourself (Fallback)
 
-In your **editor**, open `workspace/SOUL.md` and `workspace/IDENTITY.md`. The starter shipped templates — they look like this:
+In your **editor**, open `workspace/SOUL.md` and `workspace/IDENTITY.md`. The starter shipped templates — each file begins with a `<!-- REPLACE-AGENT-PERSONALITY -->` HTML comment marker. Replace that marker and the template content below it with your own voice. The templates look like this:
 
 **SOUL.md**:
 ```markdown
