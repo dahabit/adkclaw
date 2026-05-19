@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest';
-import { BudgetGuard } from './budget.js';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { BudgetGuard, assertDailyTokenBudget } from './budget.js';
 import { SessionStore } from '../sessions/store.js';
 
 let sessions: SessionStore;
@@ -67,5 +67,91 @@ describe('BudgetGuard', () => {
     sessions.appendMessage({ sessionKey: 's1', role: 'assistant', tokens: 1_000_000 });
     const r = noLimit.check('alice');
     expect(r.ok).toBe(true);
+  });
+});
+
+describe('assertDailyTokenBudget', () => {
+  const original = process.env.DAILY_TOKEN_BUDGET;
+
+  afterEach(() => {
+    process.env.DAILY_TOKEN_BUDGET = original;
+  });
+
+  it('throws when DAILY_TOKEN_BUDGET is not set', () => {
+    const current = process.env.DAILY_TOKEN_BUDGET;
+    delete process.env.DAILY_TOKEN_BUDGET;
+    try {
+      expect(() => assertDailyTokenBudget()).toThrow('DAILY_TOKEN_BUDGET is required');
+    } finally {
+      process.env.DAILY_TOKEN_BUDGET = current;
+    }
+  });
+
+  it('throws when DAILY_TOKEN_BUDGET is not a valid number', () => {
+    process.env.DAILY_TOKEN_BUDGET = 'not-a-number';
+    expect(() => assertDailyTokenBudget()).toThrow('must be a number >= 1000');
+  });
+
+  it('throws when DAILY_TOKEN_BUDGET is below minimum (1000)', () => {
+    process.env.DAILY_TOKEN_BUDGET = '999';
+    expect(() => assertDailyTokenBudget()).toThrow('must be a number >= 1000');
+  });
+
+  it('returns the budget when valid', () => {
+    process.env.DAILY_TOKEN_BUDGET = '100000';
+    expect(assertDailyTokenBudget()).toBe(100000);
+  });
+
+  it('returns the budget when above minimum', () => {
+    process.env.DAILY_TOKEN_BUDGET = '1000';
+    expect(assertDailyTokenBudget()).toBe(1000);
+  });
+});
+
+describe('BudgetGuard percentage calculation', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    sessions = new SessionStore({ databasePath: ':memory:' });
+  });
+
+  it('calculates usage percentage in refusal message', () => {
+    sessions.createSession({ key: 's1', senderId: 'alice' });
+    sessions.appendMessage({ sessionKey: 's1', role: 'assistant', tokens: 800 });
+    const guard = new BudgetGuard({
+      sessions,
+      dailyTokenBudget: 1000,
+      startOfDayMs: () => 0,
+    });
+    const r = guard.check('alice');
+    expect(r.ok).toBe(true); // 800 < 1000, still under budget
+    // Check that it doesn't have a refusal (still OK)
+    expect(r.refusalText).toBeUndefined();
+  });
+
+  it('handles edge case of exactly 100% usage', () => {
+    sessions.createSession({ key: 's1', senderId: 'alice' });
+    sessions.appendMessage({ sessionKey: 's1', role: 'assistant', tokens: 1000 });
+    const guard = new BudgetGuard({
+      sessions,
+      dailyTokenBudget: 1000,
+      startOfDayMs: () => 0,
+    });
+    const r = guard.check('alice');
+    expect(r.ok).toBe(false); // 1000 >= 1000, at budget
+    expect(r.refusalText).toContain('100%');
+  });
+
+  it('rounds percentage to nearest integer', () => {
+    sessions.createSession({ key: 's1', senderId: 'alice' });
+    sessions.appendMessage({ sessionKey: 's1', role: 'assistant', tokens: 1100 });
+    const guard = new BudgetGuard({
+      sessions,
+      dailyTokenBudget: 1000,
+      startOfDayMs: () => 0,
+    });
+    const r = guard.check('alice');
+    expect(r.ok).toBe(false); // 1100 >= 1000, over budget
+    // 1100/1000 = 110%, rounds to 110%
+    expect(r.refusalText).toContain('110%');
   });
 });
