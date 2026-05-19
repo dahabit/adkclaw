@@ -30,25 +30,11 @@ export const filesystemTool: AgentTool = {
     },
     required: ['action', 'path'],
   },
+  //REPLACE-TOOL-FILESYSTEM
+  // Implement read, write, and list operations on files in the workspace,
+  // using safePath() to prevent directory traversal attacks.
+  // Fill this in from level_1/codelab.md §4.
   async execute(args, ctx) {
-    const action = String(args.action ?? '');
-    const target = safePath(ctx.workspacePath, String(args.path ?? ''));
-
-    if (action === 'read') {
-      const text = await readFile(target, 'utf8');
-      return { success: true, result: text };
-    }
-    if (action === 'write') {
-      await mkdir(resolve(target, '..'), { recursive: true });
-      const content = String(args.content ?? '');
-      await writeFile(target, content, 'utf8');
-      return { success: true, result: `Wrote ${content.length} bytes.` };
-    }
-    if (action === 'list') {
-      const entries = await readdir(target, { withFileTypes: true });
-      const lines = entries.map((e) => `${e.isDirectory() ? 'dir ' : 'file'}  ${e.name}`);
-      return { success: true, result: lines.join('\n') || '(empty)' };
-    }
-    return { error: `Unknown action: ${action}` };
+    throw new Error('REPLACE-TOOL-FILESYSTEM not implemented — see level_1/codelab.md §4');
   },
 };
