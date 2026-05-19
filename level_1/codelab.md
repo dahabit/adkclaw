@@ -228,10 +228,7 @@ The LLM may emit **tool calls** instead of text. The runtime runs each call, app
 In your **editor**, open `src/agent/runner.ts`. You will see the class skeleton with an `async run()` method marked with `//REPLACE-AGENT-LOOP`. Replace the marker and the throwing stub with this implementation:
 
 ```typescript
-    const history: Content[] = [
-      ...req.history,
-      { role: 'user', parts: [{ text: req.userText }] },
-    ];
+    const history: Content[] = [...req.history, { role: 'user', parts: [{ text: req.userText }] }];
     let toolCalls = 0;
 
     const sdkTools: Array<{ functionDeclarations: object[] }> = [
@@ -679,7 +676,7 @@ In your **editor**, open `src/index.ts`. You will see the main function with a `
     await tg.launch();
   }
 
-  console.log(`Agent ${config.agent.name} is online.`);
+  console.log(`🤖 ${config.agent.name} is online.`);
 ```
 
 ### Verify your progress
