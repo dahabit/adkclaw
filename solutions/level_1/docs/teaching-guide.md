@@ -39,7 +39,7 @@ A **chatbot** has only #1. A **RAG system** has #1+#3. A **tool-using agent** ha
 
 | Choice | Reason |
 |--------|--------|
-| **Gemini 2.5 Pro / Flash** | 1M-token context (massive headroom for our memory experiments), native tool calling, strong reasoning at low cost. Flash is ~10× cheaper than Pro — perfect for sub-agents. |
+| **Gemini 3.1 Pro / 3 Flash** | 1M-token context (massive headroom for our memory experiments), native tool calling, strong reasoning at low cost. Flash is ~10× cheaper than Pro — perfect for sub-agents. |
 | **Google ADK** (`@google/genai`) | First-party SDK. Function calling is a native concept, not bolted on. Grounding (web search) is built-in. |
 | **No LangChain / LangGraph / CrewAI** | These are **abstractions over abstractions**. Students who learn AdkClaw understand what's *under* those frameworks. We use the raw SDK so every layer is teachable. |
 | **No MCP** | Model Context Protocol is a tool-discovery standard. Out of scope for v1 — we register tools explicitly so students see the wiring. Documented as future work. |
@@ -106,21 +106,33 @@ Everything in `src/` is custom code. Specifically:
 
 ```
 adkclaw/
-├── src/                ← all custom TypeScript code
-├── workspace/          ← the agent's runtime memory (created by `npm run setup`)
-├── workspace.example/  ← templates for new installs
-├── data/               ← SQLite + runtime artifacts (gitignored)
-├── docs/               ← documentation
-├── codelab/            ← workshop curriculum (starter + per-step snapshots)
+├── src/                ← reference implementation (finished agent)
+├── level_0/ … level_5/ ← per-level workshop structure
+│   ├── level_1/
+│   │   ├── starter/    ← self-contained Level 1 starter (NEW per-level model)
+│   │   │   ├── package.json, tsconfig.json, src/, workspace.example/
+│   │   │   ├── docs/teaching-guide.md
+│   │   │   └── scripts/verify.ts (offline checkpoint)
+│   │   ├── codelab.md  ← anchored to level_1/starter/ markers
+│   │   └── README.md
+│   ├── level_2/ … level_5/ (currently follow old codelab/starter + tag model)
+│
+├── solutions/
+│   ├── level_1/        ← complete answer key (generated from v1-complete tag)
+│   │   ├── package.json, tsconfig.json, src/, workspace/
+│   │   ├── docs/teaching-guide.md
+│   │   └── README.md
+│
+├── codelab/starter/    ← legacy monolithic scaffold (still exists, used by L2–L5)
+├── docs/               ← repo-root documentation
 ├── systemd/            ← Linux service unit
-├── BRD.md              ← long-form design reference (3,975 lines)
-├── CLAUDE.md           ← architecture guide (source of truth)
-├── DEVELOPER.md        ← developer onboarding
-├── EXECUTION-PLAN.md   ← build roadmap
+├── workshop.config.json ← shared metadata (model IDs, level durations)
 └── README.md           ← user-facing intro
 ```
 
-### `src/` — the engine
+### `src/` — the reference implementation
+
+**The finished agent** — post-Level 4 with all 21 tools, multi-agent orchestration, healing, cron, Firestore adapter. Study this as the answer key; don't clone it as your starting point.
 
 | Folder | Contains | Pillar it serves |
 |--------|----------|------------------|
@@ -170,24 +182,141 @@ A vector database is *not* better here for the first 100K facts. It's faster to 
 - `adkclaw.db` — SQLite DB (sessions, messages, cron jobs, compaction checkpoints, audit log)
 - Gitignored. Everything in here is rebuildable from `workspace/` + the LLM.
 
-### `codelab/` — the curriculum
+### The per-level structure (new for Level 1)
+
+**Level 1 is now live in the new format.** Levels 2–5 are being migrated.
+
+Each level has its own **self-contained starter**:
+
+```
+level_1/
+├── starter/          ← self-contained starter (own package.json, src/, workspace.example/)
+│   ├── package.json  ← students run "npm install" here
+│   ├── tsconfig.json
+│   ├── src/          ← source with //REPLACE-* markers and throwing stubs
+│   ├── docs/teaching-guide.md
+│   └── scripts/verify.ts ← offline checkpoint (tsc + vitest)
+├── codelab.md        ← re-anchored to starter/ with marker numbers
+└── README.md         ← build flow guide
+```
+
+Students work in `level_N/starter/`, fill `//REPLACE-*` markers, run `npm run verify` to type-check and test offline (no Gemini key needed for the checkpoint).
+
+### The legacy `codelab/` (Levels 2–5)
 
 ```
 codelab/
-├── starter/                    ← what students clone first (minimal scaffold)
-├── workshop-1-evolution-of-ai/
-│   ├── step-1-scaffold/        ← each step = working tree
-│   ├── step-2-tools/
-│   ├── step-3-telegram/
-│   └── solution/
-├── workshop-2-agent-anatomy/
-├── workshop-3-adk-in-action/
-└── workshop-4-agent-army/
+├── starter/          ← monolithic scaffold (still used by L2–L5)
 ```
 
-Each step folder is a complete working `npm install && npm run dev`-able snapshot. The *diff* between consecutive steps **is** the lesson content.
+Levels 2–5 still follow the old flow: students grow one `codelab/starter/`, checkpoint via git tags (`v2-complete`, `v3-complete`, etc.). The per-level-starter migration is in progress.
 
-**We built the reference first, then split into steps.** Don't write codelab content before the reference works — codelabs distill what we actually built; we don't guess where students will struggle before we've felt the friction ourselves.
+---
+
+## 4.5 Teaching with the per-level starters
+
+**This section is for instructors.** Level 1 is now live in the new format; Levels 2–5 are being migrated. Here's how the per-level-starter model works in the classroom.
+
+### Student workflow
+
+Instead of one monolithic `codelab/starter/`, each level is a **standalone project**:
+
+```bash
+cd ~/adkclaw/level_1/starter
+npm install
+npm run verify              # offline checkpoint: tsc --noEmit + vitest run
+```
+
+The starter has **pre-scaffolded code** with `// REPLACE-*` marker comments and throwing compilation stubs:
+
+```typescript
+// src/agent/runner.ts
+async callGemini(/*...*/): Promise<ContentResponse> {
+  // REPLACE: Implement the single call to client.models.generateContent({...})
+  throw new Error('Not implemented');
+}
+```
+
+Students open the file, find the marker, replace the stub with the actual code. The starter **type-checks before any marker is filled** — `npm run verify` forces type safety on the scaffold itself.
+
+### Marker convention
+
+Markers appear in two forms:
+
+1. **Exact markers** — the codelab shows the exact code to write:
+   ```markdown
+   Find `// REPLACE: callGemini` in `src/agent/runner.ts` line 42.
+   Replace it with:
+   ```typescript
+   const response = await client.models.generateContent({...});
+   return response;
+   ```
+
+2. **Personality/domain markers** — optional AI Studio path with a hand-write fallback:
+   ```typescript
+   // REPLACE-AGENT-PERSONALITY: Define your agent's tone
+   // (Hand: Write 2–3 sentences. AI Studio: Use Gemini to draft one.)
+   const personality = "...";
+   ```
+   Markers like `AGENT-PERSONALITY`, `SYSTEM-RULES`, `DOMAIN-KNOWLEDGE` offer an optional AI-assisted path. Students can use the AI Studio link in the codelab or hand-write it; both paths are valid.
+
+### The offline checkpoint (`npm run verify`)
+
+`scripts/verify.ts` is a Hybrid rule: it runs **deterministically, no Gemini key required, no network calls**.
+
+```bash
+npm run verify
+# runs: tsc --noEmit (typecheck) + vitest run (unit tests)
+# output: ✓ All tests pass. You're ready for the next section.
+```
+
+This is the per-section checkpoint. It validates the student's code is:
+- Type-safe (catches bugs before runtime)
+- Functionally correct (tests exercise the real behavior)
+- Ready to integrate with the next section
+
+If a student gets stuck, they can:
+1. **Review the test expectations** — `src/<module>/<module>.test.ts` shows what behavior is expected
+2. **Read the codelab more carefully** — it lists exactly which lines to fill
+3. **Peek at `solutions/level_1/`** — the complete answer key (available after the section passes or as optional reference)
+
+### Answer keys and diffing
+
+`solutions/level_1/` is a **maintained answer key** — the complete, runnable finished Level 1 generated from the `v1-complete` git tag. It has:
+
+- `solutions/level_1/src/` — all `// REPLACE-*` markers filled
+- `solutions/level_1/workspace/` — a fully bootstrapped agent
+- `solutions/level_1/docs/teaching-guide.md` — identical copy of this guide
+
+Students can compare their work to the answer key:
+
+```bash
+diff -u ~/adkclaw/level_1/starter/src/agent/runner.ts ~/adkclaw/solutions/level_1/src/agent/runner.ts
+```
+
+This is a powerful debugging tool — it shows exactly where their implementation diverges.
+
+### Structure differences from the old model
+
+**Old (Levels 2–5, still in use):**
+- One monolithic `codelab/starter/` for all levels
+- No offline checkpoint; students see examples only
+- Progress tracked via git tags (`v1-complete`, `v2-complete`, …)
+
+**New (Level 1, pilot):**
+- Per-level `level_N/starter/` — self-contained
+- `npm run verify` as the per-section checkpoint
+- Answer keys in `solutions/level_N/`
+- Hybrid markers (exact code + optional AI Studio path)
+
+The new model is **in production for Level 1**. Levels 2–5 are being migrated to the same pattern.
+
+### Teaching notes
+
+1. **Emphasize the checkpoint.** `npm run verify` is *not* a score — it's a safety net. A passing checkpoint means the student has solid ground to build the next section on.
+2. **Marker fills are learning moments.** When a student fills a marker, they should understand *why* that code solves the problem, not just *that* it does. Ask: "What would happen if you swapped that for X?" or "What does this tool call tell Gemini?"
+3. **Use the answer key during support.** If a student is completely stuck, use `diff` to show the exact divergence instead of explaining over voice.
+4. **The Hybrid rule.** Personality markers offer an AI-assisted option. Some students will hand-write everything (no internet required, full ownership); others will use AI Studio (faster, higher quality). Both are paths to learning.
 
 ---
 
@@ -224,7 +353,7 @@ User types "what's my Flutter version?" on Telegram
 │  while (true):                                                   │
 │    response = HealingEngine.wrap(() =>                          │
 │      client.models.generateContent({                             │
-│        model: 'gemini-3.1-pro-preview',                                  │
+│        model: 'gemini-3.1-pro-preview', (or fallback: gemini-3-flash-preview) │
 │        contents: history,                                        │
 │        config: { systemInstruction, tools }                      │
 │      })                                                          │
@@ -271,7 +400,7 @@ async function runTurn(message: string): Promise<string> {
 
   for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
     const response = await client.models.generateContent({
-      model: 'gemini-3.1-pro-preview',
+      model: 'gemini-3.1-pro-preview', // fallback to gemini-3-flash-preview on rate limit
       contents: history,
       config: { systemInstruction, tools: registry.toFunctionDeclarations() },
     });
@@ -512,14 +641,16 @@ These are the things that bite if you skip them:
 
 ## 12. Workshop progression — what we teach when
 
-| Workshop | Pillar focus | New code introduced |
-|----------|-------------|---------------------|
-| **WS1: Evolution of AI** | Brain, Tools, Personality | `agent/runner.ts`, basic tools, `IDENTITY.md`, Telegram |
-| **WS2: Agent Anatomy** | Memory | `context/`, `memory/`, compaction, daily notes, bank |
-| **WS3: ADK in Action** | Brain (advanced) | Callbacks, grounding, embeddings, ADK Skills, Vertex Vector Search |
-| **WS4: Agent Army** | Self-healing, Sub-agents | `healing/`, `multi-agent/`, cron, heartbeat, A2A |
+| Level | Pillar focus | New code introduced |
+|-------|-------------|---------------------|
+| **Level 0** | Architecture tour | No code — presentation + repo orientation |
+| **Level 1** | Brain, Tools, Personality | `agent/runner.ts`, basic tools, `IDENTITY.md`, Telegram |
+| **Level 2** | Memory | `context/`, `memory/`, compaction, daily notes, bank |
+| **Level 3** | Self-healing, Sub-agents | `healing/`, `multi-agent/`, cron, heartbeat, A2A |
+| **Level 4** | Cloud deployment | Cloud Run, Firestore, Cloud Scheduler, webhook |
+| **Level 5** | Production hardening | Admin auth, OIDC, Cloud DLP, Firestore rules, secret rotation |
 
-Each workshop ends with one **failure → recovery** demo, so self-healing is the spine running through all four — never a footnote.
+Each level after Level 1 builds on the previous foundation. Self-healing is woven through Levels 3+, never a footnote.
 
 ---
 
