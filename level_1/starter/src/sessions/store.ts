@@ -80,24 +80,14 @@ export class SessionStore {
     };
   }
 
+  //REPLACE-SESSION-STORE
+  // Retrieve message history and append messages to the session store.
+  // Fill this in from level_1/codelab.md §6.
   history(sessionKey: string): Content[] {
-    const rows = this.db
-      .prepare(`SELECT content_json FROM messages WHERE session_key = ? ORDER BY id ASC`)
-      .all(sessionKey) as Array<{ content_json: string }>;
-    return rows.map((r) => JSON.parse(r.content_json) as Content);
+    throw new Error('REPLACE-SESSION-STORE not implemented — see level_1/codelab.md §6');
   }
 
   appendAll(sessionKey: string, contents: Content[]): void {
-    const stmt = this.db.prepare(
-      `INSERT INTO messages (session_key, role, content_json, created_at) VALUES (?, ?, ?, ?)`,
-    );
-    const now = Date.now();
-    const tx = this.db.transaction(() => {
-      for (const c of contents) {
-        stmt.run(sessionKey, c.role ?? 'user', JSON.stringify(c), now);
-      }
-      this.db.prepare(`UPDATE sessions SET updated_at = ? WHERE key = ?`).run(now, sessionKey);
-    });
-    tx();
+    throw new Error('REPLACE-SESSION-STORE not implemented — see level_1/codelab.md §6');
   }
 }
