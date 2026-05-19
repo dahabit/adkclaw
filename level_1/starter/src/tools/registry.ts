@@ -24,12 +24,12 @@ export class ToolRegistry {
   //REPLACE-TOOL-REGISTRY
   // Convert your registered tools into the Gemini SDK's FunctionDeclaration format,
   // and then execute tool calls with safety checks (permission, errors, etc).
-  // Fill this in from level_1/codelab.md §3-4.
+  // Fill this in from level_1/codelab.md §3.
   toFunctionDeclarations(): Array<{ name: string; description: string; parameters: object }> {
-    throw new Error('REPLACE-TOOL-REGISTRY not implemented — see level_1/codelab.md §3-4');
+    throw new Error('REPLACE-TOOL-REGISTRY not implemented — see level_1/codelab.md §3');
   }
 
   async invoke(name: string, args: unknown, ctx: ToolContext): Promise<ToolResult> {
-    throw new Error('REPLACE-TOOL-REGISTRY not implemented — see level_1/codelab.md §3-4');
+    throw new Error('REPLACE-TOOL-REGISTRY not implemented — see level_1/codelab.md §3');
   }
 }
