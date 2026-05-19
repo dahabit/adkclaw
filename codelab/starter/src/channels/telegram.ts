@@ -81,4 +81,16 @@ export class TelegramAdapter {
     void this.bot.launch();
     console.log('[telegram] bot online');
   }
+
+  // Push a message to a chat unprompted — used by cron jobs and the heartbeat.
+  async deliver(chatId: string, text: string): Promise<void> {
+    if (!chatId || !text) return;
+    const id = Number(chatId);
+    if (!Number.isFinite(id)) {
+      throw new Error(`Invalid Telegram chat id: ${chatId}`);
+    }
+    for (let i = 0; i < text.length; i += MAX_MESSAGE_LENGTH) {
+      await this.bot.telegram.sendMessage(id, text.slice(i, i + MAX_MESSAGE_LENGTH));
+    }
+  }
 }
