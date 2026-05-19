@@ -10,34 +10,12 @@ import { SessionStore } from './sessions/store.js';
 import { TelegramAdapter } from './channels/telegram.js';
 import { createHttpServer } from './server/http.js';
 
+//REPLACE-MAIN-ENTRY
 async function main(): Promise<void> {
-  const config = loadConfig();
-  const { errors, warnings } = validateConfig(config);
-  for (const w of warnings) console.warn(`[config] ${w}`);
-  if (errors.length > 0) {
-    for (const e of errors) console.error(`[config] ${e}`);
-    throw new Error('Invalid configuration — see errors above.');
-  }
-
-  const client = new GoogleGenAI({ apiKey: config.gemini.apiKey });
-  const registry = new ToolRegistry();
-  registerCoreTools(registry);
-
-  const sessions = new SessionStore(config.paths.database);
-  const contextEngine = new ContextEngine(config.paths.workspace);
-  const runner = new AgentRunner(client, registry, config);
-
-  const app = createHttpServer(config, runner, contextEngine, sessions);
-  app.listen(config.server.port, () => {
-    console.log(`[http] listening on http://${config.server.host}:${config.server.port}`);
-  });
-
-  if (config.telegram.botToken) {
-    const tg = new TelegramAdapter(config, runner, contextEngine, sessions);
-    await tg.launch();
-  }
-
-  console.log(`🤖 ${config.agent.name} is online.`);
+  // Load config, create the Gemini client, register tools, wire the channels,
+  // and start the HTTP server and optional Telegram bot.
+  // Fill this in from level_1/codelab.md §6.
+  throw new Error('REPLACE-MAIN-ENTRY not implemented — see level_1/codelab.md §6');
 }
 
 main().catch((err) => {
