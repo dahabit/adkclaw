@@ -85,3 +85,7 @@ venv/
 # === Frontend (for platform/frontend) ===
 .parcel-cache/
 .turbo/
+
+# === Private-repo stragglers (never belong in the public repo) ===
+platform/
+solutions/

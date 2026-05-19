@@ -31,7 +31,7 @@ adkclaw/
 │   ├── README.md
 │   ├── codelab.md
 │   └── RESOURCES.md
-├── level_1/ … level_4/       ← Per-level codelab.md + README.md + RESOURCES.md
+├── level_1/ … level_5/       ← Per-level codelab.md + README.md + RESOURCES.md
 │
 ├── src/                      ← Reference implementation (post-L4 finished agent)
 │                              study this; don't clone it as your starting point
@@ -84,7 +84,7 @@ These tags are maintained against the same `codelab/starter/` directory — ther
 
 Instructors and co-trainers — request access. This repo has:
 
-- `curriculum/level_0/INSTRUCTOR.md` … `level_4/INSTRUCTOR.md` — per-level run-of-show, talking track, common pitfalls, demo recovery
+- `curriculum/level_0/INSTRUCTOR.md` … `level_5/INSTRUCTOR.md` — per-level run-of-show, talking track, common pitfalls, demo recovery
 - `curriculum/teaching-guide.md` — train-the-trainer master document
 - `slides/` — Marp slide decks (one per level)
 - `briefs/` — content-generation briefs (the "secret sauce" for codelabs)
@@ -109,4 +109,4 @@ Students never touch this repo. Their agent talks to it via HTTP only when they 
 - **Running a workshop cohort?** You need `dahabit/adkclaw-instructor`.
 - **Working on the website?** That's `dahabit/adkclaw-platform`.
 
-If you find a reference in this repo to something that no longer exists (a `solutions/` directory, a `level_N/` working tree, a private file), please open an issue — the split is recent and stragglers may exist.
+If you find a reference in this repo to something that no longer exists (a `level_N/` working tree, a private file), please open an issue — the split is recent and stragglers may exist.

@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "sourceMap": false
+  },
+  "exclude": [
+    "node_modules",
+    "dist",
+    "test",
+    "workspace",
+    "workspace.example",
+    "data",
+    "src/**/*.test.ts"
+  ]
+}

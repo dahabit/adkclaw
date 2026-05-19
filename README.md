@@ -10,6 +10,9 @@
 [![Codelab](https://img.shields.io/badge/Codelab-Level%202-green?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-2/instructions)
 [![Codelab](https://img.shields.io/badge/Codelab-Level%203-orange?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-3/instructions)
 [![Codelab](https://img.shields.io/badge/Codelab-Level%204-green?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-4/instructions)
+[![Codelab](https://img.shields.io/badge/Codelab-Level%205-orange?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-5/instructions)
+
+> **Just want to use it?** → jump to [Quick Start](#-quick-start) · **Want to build it yourself?** → [start at Level 0](level_0/README.md)
 
 ## 🎯 The Journey
 
@@ -30,7 +33,7 @@ Across five levels, you'll build the same autonomous-agent reference implementat
 
 | Component | Technologies |
 |-----------|-------------|
-| **Brain** | Google [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) (`@google/genai`), Gemini 2.5 Pro / Flash |
+| **Brain** | Google [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) (`@google/genai`), Gemini 3.1 Pro / 3 Flash |
 | **Language** | TypeScript 5.6 + Node.js 22+ |
 | **Channels** | Telegram (telegraf), Terminal CLI, HTTP API |
 | **Storage** | SQLite (better-sqlite3) → Firestore in cloud (Level 4) |
@@ -40,7 +43,34 @@ Across five levels, you'll build the same autonomous-agent reference implementat
 
 ## 🚀 Quick Start
 
-### For Workshop Participants
+AdkClaw has two front doors — pick yours.
+
+### 🟢 Just want to run the agent? (no workshop)
+
+You don't need the workshop to use AdkClaw — the finished framework is ready to run.
+
+**Fastest — via npm:**
+
+```bash
+npx adkclaw setup        # interactive: name your agent, paste your keys
+npx adkclaw start        # agent boots on http://localhost:3000
+```
+
+**Or clone, to read and modify the source:**
+
+```bash
+git clone https://github.com/dahabit/adkclaw.git
+cd adkclaw
+npm install
+npm run setup            # interactive: name your agent, paste your keys
+npm start                # agent boots on http://localhost:3000
+```
+
+You'll need a [Gemini API key](https://aistudio.google.com/apikey); a [Telegram bot token](https://t.me/BotFather) is optional. See the [Capabilities Tour](docs/capabilities.md) for what the finished agent can do and [examples/](examples/) for copy-paste recipes.
+
+### 🔵 Want to learn to build it? (workshop)
+
+Build the same framework yourself, level by level.
 
 1. **Read [PREWORK.md](PREWORK.md)** — 7-day prep guide covering accounts, tools, and the 5-minute preflight check. Do this before Day 1.
 
@@ -63,7 +93,7 @@ Across five levels, you'll build the same autonomous-agent reference implementat
 
 6. **Follow the codelab:** [Level 0 Instructions](https://codelabs.developers.google.com/adkclaw-level-0/instructions)
 
-### For Workshop Hosts
+### 🟠 Hosting a workshop?
 
 The instructor materials (slide decks, run-of-show, speaker notes, demo recovery) live in the private `dahabit/adkclaw-instructor` repo. Request access if you're delivering a cohort.
 
@@ -99,7 +129,7 @@ The instructor materials (slide decks, run-of-show, speaker notes, demo recovery
 │   │ Tour     │   │ Brain    │   │ Memory   │   │ Army     │   │ Cloud│ │
 │   └──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────┘ │
 │                                                                          │
-│   Final Architecture (after Level 4)                                     │
+│   Final Architecture (after Level 5)                                     │
 │   ──────────────────────────────────                                     │
 │                                                                          │
 │   ┌──────────┐                ┌──────────────────────┐                  │
