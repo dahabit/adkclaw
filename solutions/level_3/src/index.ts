@@ -27,6 +27,8 @@ import {
   makeMessageUserTool,
 } from './tools/cron.js';
 import { AgentRunner } from './agent/runner.js';
+import { assertDailyTokenBudget, BudgetGuard } from './agent/budget.js';
+import { assertAdminKey } from './server/middleware/admin-auth.js';
 import { SessionStore } from './sessions/store.js';
 import { TelegramAdapter } from './channels/telegram.js';
 import { createHttpServer } from './server/http.js';
@@ -42,6 +44,13 @@ async function main(): Promise<void> {
     for (const e of errors) console.error(`[config] ${e}`);
     throw new Error('Invalid configuration — see errors above.');
   }
+
+  // L5 hardening folded into L3 — the daemon refuses to start unless
+  // DAILY_TOKEN_BUDGET and ADMIN_KEY are configured.
+  const dailyTokenBudget = assertDailyTokenBudget();
+  assertAdminKey();
+  const budget = new BudgetGuard({ dailyTokenBudget });
+  void budget; // BudgetGuard is wired into request paths in L4.
 
   const client = new GoogleGenAI({ apiKey: config.gemini.apiKey });
   const healing = new HealingEngine();

@@ -6,6 +6,7 @@ import type { Compactor } from '../context/compaction.js';
 import type { CronEngine } from '../cron/engine.js';
 import type { SessionStore } from '../sessions/store.js';
 import type { Config } from '../types/index.js';
+import { adminAuth } from './middleware/admin-auth.js';
 
 const DASHBOARD_HTML = `<!doctype html>
 <meta charset="utf-8" />
@@ -20,7 +21,8 @@ const DASHBOARD_HTML = `<!doctype html>
 <div class="card"><h2>Active sessions</h2><pre id="sessions">loading…</pre></div>
 <div class="card"><h2>Cron jobs</h2><pre id="cron">loading…</pre></div>
 <script>
-  fetch('/api/admin/status').then((r) => r.json()).then((s) => {
+  fetch('/api/admin/status', { headers: { 'x-admin-key': localStorage.getItem('adkclaw-admin-key') || '' } })
+    .then((r) => r.json()).then((s) => {
     document.getElementById('sessions').textContent = JSON.stringify(s.sessions, null, 2);
     document.getElementById('cron').textContent = JSON.stringify(s.cron, null, 2);
   });
@@ -42,11 +44,12 @@ export function createHttpServer(
   });
 
   // Live admin dashboard — a static auto-refreshing page, no build step.
-  app.get('/', (_req, res) => {
+  // L5 hardening folded in: gated by adminAuth middleware (x-admin-key header).
+  app.get('/', adminAuth, (_req, res) => {
     res.type('html').send(DASHBOARD_HTML);
   });
 
-  app.get('/api/admin/status', (_req, res) => {
+  app.get('/api/admin/status', adminAuth, (_req, res) => {
     res.json({
       sessions: sessions.listSessions().map((s) => ({
         key: s.key,
