@@ -17,6 +17,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "typecheck": "tsc --noEmit",
+    "verify": "tsx scripts/verify.ts",
     "setup": "tsx src/cli/setup.ts",
     "chat": "tsx src/cli/repl.ts",
     "format": "prettier --write .",
