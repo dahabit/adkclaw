@@ -43,71 +43,24 @@ export class MemoryBank {
   }
 
   async save(category: BankCategory, name: string, content: string): Promise<BankEntry> {
-    const slug = slugify(name);
-    const dir = join(this.bankRoot, category);
-    await mkdir(dir, { recursive: true });
-    const path = join(dir, `${slug}.md`);
-
-    const now = new Date();
-    let createdAt = now.getTime();
-    if (existsSync(path)) {
-      createdAt = (await stat(path)).birthtimeMs || (await stat(path)).mtimeMs;
-    }
-
-    const frontmatter = [
-      '---',
-      `name: ${name}`,
-      `category: ${category}`,
-      `slug: ${slug}`,
-      `created_at: ${new Date(createdAt).toISOString()}`,
-      `updated_at: ${now.toISOString()}`,
-      '---',
-      '',
-    ].join('\n');
-
-    await writeFile(path, frontmatter + content.trim() + '\n', 'utf8');
-    return {
-      category,
-      name,
-      slug,
-      content: content.trim(),
-      path,
-      createdAt,
-      updatedAt: now.getTime(),
-    };
+    //REPLACE-MEMORY-BANK
+    // Implement the MemoryBank from level_2/codelab.md §4.
+    throw new Error('REPLACE-MEMORY-BANK not implemented — see level_2/codelab.md §4');
   }
 
   async list(category?: BankCategory): Promise<BankSummary[]> {
-    const out: BankSummary[] = [];
-    const cats: readonly BankCategory[] = category ? [category] : BANK_CATEGORIES;
-    for (const cat of cats) {
-      const dir = join(this.bankRoot, cat);
-      if (!existsSync(dir)) continue;
-      for (const f of await readdir(dir)) {
-        if (!f.endsWith('.md')) continue;
-        const path = join(dir, f);
-        const raw = await readFile(path, 'utf8');
-        const body = raw.replace(/^---\n[\s\S]*?\n---\n+/, '');
-        const preview = body.split('\n').slice(0, 2).join(' ').slice(0, 200);
-        const s = await stat(path);
-        const slug = f.replace(/\.md$/, '');
-        const name = raw.match(/^name:\s*(.+)$/m)?.[1]?.trim() ?? slug;
-        out.push({ category: cat, slug, name, preview, updatedAt: s.mtimeMs });
-      }
-    }
-    return out.sort((a, b) => b.updatedAt - a.updatedAt);
+    //REPLACE-MEMORY-BANK
+    // Implement the MemoryBank from level_2/codelab.md §4.
+    throw new Error('REPLACE-MEMORY-BANK not implemented — see level_2/codelab.md §4');
   }
 
   async recall(
     query: string,
     opts?: { category?: BankCategory; limit?: number },
   ): Promise<BankSummary[]> {
-    const all = await this.list(opts?.category);
-    if (!query.trim()) return all.slice(0, opts?.limit ?? 20);
-    const q = query.toLowerCase();
-    return all
-      .filter((e) => e.name.toLowerCase().includes(q) || e.preview.toLowerCase().includes(q))
-      .slice(0, opts?.limit ?? 20);
+    //REPLACE-MEMORY-BANK
+    // Implement the MemoryBank from level_2/codelab.md §4.
+    throw new Error('REPLACE-MEMORY-BANK not implemented — see level_2/codelab.md §4');
   }
 
   // Returns the markdown body of one entry, or null if absent.

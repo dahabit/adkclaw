@@ -19,18 +19,9 @@ export class DailyNotes {
   }
 
   async append(text: string, date: Date = new Date()): Promise<void> {
-    if (!text.trim()) return;
-    await mkdir(this.memoryDir, { recursive: true });
-    const path = this.pathFor(date);
-    const stamp = date.toTimeString().slice(0, 5);
-    const entry = `\n- **${stamp}** ${text.trim()}`;
-    if (existsSync(path)) {
-      const current = await readFile(path, 'utf8');
-      await writeFile(path, current.trimEnd() + '\n' + entry + '\n', 'utf8');
-    } else {
-      const header = `# Daily Notes — ${this.isoDate(date)}\n${entry}\n`;
-      await writeFile(path, header, 'utf8');
-    }
+    //REPLACE-MEMORY-DAILY
+    // Append a timestamped line to today's daily note. From level_2/codelab.md §5.
+    throw new Error('REPLACE-MEMORY-DAILY not implemented — see level_2/codelab.md §5');
   }
 
   // treated as an already-formatted YYYY-MM-DD; a Date is normalised.
