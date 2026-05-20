@@ -5,18 +5,13 @@
 import type { Content } from '@google/genai';
 
 export function estimateTokens(text: string | null | undefined): number {
-  if (!text) return 0;
-  return Math.ceil(text.length / 4);
+  //REPLACE-CONTEXT-TOKENS
+  // From level_2/codelab.md §3 "Compaction" (token-counter helper).
+  throw new Error('REPLACE-CONTEXT-TOKENS not implemented — see level_2/codelab.md §3');
 }
 
 export function estimateTokensInHistory(history: Content[]): number {
-  let total = 0;
-  for (const c of history) {
-    for (const part of c.parts ?? []) {
-      if (typeof part.text === 'string') total += estimateTokens(part.text);
-      if (part.functionCall) total += estimateTokens(JSON.stringify(part.functionCall));
-      if (part.functionResponse) total += estimateTokens(JSON.stringify(part.functionResponse));
-    }
-  }
-  return total;
+  //REPLACE-CONTEXT-TOKENS
+  // From level_2/codelab.md §3 "Compaction" (token-counter helper).
+  throw new Error('REPLACE-CONTEXT-TOKENS not implemented — see level_2/codelab.md §3');
 }
