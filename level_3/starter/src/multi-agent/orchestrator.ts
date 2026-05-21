@@ -64,68 +64,11 @@ export class MultiAgentOrchestrator {
   }
 
   async spawn(req: SpawnRequest): Promise<SpawnResult> {
-    const start = Date.now();
-    const profile = this.resolveProfile(req.profileId);
-    const childKey = `subagent:${req.parentSessionKey}:${randomKey()}`;
-    const model = this.modelFor(profile, req.model);
-
-    // Isolated session — its own row, linked to the parent, no shared history.
-    const session = this.sessions.ensureSession(
-      childKey,
-      'subagent',
-      null,
-      model,
-      'isolated',
-      req.parentSessionKey,
-    );
-
-    const framing =
-      '[You are a sub-agent spawned for ONE specific task. Complete it and return a ' +
-      'structured result. Do not chitchat. Do not chain into unrelated work.]';
-    const profileText = profile
-      ? `\n\n## Your role\n${profile.role}.\nReports to: ${profile.reportsTo}.\n\n${profile.bootstrap}`
-      : '';
-    const goalText =
-      req.goalChain && req.goalChain.length > 0
-        ? '\n\n## Goal ancestry (why this matters)\n' +
-          req.goalChain.map((g, i) => `${i + 1}. ${g}`).join('\n')
-        : '';
-
-    // Forked context: workspace identity/memory + the sub-agent slice — but
-    // NOT the parent's conversation history (history: []).
-    const systemPrompt = `${this.contextEngine.bootstrap().systemPrompt}\n\n---\n\n${framing}${profileText}${goalText}`;
-
-    try {
-      const result = await this.runner.run({
-        session,
-        systemPrompt,
-        history: [],
-        userText: req.task,
-        ...(profile ? { allowedToolNames: profile.toolAllowlist } : {}),
-      });
-      return {
-        ok: true,
-        summary: result.reply,
-        toolCalls: result.toolCalls,
-        tokensUsed: 0,
-        durationMs: Date.now() - start,
-        childSessionKey: childKey,
-        profileId: profile?.id ?? null,
-      };
-    } catch (e) {
-      return {
-        ok: false,
-        summary: '',
-        toolCalls: 0,
-        tokensUsed: 0,
-        durationMs: Date.now() - start,
-        childSessionKey: childKey,
-        profileId: profile?.id ?? null,
-        error: e instanceof Error ? e.message : String(e),
-      };
-    } finally {
-      this.sessions.archiveSession(childKey);
-    }
+    //REPLACE-MULTI-AGENT-SPAWN
+    // Spawn a sub-agent: isolated session + forked context + profile allowlist.
+    // From level_3/codelab.md §2 "Sub-agent orchestration".
+    void req;
+    throw new Error('REPLACE-MULTI-AGENT-SPAWN not implemented — see level_3/codelab.md §2');
   }
 
   async spawnParallel(reqs: SpawnRequest[]): Promise<SpawnResult[]> {

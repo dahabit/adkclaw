@@ -138,65 +138,13 @@ Why is rule 2 non-negotiable? If you pass parent history to children:
 > });
 > ```
 
-### Implement `src/multi-agent/orchestrator.ts`
+### Fill the `MULTI-AGENT-SPAWN` marker — `src/multi-agent/orchestrator.ts`
+
+The starter ships `src/multi-agent/orchestrator.ts` with the `SpawnRequest` / `SpawnResult` / `OrchestratorOptions` types, the `MultiAgentOrchestrator` class shell + constructor, the `resolveProfile()` and `modelFor()` helpers, the `randomKey()` utility, and the `spawnParallel()` batcher all pre-provided. You fill **one method body**, marked `//REPLACE-MULTI-AGENT-SPAWN`.
+
+Open `src/multi-agent/orchestrator.ts`, find `//REPLACE-MULTI-AGENT-SPAWN` inside `async spawn(req): Promise<SpawnResult>`, and replace the stub body with:
 
 ```typescript
-// src/multi-agent/orchestrator.ts
-import type { AgentRunner } from '../agent/runner.js';
-import type { ContextEngine } from '../context/manager.js';
-import type { SessionStore } from '../sessions/store.js';
-import type { Config } from '../types/index.js';
-import { PROFILES, type AgentProfile } from './profiles/index.js';
-
-export interface SpawnRequest {
-  task: string;
-  parentSessionKey: string;
-  profileId?: string;
-  goalChain?: string[];
-  model?: string;
-}
-
-export interface SpawnResult {
-  ok: boolean;
-  summary: string;
-  toolCalls: number;
-  tokensUsed: number;
-  durationMs: number;
-  childSessionKey: string;
-  profileId: string | null;
-  error?: string;
-}
-
-export interface OrchestratorOptions {
-  runner: AgentRunner;
-  sessions: SessionStore;
-  contextEngine: ContextEngine;
-  config: Config;
-}
-
-function randomKey(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export class MultiAgentOrchestrator {
-  private readonly runner: AgentRunner;
-  private readonly sessions: SessionStore;
-  private readonly contextEngine: ContextEngine;
-  private readonly config: Config;
-
-  constructor(opts: OrchestratorOptions) {
-    this.runner = opts.runner;
-    this.sessions = opts.sessions;
-    this.contextEngine = opts.contextEngine;
-    this.config = opts.config;
-  }
-
-  resolveProfile(profileId: string | undefined): AgentProfile | null {
-    if (!profileId) return null;
-    return PROFILES[profileId] ?? null;
-  }
-
-  async spawn(req: SpawnRequest): Promise<SpawnResult> {
     const start = Date.now();
     const profile = this.resolveProfile(req.profileId);
     const childKey = `subagent:${req.parentSessionKey}:${randomKey()}`;
@@ -259,15 +207,18 @@ export class MultiAgentOrchestrator {
     } finally {
       this.sessions.archiveSession(childKey);
     }
-  }
-
-  private modelFor(profile: AgentProfile | null, override: string | undefined): string {
-    if (override) return override;
-    if (profile?.defaultModel === 'pro') return this.config.gemini.defaultModel;
-    return this.config.gemini.fallbackModel;
-  }
-}
 ```
+
+Read top-down — the body is one block but the parts map onto the six rules above:
+- **Lines 1–4:** start the clock, resolve the profile (may be null), mint a child session key, pick the model. The Flash-by-default behaviour from rule 4 hides inside `modelFor()`.
+- **Lines 6–14** (`ensureSession`): rule 1 — isolated session row, parent linkage.
+- **Lines 16–28** (`framing` / `profileText` / `goalText`): build the system-prompt slice. The framing is the sub-agent's job description; the profile is its role; goal-chain is "why does this task matter".
+- **Lines 30–32** (`systemPrompt`): rule 2 — workspace identity + sub-agent slice, no parent history.
+- **Lines 34–41** (`runner.run({ history: [] })`): rule 3 — pass `allowedToolNames` only when there's a profile.
+- **Lines 42–60** (success / error path): a sub-agent failure is data, not an exception — return `ok: false` and let the parent decide.
+- **Line 61** (`archiveSession` in `finally`): rule 6 — always archive, even on throw.
+
+**Checkpoint** — run `npm run verify`. Green. The spawn path is exercised live in §7's wow demo (sub-agent delegation).
 
 ### The four profiles
 
