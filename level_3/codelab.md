@@ -79,21 +79,54 @@ By the end of this codelab, you will have:
 ## 1. Branch and verify
 
 ```bash
-cd ~/adkclaw/codelab/starter   # or your L2 directory
-source ~/adkclaw/set_env.sh
+cd ~/adkclaw/level_3/starter
 git checkout -b level-3
-npm test         # all L2 tests must still pass
-npm run typecheck
+npm install      # if you haven't already inside this level dir
+npm run verify   # offline checkpoint: tsc --noEmit + vitest run
 ```
 
-The L3 work layers four new modules on top of L2. If L2 is broken, L3 will be uninterpretable.
+`npm run verify` should print `✓ verify passed — this checkpoint is green.` (10 test files, 132 tests). All L1+L2 behaviour ships pre-provided here — L3 adds four new modules (`multi-agent/`, `healing/`, `cron/`, expanded `server/`) on top.
 
-> **Verified reference.** The complete, compiling Level 3 starter is tagged
-> `v3-complete`. `git checkout v3-complete -- codelab/starter/` gives the exact
-> end state of this level (`npm run build` + `npm run typecheck` clean, 114
-> tests passing); `git diff v2-complete v3-complete -- codelab/starter/` is the
-> precise implementation diff. Where a snippet below is abbreviated for
-> teaching, the tagged starter is the source of truth.
+> **Verified reference.** `solutions/level_3/` is the answer key — its `src/` is byte-identical to `level_3/starter/src/` *except* for the methods covered by `//REPLACE-*` markers. `diff -rq level_3/starter/src solutions/level_3/src` should show only the marker files differ; that's the clean-room invariant. When a snippet below is abbreviated for teaching, the solution is the source of truth.
+
+## 1.5 Daemon startup gates (L5 hardening, folded in)
+
+L3 ships three startup gates that the daemon **refuses to boot without**. They live in `src/index.ts` and fire before the runner is even constructed:
+
+```typescript
+const dailyTokenBudget = assertDailyTokenBudget();           // throws if unset
+assertAdminKey();                                            // throws if unset
+if (config.telegram.botToken)
+  assertAllowedSenders(config.telegram.allowedSenders);      // throws if empty
+```
+
+| Gate | Env var | Why it's mandatory |
+|------|---------|--------------------|
+| `assertDailyTokenBudget()` | `DAILY_TOKEN_BUDGET` (integer ≥ 1000) | No default — a missing budget is the surprise-bill pattern. Recommended: `100000` single-user, `500000` team. |
+| `assertAdminKey()` | `ADMIN_KEY` (any non-empty string) | The `/api/admin/*` routes need an HTTP middleware that compares `Authorization: Bearer <key>` against this. Without it, anyone who guesses the URL reads your session contents. |
+| `assertAllowedSenders()` | `ALLOWED_SENDERS` (comma-separated numeric IDs) | Telegram has no usernames you can trust — only numeric IDs. An empty allowlist silently rejects every sender, which looks identical to "working". Fail-fast at boot. |
+
+These are the **L5 fold** — three of the security checks that originally lived in the standalone Level 5 hardening codelab now run from day one of L3. The reasoning: a sub-agent army with cron + heartbeat is exactly the surface where a runaway loop becomes a runaway bill, so the budget gate has to land *before* you ship sub-agents, not after.
+
+> **What about `BudgetGuard` (the per-sender runtime cap)?** `assertDailyTokenBudget()` returns the parsed budget; you pass it to `new BudgetGuard({ dailyTokenBudget })`, which records token usage per sender and refuses turns over budget. In L3 it's instantiated but the request paths only wire it in L4 (the cloud-deploy level, where a single user can no longer DoS your wallet by accident). For L3 it's primed and ready — read `src/agent/budget.ts` once.
+
+Set the three env vars in `.env` (the wizard writes `.env.example` for you):
+
+```bash
+DAILY_TOKEN_BUDGET=100000
+ADMIN_KEY=$(openssl rand -hex 32)   # random hex; rotate per machine
+ALLOWED_SENDERS=123456789           # your numeric Telegram ID (from /start)
+```
+
+Verify the daemon now boots:
+
+```bash
+npm run dev
+# [http] listening on http://localhost:3000
+# 🤖 <name> is online.
+```
+
+If you see `Error: DAILY_TOKEN_BUDGET is required` — that's the gate firing. Don't catch it; set the env var.
 
 ## 2. Sub-agent orchestration
 
@@ -678,6 +711,9 @@ Level 4 ships your agent to **Google Cloud** so it survives losing your laptop. 
 | `src/server/http.ts` | Admin dashboard (`DASHBOARD_HTML` + `/api/admin/status`) | (pre-provided — extend if you want extra widgets) |
 | `src/tools/spawn.ts` | Spawn tools (`spawn_search`, `spawn_communicator`, …) | Registered the tool factories in `src/index.ts` |
 | `src/tools/cron.ts` | Cron tools (`cron_add`, `cron_remove`, `cron_list`, `message_user`) | Registered the tool factories in `src/index.ts` |
+| `src/agent/budget.ts` | Daily-token cap (`assertDailyTokenBudget` + `BudgetGuard`) | (pre-provided — `budget.test.ts` locks the gate behaviour). Set `DAILY_TOKEN_BUDGET` in `.env` to boot. |
+| `src/server/middleware/admin-auth.ts` | Admin-key check for `/api/admin/*` | (pre-provided). Set `ADMIN_KEY` in `.env` to boot. |
+| `src/channels/telegram.ts` (`assertAllowedSenders`) | Telegram allowlist startup gate | (pre-provided). Set `ALLOWED_SENDERS` in `.env` when `TELEGRAM_BOT_TOKEN` is set. |
 
 ## Appendix B — Troubleshooting
 
