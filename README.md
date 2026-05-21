@@ -90,8 +90,8 @@ Build the same framework yourself, level by level.
    ```
 
 5. **Build, level by level.** Each level has its own starter:
-   - **Level 1** is now live in the new format: `level_1/starter/` (self-contained, with `npm run verify` offline checkpoint)
-   - **Levels 2–5** are being migrated and currently follow the traditional flow: grow `codelab/starter/`, checkpoint via git tags
+   - **Levels 1–4** each have a self-contained per-level starter (`level_N/starter/`) with offline `npm run verify` checkpoints (`tsc --noEmit` + `vitest run`, no Gemini key or network needed).
+   - **Level 5** content (the hardening level) is being folded into Levels 3 and 4; the standalone Level 5 directory will be removed in Stage 3 of the restructure.
    
    See [ARCHITECTURE.md](ARCHITECTURE.md) for the three-repo layout and level checkpoint tags.
 
@@ -242,14 +242,15 @@ cp .env.example .env       # add your keys
 npm run dev
 ```
 
-**For Levels 2–5 (traditional monolithic starter, being migrated):**
+**For Levels 2–4 (per-level starters, same pattern as Level 1):**
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/codelab/starter
+cd adkclaw/level_2/starter        # or level_3/starter, level_4/starter
 npm install
-cp .env.example .env       # add your keys
-npm run dev
+cp .env.example .env               # add your keys
+npm run verify                     # offline: tsc + vitest — should be green
+npm run dev                        # interactive — needs GEMINI_API_KEY in .env
 ```
 
 ### Level checkpoints
@@ -258,14 +259,14 @@ npm run dev
 - `npm run verify` (offline: `tsc --noEmit + vitest run`)
 - Reference: `solutions/level_1/`
 
-**Levels 2–5** use git tags:
+**Levels 2–4** use the same offline-verify pattern as Level 1:
 
 ```bash
-git checkout v2-complete -- codelab/starter/   # post-Level 2 baseline
-git checkout v3-complete -- codelab/starter/   # post-Level 3 baseline
+cd level_2/starter && npm run verify   # offline: tsc + vitest
+# Reference solutions: solutions/level_2/, solutions/level_3/, solutions/level_4/
 ```
 
-The full reference implementation (post-Level 4 finished agent with all 21 tools) lives at `src/` in this repo. Study it as the answer key.
+Legacy git tags `v0-starter`…`v5-complete` are kept for reference (the monolithic `codelab/starter/` flow). The per-level starters under `level_N/starter/` are the new canonical entry points. The full reference implementation lives at `src/` in this repo — study it as the answer key.
 
 ## 📄 License
 

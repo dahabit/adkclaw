@@ -65,7 +65,7 @@ Pick one path and stick with it for the whole workshop. Switching mid-session lo
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/codelab/starter
+cd adkclaw/level_1/starter
 npm install
 cd -                           # back to repo root
 ./scripts/preflight.sh
