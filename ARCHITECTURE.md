@@ -25,55 +25,38 @@ adkclaw/
 │   ├── README.md
 │   ├── codelab.md
 │   └── RESOURCES.md
-├── level_1/                  ← Build the Brain (NEW per-level-starter model)
-│   ├── starter/              ← self-contained Level 1 starter (own package.json, src/)
+├── level_1/ … level_4/       ← Per-level starters (one self-contained project per level)
+│   ├── starter/              ← own package.json, src/, workspace.example/
 │   │   ├── package.json
-│   │   ├── src/
+│   │   ├── src/              ← with //REPLACE-* markers
 │   │   ├── workspace.example/
-│   │   ├── docs/teaching-guide.md
 │   │   └── scripts/verify.ts (offline checkpoint)
-│   ├── codelab.md (anchored to starter/ markers)
+│   ├── codelab.md            ← anchored to starter/ markers
 │   └── README.md
-├── level_2/ … level_5/       ← Per-level codelab.md, README.md, RESOURCES.md (migrating to per-level starters)
 │
 ├── solutions/
-│   ├── level_1/              ← complete answer key (generated from v1-complete tag)
+│   ├── level_1/ … level_4/   ← complete answer keys (one per level)
 │   │   ├── package.json, src/, workspace/
-│   │   ├── docs/teaching-guide.md
 │   │   └── README.md
-│
-├── codelab/starter/          ← legacy monolithic starter (still used by L2–L5)
-│   ├── package.json
-│   ├── src/
-│   ├── workspace.example/
-│   └── docs/
 │
 ├── src/                      ← Reference implementation (post-L4 finished agent)
 │                              study this; don't clone it as your starting point
 ├── docs/                     ← Tech stack, capabilities, internals, teaching-guide.md
 ├── scripts/                  ← setup.sh, preflight.sh
+├── RUNBOOK.md                ← operating your deployed agent (L4 graduates)
 └── extensions/               ← Optional post-workshop projects (Slack, RAG, voice)
 ```
 
 ### Where students start
 
-**Level 1** (new model):
 ```bash
-cd level_1/starter
+cd level_N/starter             # N = 1, 2, 3, or 4
 npm install
-npm run setup      # interactive: pick agent name, paste keys
-npm run verify     # offline checkpoint (tsc + vitest)
+npm run setup                  # interactive: pick agent name, paste keys (L1 only)
+npm run verify                 # offline checkpoint (tsc + vitest)
 ```
 
-**Levels 2–5** (being migrated, currently traditional):
-```bash
-cd codelab/starter
-npm install
-npm run setup
-# follow level_2/codelab.md through level_5/codelab.md
-```
-
-If a student falls behind, they can fast-forward via git tags (see *Level checkpoints* below) for Levels 2–5. Level 1 students can also reference `solutions/level_1/` as an answer key.
+Each level is a standalone project — `npm install` per level. Students can reference `solutions/level_N/` as the answer key. There is no longer a single monolithic starter that grows across levels.
 
 ### What `src/` is for
 
@@ -81,45 +64,23 @@ If a student falls behind, they can fast-forward via git tags (see *Level checkp
 
 ## Level checkpoints
 
-### Level 1 (new model)
-
 **Offline checkpoints** via `npm run verify`:
 - Runs `tsc --noEmit` + `vitest run` — no Gemini key, no network
 - Type-checks and tests the student's marker fills per section
 - Deterministic pass/fail within 10 seconds
 
-**Answer keys** in `solutions/level_1/`:
-- Complete, runnable finished Level 1 (generated from `v1-complete` git tag)
-- Students can diff their work: `diff ~/adkclaw/level_1/starter/src/ ~/adkclaw/solutions/level_1/src/`
+**Answer keys** in `solutions/level_N/`:
+- Complete, runnable finished Level N
+- Students can diff their work: `diff -ru ~/adkclaw/level_N/starter/src ~/adkclaw/solutions/level_N/src`
+- The diff should show only `//REPLACE-*` marker blocks — that's the clean-room invariant.
 
-### Levels 2–5 (traditional git-tag model, being migrated)
-
-The repo ships tagged checkpoints of `codelab/starter/` at each level boundary:
-
-| Tag | State of `codelab/starter/` |
-|---|---|
-| `v0-starter` | Day-1 starter (no agent loop yet) |
-| `v1-complete` | Post-Level 1: agent loop + 3 tools + Telegram + SQLite sessions |
-| `v2-complete` | Post-Level 2: + memory bank + compaction + skills |
-| `v3-complete` | Post-Level 3: + sub-agents + healing + cron + dashboard |
-| `v4-complete` | Post-Level 4: + Cloud Run + Firestore + webhook + scheduler |
-| `v5-complete` | Post-Level 5: + admin auth + OIDC + BudgetGuard FATAL + Cloud DLP + Firestore rules |
-
-To rescue yourself mid-workshop:
-
-```bash
-git stash                       # save your work-in-progress
-git checkout v2-complete -- codelab/starter/
-# you now have a fresh L2 baseline; continue from L3
-```
-
-These tags are maintained against the same `codelab/starter/` directory.
+> **Legacy tags.** Historical tags `v0-starter` … `v5-complete` (pointing at the now-removed `codelab/starter/`) remain in the git history for reference. They are not the canonical entry point and are not referenced from any current codelab or README. New cohorts use `level_N/starter/` + `solutions/level_N/`.
 
 ## What's in `dahabit/adkclaw-instructor` (private)
 
 Instructors and co-trainers — request access. This repo has:
 
-- `curriculum/level_0/INSTRUCTOR.md` … `level_5/INSTRUCTOR.md` — per-level run-of-show, talking track, common pitfalls, demo recovery
+- `curriculum/level_0/INSTRUCTOR.md` … `level_4/INSTRUCTOR.md` — per-level run-of-show, talking track, common pitfalls, demo recovery
 - `curriculum/teaching-guide.md` — train-the-trainer master document
 - `slides/` — Marp slide decks (one per level)
 - `briefs/` — content-generation briefs (the "secret sauce" for codelabs)

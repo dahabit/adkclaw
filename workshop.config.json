@@ -43,13 +43,6 @@
       "title": "Ship to the Cloud",
       "duration_min": 150,
       "type": "hands-on"
-    },
-    {
-      "id": 5,
-      "slug": "harden",
-      "title": "Harden the Cloud",
-      "duration_min": 150,
-      "type": "hands-on"
     }
   ]
 }

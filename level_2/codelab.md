@@ -41,7 +41,7 @@ The default path below assumes self-study. Branch points are flagged with **(In-
 ### What you will need
 
 - A computer with **Node.js 22+** installed (`node --version` ≥ v22.0.0)
-- The Level 1 codebase (yours from yesterday or fresh from `codelab/starter/`)
+- A clone of this repo with `cd level_2/starter && npm install` done
 - A free [Gemini API key](https://aistudio.google.com/apikey) (already in your `.env` from L1)
 - A [Telegram bot token](https://t.me/BotFather) (already in your `.env` from L1)
 - A handful of Gemini Pro testing turns and a few compaction calls — comfortably inside the free tier
@@ -76,35 +76,25 @@ By the end of this codelab, you will have:
 
 ## 1. Scaffold and verify
 
-If you skipped Level 1 or want a clean slate, fast-forward to the post-L1 baseline: `git checkout v1-complete -- codelab/starter/`.
-
-### Continue your L1 codebase
+Clone the workshop and install Level 2's starter:
 
 ```bash
-cd ~/adkclaw/codelab/starter   # or the directory where your L1 work lives
-source ~/adkclaw/set_env.sh
-git status                     # confirm you're on a clean branch
-git checkout -b level-2
+git clone https://github.com/dahabit/adkclaw.git
+cd adkclaw/level_2/starter
+npm install
 ```
 
-### Verify L1 still works
+The starter ships as a self-contained TypeScript project. Each L2 concept lives in a file with a `//REPLACE-*` marker + a throwing stub — you fill the markers as you go.
+
+### Verify the starter compiles
 
 ```bash
-npm test
-npm run typecheck
+npm run verify
 ```
 
-Both should pass green. If they don't, fix L1 before continuing.
+This type-checks the project (`tsc --noEmit`) and runs the test suite offline (`vitest run` — no Gemini key, no network). A green pass confirms the starter skeleton compiles and the pre-filled modules are correct. **You'll run `npm run verify` after every section** — it's your checkpoint that nothing regressed.
 
-### Start the daemon
-
-```bash
-npm run dev
-```
-
-Send a message on Telegram. The agent should reply. Stop the daemon with `Ctrl+C` — we'll restart it many times today.
-
-> **Why a clean L1 baseline matters:** L2 layers four new modules on top of L1. If L1 is half-broken, you'll spend the day debugging the wrong layer.
+> **Why per-section verify matters:** L2 layers four new modules on top of L1. If anything breaks, you isolate it to the section you just finished instead of debugging the whole project at the end. The verify gate is structural — `tsc` and `vitest` only, no live agent — so it stays green regardless of which markers are still unfilled.
 
 ## 2. The Context Engine — bootstrap from workspace
 
@@ -135,130 +125,140 @@ That's all it takes for "edit a workspace file → next turn knows" to work.
 
 ### Implement `src/context/manager.ts`
 
-Open the file and find the `// REPLACE` markers. Implement:
+The starter ships `src/context/manager.ts` with the `ContextEngine` class shell, the `CORE_FILES` and `BANK_CATEGORIES` constants, and the helpers (`todayDate`, `safeRead`, `safeMtime`, `extractSkillDescription`) pre-provided. You fill four method bodies, all marked `//REPLACE-CONTEXT-ENGINE`.
+
+#### `bootstrap()` — assemble the system prompt
+
+Open `src/context/manager.ts`, find `//REPLACE-CONTEXT-ENGINE` inside `bootstrap()`, and replace the stub body with:
 
 ```typescript
-const CORE_FILES: Array<{ filename: string; heading: string }> = [
-  { filename: 'IDENTITY.md', heading: 'Identity' },
-  { filename: 'USER.md',     heading: 'User' },
-  { filename: 'SOUL.md',     heading: 'Soul' },
-  { filename: 'AGENTS.md',   heading: 'Agents' },
-  { filename: 'MEMORY.md',   heading: 'Memory' },
-  { filename: 'TOOLS.md',    heading: 'Tools' },
-];
-
-export class ContextEngine {
-  private cacheKey: string | null = null;
-  private cached: BootstrapResult | null = null;
-
-  // Stub returns [] for now; implemented at the end of Section 4 (MemoryBank).
-  // Without this stub, the snippet you just pasted won't compile — and that's
-  // intentional: the codelab grows method-by-method with you.
-  private bankIndexSections(): BootstrapSection[] { return []; }
-
-  // Stub returns [] for now; implemented at the end of Section 6 (SkillsLoader).
-  private skillsIndexSections(): BootstrapSection[] { return []; }
-
-  bootstrap(): BootstrapResult {
     const fingerprint = this.fingerprint();
     if (this.cacheKey === fingerprint && this.cached) return this.cached;
 
     const sections: BootstrapSection[] = [];
+
     for (const { filename, heading } of CORE_FILES) {
-      const path = resolve(this.workspacePath, filename);
-      if (!existsSync(path)) continue;
-      sections.push({ source: filename, heading, content: readFileSync(path, 'utf8') });
+      const content = safeRead(resolve(this.workspacePath, filename));
+      if (content && content.trim()) {
+        sections.push({ source: filename, heading, content: content.trim() });
+      }
     }
 
-    // Append today's daily note
-    const today = new Date().toISOString().slice(0, 10);
-    const dailyPath = resolve(this.workspacePath, 'memory', `${today}.md`);
-    if (existsSync(dailyPath)) {
+    const today = todayDate();
+    const daily = safeRead(resolve(this.workspacePath, 'memory', `${today}.md`));
+    if (daily && daily.trim()) {
       sections.push({
         source: `memory/${today}.md`,
-        heading: 'Today',
-        content: readFileSync(dailyPath, 'utf8'),
+        heading: `Daily note (${today})`,
+        content: daily.trim(),
       });
     }
 
-    // Append the bank index — placeholder until Section 4 builds MemoryBank.
-    // Returns [] today; you'll wire it up at the end of Section 4.
-    sections.push(...this.bankIndexSections());
+    const bankIndex = this.indexBank();
+    if (bankIndex) {
+      sections.push({ source: 'bank/', heading: 'Memory Bank Index', content: bankIndex });
+    }
 
-    // Append skills index — placeholder until Section 6 builds SkillsLoader.
-    sections.push(...this.skillsIndexSections());
+    const skills = this.loadSkills();
+    if (skills) {
+      sections.push({ source: 'skills/', heading: 'Available Skills', content: skills });
+    }
 
-    // Append HEARTBEAT.md (live tasks)
-    const heartbeatPath = resolve(this.workspacePath, 'HEARTBEAT.md');
-    if (existsSync(heartbeatPath)) {
+    const heartbeat = safeRead(resolve(this.workspacePath, 'HEARTBEAT.md'));
+    if (heartbeat && heartbeat.trim()) {
       sections.push({
         source: 'HEARTBEAT.md',
-        heading: 'Heartbeat',
-        content: readFileSync(heartbeatPath, 'utf8'),
+        heading: 'Heartbeat Tasks',
+        content: heartbeat.trim(),
       });
     }
 
-    const systemPrompt = sections
-      .map((s) => `## ${s.heading} (${s.source})\n\n${s.content}`)
-      .join('\n\n---\n\n');
+    const systemPrompt = sections.map((s) => `# ${s.heading}\n\n${s.content}`).join('\n\n---\n\n');
 
-    const result = { systemPrompt, sections, totalChars: systemPrompt.length };
+    const result: BootstrapResult = { systemPrompt, sections, totalChars: systemPrompt.length };
     this.cached = result;
     this.cacheKey = fingerprint;
     return result;
-  }
+```
 
-  fingerprint(): string {
-    const stamps: string[] = [];
-    // CORE FILES (IDENTITY/USER/SOUL/AGENTS/MEMORY/TOOLS)
+#### `fingerprint()` — invalidate cache when any source changes
+
+Find `//REPLACE-CONTEXT-ENGINE` inside `private fingerprint(): string` and replace the stub body with:
+
+```typescript
+    const parts: string[] = [];
     for (const { filename } of CORE_FILES) {
-      const path = resolve(this.workspacePath, filename);
-      if (!existsSync(path)) continue;
-      stamps.push(`${filename}:${statSync(path).mtimeMs}`);
+      parts.push(`${filename}:${safeMtime(resolve(this.workspacePath, filename))}`);
     }
-    // DAILY NOTE (today only)
-    const today = new Date().toISOString().slice(0, 10);
-    const dailyPath = resolve(this.workspacePath, 'memory', `${today}.md`);
-    if (existsSync(dailyPath)) stamps.push(`memory/${today}:${statSync(dailyPath).mtimeMs}`);
-    // BANK INDEX (every entry — implement after Section 4)
-    const bankDir = resolve(this.workspacePath, 'bank');
-    if (existsSync(bankDir)) {
-      for (const cat of ['facts', 'decisions', 'projects', 'people']) {
-        const catDir = resolve(bankDir, cat);
-        if (!existsSync(catDir)) continue;
-        for (const f of readdirSync(catDir)) {
-          if (!f.endsWith('.md')) continue;
-          stamps.push(`bank/${cat}/${f}:${statSync(resolve(catDir, f)).mtimeMs}`);
-        }
-      }
-    }
-    // SKILLS directory
+    const today = todayDate();
+    parts.push(
+      `memory/${today}.md:${safeMtime(resolve(this.workspacePath, 'memory', `${today}.md`))}`,
+    );
+    parts.push(`HEARTBEAT.md:${safeMtime(resolve(this.workspacePath, 'HEARTBEAT.md'))}`);
+    parts.push(`skills:${safeMtime(resolve(this.workspacePath, 'skills'))}`);
+    parts.push(`bank:${safeMtime(resolve(this.workspacePath, 'bank'))}`);
     const skillsDir = resolve(this.workspacePath, 'skills');
     if (existsSync(skillsDir)) {
-      for (const f of readdirSync(skillsDir)) {
-        if (!f.endsWith('.md')) continue;
-        stamps.push(`skills/${f}:${statSync(resolve(skillsDir, f)).mtimeMs}`);
+      try {
+        for (const f of readdirSync(skillsDir).sort()) {
+          if (f.endsWith('.md')) parts.push(`skills/${f}:${safeMtime(resolve(skillsDir, f))}`);
+        }
+      } catch {
+        // ignore
       }
     }
-    // HEARTBEAT.md
-    const heartbeatPath = resolve(this.workspacePath, 'HEARTBEAT.md');
-    if (existsSync(heartbeatPath)) {
-      stamps.push(`HEARTBEAT.md:${statSync(heartbeatPath).mtimeMs}`);
+    return parts.join('|');
+```
+
+#### `indexBank()` — sample the bank into a system-prompt slice
+
+Find `//REPLACE-CONTEXT-ENGINE` inside `private indexBank(): string | null` and replace the stub body with:
+
+```typescript
+    const bankRoot = resolve(this.workspacePath, 'bank');
+    if (!existsSync(bankRoot)) return null;
+    const lines: string[] = [];
+    for (const cat of BANK_CATEGORIES) {
+      const dir = resolve(bankRoot, cat);
+      if (!existsSync(dir)) continue;
+      try {
+        const entries = readdirSync(dir).filter((f) => f.endsWith('.md'));
+        if (entries.length === 0) continue;
+        const sample = entries.slice(0, 10).join(', ');
+        const more = entries.length > 10 ? ', ...' : '';
+        lines.push(`- **${cat}** (${entries.length}): ${sample}${more}`);
+      } catch {
+        // skip
+      }
     }
-    return stamps.join('|');
-  }
-}
+    return lines.length > 0 ? lines.join('\n') : null;
 ```
 
-> **Important:** `fingerprint()` MUST scan every file/directory that `bootstrap()` reads. Miss one (the bank, the skills directory, HEARTBEAT.md) and the cache won't invalidate when that source changes — your "edit a file → next turn knows" demo will silently break. The implementation above is complete; copy it as-is.
+#### `loadSkills()` — advertise available markdown skills
 
-### Test it
+Find `//REPLACE-CONTEXT-ENGINE` inside `private loadSkills(): string | null` and replace the stub body with:
 
-```bash
-npm test src/context/manager.test.ts
+```typescript
+    const dir = resolve(this.workspacePath, 'skills');
+    if (!existsSync(dir)) return null;
+    try {
+      const files = readdirSync(dir).filter((f) => f.endsWith('.md'));
+      if (files.length === 0) return null;
+      const out: string[] = [];
+      for (const f of files.sort()) {
+        const content = safeRead(resolve(dir, f));
+        if (!content) continue;
+        out.push(`- **${f.replace(/\.md$/, '')}** — ${extractSkillDescription(content)}`);
+      }
+      return out.length > 0 ? out.join('\n') : null;
+    } catch {
+      return null;
+    }
 ```
 
-The tests verify: section order, mtime cache invalidation, missing-file tolerance, and that editing `USER.md` mid-test causes the next bootstrap to see the new content.
+> **Important:** `fingerprint()` MUST sample every file/directory that `bootstrap()` reads. Miss one (the bank, the skills directory, HEARTBEAT.md) and the cache won't invalidate when that source changes — your "edit a file → next turn knows" demo will silently break.
+
+**Checkpoint** — run `npm run verify`. Still green. The four method bodies type-check together; the live behaviour (re-bootstrap on edit) is exercised in §7's wow demo.
 
 > **Common pitfall**: students sometimes use `Date.now()` in the fingerprint. Don't. The fingerprint must depend on **file content's mtime**, not the wall clock.
 
@@ -285,97 +285,36 @@ Gemini 2.5 Pro has a 1M-token window. That sounds infinite — but a chatty agen
 
 The summarisation call is **structural overhead**, not user-facing reasoning. Flash is ~10x cheaper than Pro and good enough at this task. The agent's main loop still uses Pro.
 
-### Implement `src/context/compaction.ts`
+### Fill the `CONTEXT-TOKENS` marker — `src/context/token-counter.ts`
 
-> **Note:** the `Compactor` below uses `estimateTokensInHistory` from
-> `src/context/token-counter.ts`. Create that small helper first — the
-> cost-of-tokens math, no black box:
->
-> ```typescript
-> // src/context/token-counter.ts
-> import type { Content } from '@google/genai';
->
-> export function estimateTokens(text: string | null | undefined): number {
->   if (!text) return 0;
->   return Math.ceil(text.length / 4); // ~4 chars per token for English
-> }
->
-> export function estimateTokensInHistory(history: Content[]): number {
->   let total = 0;
->   for (const c of history) {
->     for (const part of c.parts ?? []) {
->       if (typeof part.text === 'string') total += estimateTokens(part.text);
->       if (part.functionCall) total += estimateTokens(JSON.stringify(part.functionCall));
->       if (part.functionResponse) total += estimateTokens(JSON.stringify(part.functionResponse));
->     }
->   }
->   return total;
-> }
-> ```
-> For exact counts later, swap in `client.models.countTokens({ model, contents })`.
+The starter ships `src/context/token-counter.ts` with the imports and two function signatures pre-provided. Open the file, find both `//REPLACE-CONTEXT-TOKENS` markers, and replace each stub body:
 
 ```typescript
-// src/context/compaction.ts
-import type { GoogleGenAI, Content } from '@google/genai';
-import type { SessionStore } from '../sessions/store.js';
-import { estimateTokensInHistory } from './token-counter.js';
+  // body of estimateTokens()
+  if (!text) return 0;
+  return Math.ceil(text.length / 4);
+```
 
-export const PRESERVATION_RULES = `
-PRESERVATION RULES — when you summarize, you MUST preserve:
-- All task IDs, URLs, file paths, opaque identifiers
-- Active tasks and their current status
-- The user's last request
-- Decisions and the reasoning behind them
-- TODOs, open questions, blockers
-- Any pending approvals or asks
-Discard chitchat, restated context, and repeated information.
-`.trim();
-
-export interface CompactorOptions {
-  client: GoogleGenAI;
-  sessions: SessionStore;
-  thresholdTokens: number;
-  summarizerModel: string;
-  summarizeFraction?: number;
-}
-
-export interface CompactionResult {
-  tokensBefore: number;
-  tokensAfter: number;
-  summary: string;
-  summarizedMessageCount: number;
-}
-
-function contentToLine(c: Content): string {
-  const role = c.role ?? 'user';
-  const text = (c.parts ?? [])
-    .map((p) => {
-      if (typeof p.text === 'string') return p.text;
-      if (p.functionCall) return `[tool call: ${p.functionCall.name}]`;
-      if (p.functionResponse) return `[tool result]`;
-      return '';
-    })
-    .filter(Boolean)
-    .join(' ');
-  return `${role}: ${text}`;
-}
-
-export class Compactor {
-  private readonly client: GoogleGenAI;
-  private readonly sessions: SessionStore;
-  private readonly thresholdTokens: number;
-  private readonly summarizerModel: string;
-  private readonly summarizeFraction: number;
-
-  constructor(opts: CompactorOptions) {
-    this.client = opts.client;
-    this.sessions = opts.sessions;
-    this.thresholdTokens = opts.thresholdTokens;
-    this.summarizerModel = opts.summarizerModel;
-    this.summarizeFraction = opts.summarizeFraction ?? 0.6;
+```typescript
+  // body of estimateTokensInHistory()
+  let total = 0;
+  for (const c of history) {
+    for (const part of c.parts ?? []) {
+      if (typeof part.text === 'string') total += estimateTokens(part.text);
+      if (part.functionCall) total += estimateTokens(JSON.stringify(part.functionCall));
+      if (part.functionResponse) total += estimateTokens(JSON.stringify(part.functionResponse));
+    }
   }
+  return total;
+```
 
-  async maybeCompact(sessionKey: string): Promise<CompactionResult | null> {
+For exact counts later, swap in `client.models.countTokens({ model, contents })`.
+
+### Fill the `CONTEXT-COMPACTION` marker — `src/context/compaction.ts`
+
+The starter ships `src/context/compaction.ts` with imports, `PRESERVATION_RULES`, `CompactorOptions` / `CompactionResult` interfaces, the `contentToLine` helper, and the `Compactor` class shell + constructor pre-provided. Open the file, find `//REPLACE-CONTEXT-COMPACTION` inside `maybeCompact()`, and replace the stub body with:
+
+```typescript
     const history = this.sessions.history(sessionKey);
     const tokensBefore = estimateTokensInHistory(history);
     if (tokensBefore < this.thresholdTokens || history.length < 4) return null;
@@ -399,15 +338,15 @@ export class Compactor {
     this.sessions.replaceWithSummary(sessionKey, cutoff, summary);
     const tokensAfter = estimateTokensInHistory(this.sessions.history(sessionKey));
     return { tokensBefore, tokensAfter, summary, summarizedMessageCount: cutoff };
-  }
-}
 ```
 
 `SessionStore.replaceWithSummary(key, n, summary)` removes the oldest `n` messages and inserts a single `system` message containing the summary, plus writes a checkpoint row.
 
-### Wire it into the agent loop
+### Wire it into the channel handlers
 
-In `src/index.ts`, after constructing the runner:
+The compactor doesn't live on the agent loop — the runner is single-turn and stateless. Each **channel** (HTTP + Telegram) decides whether to compact *before* it pulls history off the session store. That keeps the policy ("when to summarize") next to the I/O ("when do we read history?") instead of buried in the runner.
+
+In `src/index.ts`, after constructing `sessions`:
 
 ```typescript
 import { Compactor } from './context/compaction.js';
@@ -419,16 +358,22 @@ const compactor = new Compactor({
   summarizerModel: config.gemini.fallbackModel,
 });
 
-// Pass to the runner so it calls maybeCompact() before each turn
+const app = createHttpServer(config, runner, contextEngine, sessions, compactor);
+// ...
+const tg = new TelegramAdapter(config, runner, contextEngine, sessions, compactor);
 ```
 
-### Test it
+In each channel, call `compactor.maybeCompact(session.key)` **before** reading history. From `src/channels/telegram.ts`:
 
-```bash
-npm test src/context/compaction.test.ts
+```typescript
+// Compact old turns before reading history, so the run stays under budget.
+await this.compactor.maybeCompact(session.key);
+const history = this.sessions.history(session.key);
 ```
 
-Tests verify the threshold check, that recent messages are preserved, and that the summary message is inserted at position 0 after compaction.
+`maybeCompact()` is a no-op when the session is below threshold, so it's cheap to call on every turn — no policy logic leaks into the channel.
+
+**Checkpoint** — run `npm run verify`. Green. The compaction path is exercised live in §7's wow demo (the long-session demo).
 
 > **Common pitfall**: students sometimes summarise the **last** N messages. Don't — those are the most recent context the agent needs. Summarise the **oldest**.
 
@@ -472,18 +417,13 @@ For the small bank we start with, both approaches work, but grep is dramatically
 
 Stay simple until simple breaks. **Add embeddings the day grep latency starts hurting**, not before. The instrumentation hint: log `MemoryBank.recall()` duration on every call — your migration trigger is data, not vibes.
 
-### Implement `src/memory/bank.ts`
+### Study the `MemoryBank` — `src/memory/bank.ts` (pre-provided)
+
+> **Pre-provided in the starter** — `src/memory/bank.ts` ships complete because the file is exercised by its own test suite (`bank.test.ts`); marker-blanking would break `npm run verify`. Read it; the design below is the canonical reference. Same applies to `daily-notes.ts` and `consolidator.ts` in §5.
+
+#### `save()` — write one bank entry
 
 ```typescript
-export const BANK_CATEGORIES = ['facts', 'decisions', 'projects', 'people'] as const;
-export type BankCategory = (typeof BANK_CATEGORIES)[number];
-
-export class MemoryBank {
-  constructor(opts: { workspacePath: string }) {
-    this.bankRoot = resolve(opts.workspacePath, 'bank');
-  }
-
-  async save(category: BankCategory, name: string, content: string): Promise<BankEntry> {
     const slug = slugify(name);
     const dir = join(this.bankRoot, category);
     await mkdir(dir, { recursive: true });
@@ -507,12 +447,22 @@ export class MemoryBank {
     ].join('\n');
 
     await writeFile(path, frontmatter + content.trim() + '\n', 'utf8');
-    return { category, name, slug, content: content.trim(), path, createdAt, updatedAt: now.getTime() };
-  }
+    return {
+      category,
+      name,
+      slug,
+      content: content.trim(),
+      path,
+      createdAt,
+      updatedAt: now.getTime(),
+    };
+```
 
-  async list(category?: BankCategory): Promise<BankSummary[]> {
+#### `list()` — index every entry across all four categories
+
+```typescript
     const out: BankSummary[] = [];
-    const cats = category ? [category] : BANK_CATEGORIES;
+    const cats: readonly BankCategory[] = category ? [category] : BANK_CATEGORIES;
     for (const cat of cats) {
       const dir = join(this.bankRoot, cat);
       if (!existsSync(dir)) continue;
@@ -529,17 +479,17 @@ export class MemoryBank {
       }
     }
     return out.sort((a, b) => b.updatedAt - a.updatedAt);
-  }
+```
 
-  async recall(query: string, opts?: { category?: BankCategory; limit?: number }): Promise<BankSummary[]> {
+#### `recall()` — case-insensitive substring filter over `list()`
+
+```typescript
     const all = await this.list(opts?.category);
     if (!query.trim()) return all.slice(0, opts?.limit ?? 20);
     const q = query.toLowerCase();
     return all
       .filter((e) => e.name.toLowerCase().includes(q) || e.preview.toLowerCase().includes(q))
       .slice(0, opts?.limit ?? 20);
-  }
-}
 ```
 
 ### Wire the tools
@@ -586,11 +536,11 @@ Bank entries are **curated** memory. Daily notes are **raw** memory. The consoli
 - **11:02** User decided to defer skill marketplace to Phase 4.
 ```
 
-Implement `src/memory/daily-notes.ts`:
+### Study `DailyNotes` — `src/memory/daily-notes.ts` (pre-provided)
+
+`src/memory/daily-notes.ts` is also pre-provided. Its `append()` looks like:
 
 ```typescript
-export class DailyNotes {
-  async append(text: string, date: Date = new Date()): Promise<void> {
     if (!text.trim()) return;
     await mkdir(this.memoryDir, { recursive: true });
     const path = this.pathFor(date);
@@ -603,39 +553,17 @@ export class DailyNotes {
       const header = `# Daily Notes — ${this.isoDate(date)}\n${entry}\n`;
       await writeFile(path, header, 'utf8');
     }
-  }
-}
 ```
 
 ### The consolidator
 
 End of day (or on demand), the consolidator reads the day's note, asks Gemini to extract structured memory, and writes it to the bank:
 
+### Study `Consolidator` — `src/memory/consolidator.ts` (pre-provided)
+
+`src/memory/consolidator.ts` is pre-provided. The pipeline `consolidate()` runs at end-of-day:
+
 ```typescript
-const CONSOLIDATION_PROMPT = `
-You're consolidating a day of agent activity into structured long-term memory.
-
-Read the daily notes below. Output JSON with this shape:
-{
-  "facts":     [{"name": "string", "content": "string"}],
-  "decisions": [{"name": "string", "content": "string"}],
-  "projects":  [{"name": "string", "content": "string"}],
-  "people":    [{"name": "string", "content": "string"}]
-}
-
-Rules:
-- "facts" = verified, durable facts about the user or the world (not session ephemera).
-- "decisions" = choices made today with their rationale.
-- "projects" = ongoing work with current status.
-- "people" = people mentioned with relevant context.
-- Skip categories where nothing belongs.
-- Output JSON ONLY, no preamble.
-
-DAILY NOTES:
-`.trim();
-
-export class Consolidator {
-  async consolidate(date: Date | string = new Date()): Promise<ConsolidationResult> {
     const notes = await this.daily.read(date);
     if (!notes?.trim()) return { date, saved: 0, errors: ['No daily notes'] };
 
@@ -655,14 +583,13 @@ export class Consolidator {
       }
     }
     return { date, saved, errors: [] };
-  }
-}
 ```
 
-`parseJsonLoose()` strips markdown fences if Gemini wrapped the JSON, then falls back to extracting the first `{...}` block — small models sometimes ignore "JSON only". Inline implementation:
+#### `parseJsonLoose()` helper
+
+`parseJsonLoose()` strips markdown fences if Gemini wrapped the JSON, then falls back to extracting the first `{...}` block — small models sometimes ignore "JSON only":
 
 ```typescript
-function parseJsonLoose(text: string): ParsedConsolidation {
   // Strip markdown fences if Gemini wrapped it
   const stripped = text
     .replace(/^```(?:json)?\s*/i, '')
@@ -674,20 +601,26 @@ function parseJsonLoose(text: string): ParsedConsolidation {
     // Try to extract first {...} block
     const match = stripped.match(/\{[\s\S]*\}/);
     if (match) {
-      try { return JSON.parse(match[0]) as ParsedConsolidation; } catch { return {}; }
+      try {
+        return JSON.parse(match[0]) as ParsedConsolidation;
+      } catch {
+        return {};
+      }
     }
     return {};
   }
-}
 ```
 
 ### When does consolidation run?
 
-Two triggers:
-- **End-of-day cron** (Level 3 will give us the cron engine — for now, run manually with `npm run consolidate`)
-- **On demand** — the agent can call `consolidate_today` if it explicitly decides "this conversation has enough new facts to promote"
+In Level 2 it's a library you can call manually from a Node REPL — no scheduler yet. The runtime trigger lands in Level 3 alongside the heartbeat:
+
+- **Heartbeat-driven (L3)** — every 30 minutes during work hours, the heartbeat hands the agent a tick. The agent reads `workspace/HEARTBEAT.md` and `workspace/memory/<today>.md` and may decide *"there's enough new material; promote it now"* by calling its `daily_append` / `memory_save` tools or by invoking the `Consolidator` programmatically from a custom skill. There is no `consolidate_today` Gemini tool by default — the agent uses the same memory tools it already has.
+- **End-of-day cron (L3, optional)** — you can add a `cron_add` for a midnight job that imports `Consolidator` and calls `consolidate(yesterday)`. Wire it yourself; the engine exposes the API.
 
 > **Why a separate LLM step?** Without curation, the bank fills with chatter. The consolidator is your editor — it picks what's durable, names it well, and discards noise.
+
+> **What about a `consolidate_today` tool?** Earlier drafts of the workshop exposed one. We removed it because two tools (`daily_append` for capture + `memory_save` for promote) already cover the user-visible surface; a third tool would just rename the same call. If your students want it, the `Consolidator.consolidate()` method is one tool wrapper away — same shape as the other memory tools.
 
 ### Test it
 
@@ -723,47 +656,26 @@ when_to_invoke: User says "research X", "look into Y", "find sources on Z"
 
 The agent's system prompt advertises the skill's `description` and `when_to_invoke`. When the conditions match, the agent calls the `load_skill` tool, which returns the body — a procedure to follow.
 
-### Implement `src/skills/loader.ts`
+### Read `src/skills/loader.ts` (pre-provided)
+
+`SkillsLoader` is **pre-provided** in your starter — read it, don't rewrite it. The mechanical work (frontmatter parsing, filename whitelisting) is boilerplate; the *lesson* is the runtime extensibility pattern this enables. The unit tests already exercise the loader's surface (frontmatter, missing files, path-traversal rejection), so you can trust the behaviour and focus on wiring it into the agent.
+
+The shape that matters:
 
 ```typescript
 export class SkillsLoader {
-  async list(): Promise<SkillSummary[]> {
-    if (!existsSync(this.skillsDir)) return [];
-    const files = await readdir(this.skillsDir);
-    const out: SkillSummary[] = [];
-    for (const f of files.sort()) {
-      if (!f.endsWith('.md')) continue;
-      const raw = await readFile(join(this.skillsDir, f), 'utf8');
-      const parsed = parseFrontmatter(raw);
-      out.push({
-        name: f.replace(/\.md$/, ''),
-        description: parsed.description,
-        whenToInvoke: parsed.whenToInvoke,
-        updatedAt: (await stat(join(this.skillsDir, f))).mtimeMs,
-      });
-    }
-    return out;
-  }
+  // List all skills (name + description) for the system prompt to advertise.
+  async list(): Promise<SkillSummary[]>;
 
-  async load(name: string): Promise<Skill | null> {
-    const safeName = name.replace(/[^a-zA-Z0-9._-]/g, '');
-    const path = join(this.skillsDir, `${safeName}.md`);
-    if (!existsSync(path)) return null;
-    const raw = await readFile(path, 'utf8');
-    const parsed = parseFrontmatter(raw);
-    return {
-      name: safeName,
-      description: parsed.description,
-      whenToInvoke: parsed.whenToInvoke,
-      body: parsed.body,
-      path,
-      updatedAt: (await stat(path)).mtimeMs,
-    };
-  }
+  // Load one skill body by name. Returns null if not found.
+  // Filename is sanitised — '../../etc/passwd' is normalised to 'etcpasswd' and misses.
+  async load(name: string): Promise<Skill | null>;
 }
 ```
 
-`parseFrontmatter` extracts `description` and `when_to_invoke` from the YAML frontmatter; the body is everything after `---\n`.
+Internally `list()` reads `workspace/skills/*.md`, parses YAML frontmatter to extract `description` and `when_to_invoke`, and returns metadata for the system prompt. `load(name)` whitelists the filename to alphanumerics + `._-` (a defence against `../` traversal), reads the markdown, and returns the parsed body — the *procedure* the agent will follow.
+
+> **Why this is pre-provided.** It's defensive file I/O with no agent-specific logic. The Level 2 lesson is *what skills enable* (runtime extensibility, self-learning loop), not "how do you parse YAML?". Tests under `src/skills/loader.test.ts` ship green; if you want to read the implementation, open the file in your editor — the whole thing fits on one screen.
 
 ### Wire two tools
 
@@ -918,17 +830,17 @@ Level 3 turns this single agent into a **team**. You'll add:
 
 ## Appendix A — Files you touched
 
-| File | Role | What you implemented |
-|------|------|----------------------|
-| `src/context/manager.ts` | Bootstrap system prompt | `bootstrap()`, `fingerprint()` |
-| `src/context/compaction.ts` | Compact history at configured threshold (70–80% default) | `maybeCompact()` with preservation rules |
-| `src/context/token-counter.ts` | Approximate token counts | (already provided) |
-| `src/memory/bank.ts` | Memory bank CRUD | `save()`, `list()`, `recall()`, `read()` |
-| `src/memory/daily-notes.ts` | Append-only daily scratch pad | `append()`, `read()`, `listDates()` |
-| `src/memory/consolidator.ts` | Promote daily → bank via LLM | `consolidate()` |
-| `src/skills/loader.ts` | Markdown skills loader | `list()`, `load()` |
-| `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` | Tool execute methods |
-| `src/tools/skills.ts` | `load_skill`, `list_skills` | Tool execute methods |
+| File | Role | What you did |
+|------|------|--------------|
+| `src/context/manager.ts` | Bootstrap system prompt | Filled `//REPLACE-CONTEXT-ENGINE` — implemented `bootstrap()`, `fingerprint()` |
+| `src/context/compaction.ts` | Compact history at configured threshold (70–80% default) | Filled `//REPLACE-CONTEXT-COMPACTION` — implemented `maybeCompact()` with preservation rules; wired it into both channels (HTTP + Telegram) |
+| `src/context/token-counter.ts` | Approximate token counts | Filled `//REPLACE-CONTEXT-TOKENS` (×2) — implemented `estimateTokens()` + `estimateTokensInHistory()` |
+| `src/memory/bank.ts` | Memory bank CRUD | (pre-provided — `save()`, `list()`, `recall()`, `read()`. Read + use it.) |
+| `src/memory/daily-notes.ts` | Append-only daily scratch pad | (pre-provided — `append()`, `read()`, `listDates()`) |
+| `src/memory/consolidator.ts` | Promote daily → bank via LLM | (pre-provided — `consolidate()`, runs on cron in Level 3) |
+| `src/skills/loader.ts` | Markdown skills loader | (pre-provided — `list()`, `load()`) |
+| `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` | Registered the tool factories in `src/index.ts` |
+| `src/tools/skills.ts` | `load_skill`, `list_skills` | Registered the tool factories in `src/index.ts` |
 
 ## Appendix B — Troubleshooting
 

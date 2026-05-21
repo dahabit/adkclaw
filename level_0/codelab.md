@@ -43,11 +43,11 @@ The default path below assumes self-study. Branch points are flagged with **(In-
 - (Self-study only) ~1 GB free disk for `node_modules`
 - (For Level 4) A Google Cloud project with billing enabled — you can defer this until Level 4
 
-**Tip:** If you've never used Cloud Shell, the [optional Bootcamp](https://github.com/dahabit/adkclaw/tree/main/bootcamp) walks you through Google Cloud fundamentals before this codelab.
+**Tip:** If you've never used Cloud Shell, the [Cloud Shell quickstart](https://cloud.google.com/shell/docs/launching-cloud-shell) walks you through Google Cloud fundamentals before this codelab.
 
 ## Introduction
 
-Most "agent tutorials" show you a chatbot wrapped in a fancy name. AdkClaw teaches something different: an **autonomous agent** that has a brain, hands, memory, a personality, the ability to recover from any failure, and a team of specialist sub-agents — built on top of Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) and [Gemini 2.5](https://deepmind.google/technologies/gemini/), in TypeScript you'll understand line-by-line.
+Most "agent tutorials" show you a chatbot wrapped in a fancy name. AdkClaw teaches something different: an **autonomous agent** that has a brain, hands, memory, a personality, the ability to recover from any failure, and a team of specialist sub-agents — built on top of Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) and [Gemini 3](https://deepmind.google/technologies/gemini/), in TypeScript you'll understand line-by-line.
 
 This codelab maps the territory before you start the build. By the end of the next four levels you'll have an autonomous agent on Google Cloud, named whatever you want, reachable from any phone — and the mental model and reference code to build a different one tomorrow.
 
@@ -94,7 +94,7 @@ Every autonomous agent has these six things. Take any one away and it stops bein
 
 ### Brain
 
-The LLM that thinks. AdkClaw uses **Gemini 2.5 Pro** for the parent agent (1 M token context, deep reasoning) and **Gemini 2.5 Flash** for sub-agents (10× cheaper, fast enough for specialist tasks). Reached via [`@google/genai`](https://www.npmjs.com/package/@google/genai), the official ADK SDK.
+The LLM that thinks. AdkClaw uses **Gemini 3.1 Pro** for the parent agent (1 M token context, deep reasoning) and **Gemini 3 Flash** for sub-agents (cheaper, fast enough for specialist tasks). Reached via [`@google/genai`](https://www.npmjs.com/package/@google/genai), the official ADK SDK.
 
 The brain lives in `src/agent/runner.ts` — a single file. Everything else in the repo wraps the one `client.models.generateContent({...})` call inside it.
 
@@ -199,7 +199,7 @@ The tradeoff: Python has more LLM tooling. TypeScript has fewer dependencies you
 
 | Layer | Google product |
 |-------|----------------|
-| LLM (the brain) | **Gemini 2.5 Pro / Flash** via `@google/genai` |
+| LLM (the brain) | **Gemini 3.1 Pro / 3 Flash** via `@google/genai` |
 | Web grounding | Built into Gemini |
 | Embeddings + vector search (Level 2 stretch, Level 4) | **Vertex AI** |
 | Cloud hosting (Level 4) | **Cloud Run** |
@@ -241,7 +241,7 @@ In the **terminal**, run:
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/codelab/starter
+cd adkclaw/level_1/starter
 ```
 
 **Example output** (yours may be a little different):
@@ -464,7 +464,7 @@ The scaffold is intentionally a one-line stub. Level 1 replaces it with the agen
 
 - `npm run setup` is the ceremony — naming your agent, pasting your keys.
 - `npx adkclaw check` is your pre-flight: green ticks mean Level 1 will work without setup pain.
-- Reference: [`src/cli/setup.ts`](https://github.com/dahabit/adkclaw/blob/main/codelab/starter/src/cli/setup.ts) is the full wizard implementation.
+- Reference: [`src/cli/setup.ts`](https://github.com/dahabit/adkclaw/blob/main/level_1/starter/src/cli/setup.ts) is the full wizard implementation.
 
 ## 7. (Optional) Cloud Shell setup
 
@@ -484,7 +484,7 @@ nvm install 22 && nvm use 22 && nvm alias default 22
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/codelab/starter
+cd adkclaw/level_1/starter
 npm install
 npm run setup
 npx adkclaw check
@@ -498,7 +498,7 @@ Same steps as self-study; the only difference is the host machine.
 
 - Cloud Shell is the "no-install" path — same code, different host.
 - Persistence: your home directory is preserved across sessions; `node_modules` survives reboots.
-- Reference: see [Bootcamp](https://github.com/dahabit/adkclaw/tree/main/bootcamp) for a full Cloud Shell primer.
+- Reference: see [Cloud Shell quickstart](https://cloud.google.com/shell/docs/launching-cloud-shell) for a full Cloud Shell primer.
 
 ## Congratulations!
 

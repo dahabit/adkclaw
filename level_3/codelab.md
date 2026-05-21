@@ -42,7 +42,7 @@ The default path below assumes self-study. Branch points are flagged with **(In-
 ### What you will need
 
 - A computer with **Node.js 22+** installed
-- The Level 2 codebase (yours, or fast-forward via `git checkout v2-complete -- codelab/starter/`)
+- A clone of this repo with `cd level_3/starter && npm install` done (the L3 starter ships with all L1+L2 behaviour pre-provided — no fast-forward needed)
 - A free [Gemini API key](https://aistudio.google.com/apikey) (already in `.env`)
 - A [Telegram bot token](https://t.me/BotFather) (already in `.env`)
 - A handful of Gemini Pro + Flash testing turns — comfortably inside the free tier
@@ -79,21 +79,54 @@ By the end of this codelab, you will have:
 ## 1. Branch and verify
 
 ```bash
-cd ~/adkclaw/codelab/starter   # or your L2 directory
-source ~/adkclaw/set_env.sh
+cd ~/adkclaw/level_3/starter
 git checkout -b level-3
-npm test         # all L2 tests must still pass
-npm run typecheck
+npm install      # if you haven't already inside this level dir
+npm run verify   # offline checkpoint: tsc --noEmit + vitest run
 ```
 
-The L3 work layers four new modules on top of L2. If L2 is broken, L3 will be uninterpretable.
+`npm run verify` should print `✓ verify passed — this checkpoint is green.` (10 test files, 132 tests). All L1+L2 behaviour ships pre-provided here — L3 adds four new modules (`multi-agent/`, `healing/`, `cron/`, expanded `server/`) on top.
 
-> **Verified reference.** The complete, compiling Level 3 starter is tagged
-> `v3-complete`. `git checkout v3-complete -- codelab/starter/` gives the exact
-> end state of this level (`npm run build` + `npm run typecheck` clean, 114
-> tests passing); `git diff v2-complete v3-complete -- codelab/starter/` is the
-> precise implementation diff. Where a snippet below is abbreviated for
-> teaching, the tagged starter is the source of truth.
+> **Verified reference.** `solutions/level_3/` is the answer key — its `src/` is byte-identical to `level_3/starter/src/` *except* for the methods covered by `//REPLACE-*` markers. `diff -rq level_3/starter/src solutions/level_3/src` should show only the marker files differ; that's the clean-room invariant. When a snippet below is abbreviated for teaching, the solution is the source of truth.
+
+## 1.5 Daemon startup gates (L5 hardening, folded in)
+
+L3 ships three startup gates that the daemon **refuses to boot without**. They live in `src/index.ts` and fire before the runner is even constructed:
+
+```typescript
+const dailyTokenBudget = assertDailyTokenBudget();           // throws if unset
+assertAdminKey();                                            // throws if unset
+if (config.telegram.botToken)
+  assertAllowedSenders(config.telegram.allowedSenders);      // throws if empty
+```
+
+| Gate | Env var | Why it's mandatory |
+|------|---------|--------------------|
+| `assertDailyTokenBudget()` | `DAILY_TOKEN_BUDGET` (integer ≥ 1000) | No default — a missing budget is the surprise-bill pattern. Recommended: `100000` single-user, `500000` team. |
+| `assertAdminKey()` | `ADMIN_KEY` (any non-empty string) | The `/api/admin/*` routes need an HTTP middleware that compares `Authorization: Bearer <key>` against this. Without it, anyone who guesses the URL reads your session contents. |
+| `assertAllowedSenders()` | `ALLOWED_SENDERS` (comma-separated numeric IDs) | Telegram has no usernames you can trust — only numeric IDs. An empty allowlist silently rejects every sender, which looks identical to "working". Fail-fast at boot. |
+
+These are the **L5 fold** — three of the security checks that originally lived in the standalone Level 5 hardening codelab now run from day one of L3. The reasoning: a sub-agent army with cron + heartbeat is exactly the surface where a runaway loop becomes a runaway bill, so the budget gate has to land *before* you ship sub-agents, not after.
+
+> **What about `BudgetGuard` (the per-sender runtime cap)?** `assertDailyTokenBudget()` returns the parsed budget; you pass it to `new BudgetGuard({ dailyTokenBudget })`, which records token usage per sender and refuses turns over budget. In L3 it's instantiated but the request paths only wire it in L4 (the cloud-deploy level, where a single user can no longer DoS your wallet by accident). For L3 it's primed and ready — read `src/agent/budget.ts` once.
+
+Set the three env vars in `.env` (the wizard writes `.env.example` for you):
+
+```bash
+DAILY_TOKEN_BUDGET=100000
+ADMIN_KEY=$(openssl rand -hex 32)   # random hex; rotate per machine
+ALLOWED_SENDERS=123456789           # your numeric Telegram ID (from /start)
+```
+
+Verify the daemon now boots:
+
+```bash
+npm run dev
+# [http] listening on http://localhost:3000
+# 🤖 <name> is online.
+```
+
+If you see `Error: DAILY_TOKEN_BUDGET is required` — that's the gate firing. Don't catch it; set the env var.
 
 ## 2. Sub-agent orchestration
 
@@ -138,65 +171,13 @@ Why is rule 2 non-negotiable? If you pass parent history to children:
 > });
 > ```
 
-### Implement `src/multi-agent/orchestrator.ts`
+### Fill the `MULTI-AGENT-SPAWN` marker — `src/multi-agent/orchestrator.ts`
+
+The starter ships `src/multi-agent/orchestrator.ts` with the `SpawnRequest` / `SpawnResult` / `OrchestratorOptions` types, the `MultiAgentOrchestrator` class shell + constructor, the `resolveProfile()` and `modelFor()` helpers, the `randomKey()` utility, and the `spawnParallel()` batcher all pre-provided. You fill **one method body**, marked `//REPLACE-MULTI-AGENT-SPAWN`.
+
+Open `src/multi-agent/orchestrator.ts`, find `//REPLACE-MULTI-AGENT-SPAWN` inside `async spawn(req): Promise<SpawnResult>`, and replace the stub body with:
 
 ```typescript
-// src/multi-agent/orchestrator.ts
-import type { AgentRunner } from '../agent/runner.js';
-import type { ContextEngine } from '../context/manager.js';
-import type { SessionStore } from '../sessions/store.js';
-import type { Config } from '../types/index.js';
-import { PROFILES, type AgentProfile } from './profiles/index.js';
-
-export interface SpawnRequest {
-  task: string;
-  parentSessionKey: string;
-  profileId?: string;
-  goalChain?: string[];
-  model?: string;
-}
-
-export interface SpawnResult {
-  ok: boolean;
-  summary: string;
-  toolCalls: number;
-  tokensUsed: number;
-  durationMs: number;
-  childSessionKey: string;
-  profileId: string | null;
-  error?: string;
-}
-
-export interface OrchestratorOptions {
-  runner: AgentRunner;
-  sessions: SessionStore;
-  contextEngine: ContextEngine;
-  config: Config;
-}
-
-function randomKey(): string {
-  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-export class MultiAgentOrchestrator {
-  private readonly runner: AgentRunner;
-  private readonly sessions: SessionStore;
-  private readonly contextEngine: ContextEngine;
-  private readonly config: Config;
-
-  constructor(opts: OrchestratorOptions) {
-    this.runner = opts.runner;
-    this.sessions = opts.sessions;
-    this.contextEngine = opts.contextEngine;
-    this.config = opts.config;
-  }
-
-  resolveProfile(profileId: string | undefined): AgentProfile | null {
-    if (!profileId) return null;
-    return PROFILES[profileId] ?? null;
-  }
-
-  async spawn(req: SpawnRequest): Promise<SpawnResult> {
     const start = Date.now();
     const profile = this.resolveProfile(req.profileId);
     const childKey = `subagent:${req.parentSessionKey}:${randomKey()}`;
@@ -259,15 +240,18 @@ export class MultiAgentOrchestrator {
     } finally {
       this.sessions.archiveSession(childKey);
     }
-  }
-
-  private modelFor(profile: AgentProfile | null, override: string | undefined): string {
-    if (override) return override;
-    if (profile?.defaultModel === 'pro') return this.config.gemini.defaultModel;
-    return this.config.gemini.fallbackModel;
-  }
-}
 ```
+
+Read top-down — the body is one block but the parts map onto the six rules above:
+- **Lines 1–4:** start the clock, resolve the profile (may be null), mint a child session key, pick the model. The Flash-by-default behaviour from rule 4 hides inside `modelFor()`.
+- **Lines 6–14** (`ensureSession`): rule 1 — isolated session row, parent linkage.
+- **Lines 16–28** (`framing` / `profileText` / `goalText`): build the system-prompt slice. The framing is the sub-agent's job description; the profile is its role; goal-chain is "why does this task matter".
+- **Lines 30–32** (`systemPrompt`): rule 2 — workspace identity + sub-agent slice, no parent history.
+- **Lines 34–41** (`runner.run({ history: [] })`): rule 3 — pass `allowedToolNames` only when there's a profile.
+- **Lines 42–60** (success / error path): a sub-agent failure is data, not an exception — return `ok: false` and let the parent decide.
+- **Line 61** (`archiveSession` in `finally`): rule 6 — always archive, even on throw.
+
+**Checkpoint** — run `npm run verify`. Green. The spawn path is exercised live in §7's wow demo (sub-agent delegation).
 
 ### The four profiles
 
@@ -342,7 +326,9 @@ Read bottom-up: try the cheap recovery first, escalate only when nothing else wo
 
 ### Step 1 — classify the error
 
-Implement `src/healing/classifier.ts`:
+> **All four healing files (`classifier.ts`, `engine.ts`, `index.ts`, `types.ts`) ship pre-provided.** Tests under `src/healing/` (17 cases covering classification, retry/backoff, fallback, and skip-list policy) lock the behaviour. Read the code below so you understand what each branch protects against, then move on — you don't need to type it in.
+
+Study `src/healing/classifier.ts` (pre-provided):
 
 ```typescript
 export function classifyError(err: unknown): ClassifiedError {
@@ -457,7 +443,9 @@ Tests cover: retryable vs non-retryable classification, `Retry-After` parsing, e
 
 A cron job that fires twice for the same minute (because two daemons restarted at the same time) is a recurring nightmare. The fix is small: **dedupe by minute**.
 
-### Implement `src/cron/engine.ts`
+### Study `src/cron/engine.ts` (pre-provided)
+
+The cron engine ships pre-provided — the SQLite-backed dedupe pattern is what matters, not the boilerplate. Skim the file in your editor; the part below is the heart of it:
 
 ```typescript
 export class CronEngine {
@@ -531,7 +519,9 @@ The cron engine is **scheduled** work. The heartbeat is **periodic** work — ev
 
 ### The respect-the-user constraint
 
-If the heartbeat fires at 3 AM, the user gets a Telegram ping. That's not autonomous; that's annoying. Quiet hours block delivery between 22:00 and 07:00 local time:
+If the heartbeat fires at 3 AM, the user gets a Telegram ping. That's not autonomous; that's annoying. Quiet hours block delivery between 22:00 and 07:00 local time.
+
+`src/cron/heartbeat.ts` ships pre-provided — read it to understand the quiet-hours check; the wiring you control is the `quietHours: { start, end }` constructor arg in `src/index.ts` (default `{ start: 22, end: 7 }`):
 
 ```typescript
 export class Heartbeat {
@@ -569,6 +559,8 @@ npm test src/cron/heartbeat.test.ts
 
 Tests verify: quiet-hours skip, no-action when HEARTBEAT.md is empty, runner invocation when tasks are present.
 
+> **Tie it to L2's Consolidator.** Level 2 introduced `src/memory/consolidator.ts` and noted "Level 3 will give us the cron engine." This is that level — but we don't auto-fire consolidation from a cron job. The natural trigger is the heartbeat: the agent reads `workspace/memory/<today>.md` on each tick and decides whether the day's notes are dense enough to promote. The agent calls `memory_save` (already wired in L2) for each durable item, or invokes `Consolidator.consolidate()` programmatically from a markdown skill. **Why not auto-schedule it?** Because consolidation is a judgment call, not an alarm — and the agent already has every tool it needs.
+
 ## 6. The admin dashboard
 
 `localhost:3000/` should show a live HTML status page with:
@@ -580,7 +572,9 @@ Tests verify: quiet-hours skip, no-action when HEARTBEAT.md is empty, runner inv
 - Cron jobs (next fire times)
 - Recent compactions
 
-### Implement in `src/server/http.ts`
+### Study `src/server/http.ts` (pre-provided)
+
+The dashboard HTML + the `/api/admin/status` endpoint both ship pre-provided. Skim the file once so you know where to hook in if you later want extra widgets:
 
 ```typescript
 const DASHBOARD_HTML = `<!doctype html>
@@ -708,20 +702,20 @@ Level 4 ships your agent to **Google Cloud** so it survives losing your laptop. 
 
 ## Appendix A — Files you touched
 
-| File | Role | What you implemented |
-|------|------|----------------------|
-| `src/multi-agent/orchestrator.ts` | Spawn isolated sub-agents | `spawn()`, `spawnParallel()`, `resolveProfile()` |
-| `src/multi-agent/profiles/SearchAgent.ts` | Search profile | Definition + tool allowlist |
-| `src/multi-agent/profiles/ResearcherAgent.ts` | Researcher profile | Definition + tool allowlist |
-| `src/multi-agent/profiles/CommunicatorAgent.ts` | Communicator profile | Definition + tool allowlist |
-| `src/multi-agent/profiles/CoderAgent.ts` | Coder profile | Definition + tool allowlist |
-| `src/healing/classifier.ts` | Classify errors | `classifyError()` |
-| `src/healing/engine.ts` | Recovery primitives | `withRetry()`, `withFallback()`, `protect()` |
-| `src/cron/engine.ts` | Persistent cron | `start()`, `schedule()`, idempotency keys |
-| `src/cron/heartbeat.ts` | Periodic heartbeat | `start()`, `tick()`, quiet hours |
-| `src/server/http.ts` | Admin dashboard | `DASHBOARD_HTML` + `/api/admin/status` |
-| `src/tools/spawn.ts` | Spawn tools | `makeSpawnSearchTool`, etc. |
-| `src/tools/cron.ts` | Cron tools | `makeCronAddTool`, etc. |
+| File | Role | What you did |
+|------|------|--------------|
+| `src/multi-agent/orchestrator.ts` | Spawn isolated sub-agents | Filled `//REPLACE-MULTI-AGENT-SPAWN` — implemented `spawn()` body. Class shell, `resolveProfile()`, `modelFor()`, `spawnParallel()` pre-provided. |
+| `src/multi-agent/profiles/*.ts` | Four sub-agent profiles (Search, Researcher, Communicator, Coder) | (pre-provided — tests in `profiles/index.test.ts` lock the shape) |
+| `src/healing/classifier.ts` | Classify errors | (pre-provided — `classifier.test.ts` covers 9 branches) |
+| `src/healing/engine.ts` | Recovery primitives (`withRetry`, `withFallback`, `protect`) | (pre-provided — `engine.test.ts` covers retry/backoff/skip-list) |
+| `src/cron/engine.ts` | Persistent cron with SQLite-backed idempotency | (pre-provided — read the dedupe pattern) |
+| `src/cron/heartbeat.ts` | Periodic heartbeat with quiet hours | (pre-provided — you tune `quietHours` in `src/index.ts`) |
+| `src/server/http.ts` | Admin dashboard (`DASHBOARD_HTML` + `/api/admin/status`) | (pre-provided — extend if you want extra widgets) |
+| `src/tools/spawn.ts` | Spawn tools (`spawn_search`, `spawn_communicator`, …) | Registered the tool factories in `src/index.ts` |
+| `src/tools/cron.ts` | Cron tools (`cron_add`, `cron_remove`, `cron_list`, `message_user`) | Registered the tool factories in `src/index.ts` |
+| `src/agent/budget.ts` | Daily-token cap (`assertDailyTokenBudget` + `BudgetGuard`) | (pre-provided — `budget.test.ts` locks the gate behaviour). Set `DAILY_TOKEN_BUDGET` in `.env` to boot. |
+| `src/server/middleware/admin-auth.ts` | Admin-key check for `/api/admin/*` | (pre-provided). Set `ADMIN_KEY` in `.env` to boot. |
+| `src/channels/telegram.ts` (`assertAllowedSenders`) | Telegram allowlist startup gate | (pre-provided). Set `ALLOWED_SENDERS` in `.env` when `TELEGRAM_BOT_TOKEN` is set. |
 
 ## Appendix B — Troubleshooting
 
