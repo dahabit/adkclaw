@@ -830,8 +830,8 @@ Level 3 turns this single agent into a **team**. You'll add:
 | File | Role | What you did |
 |------|------|--------------|
 | `src/context/manager.ts` | Bootstrap system prompt | Filled `//REPLACE-CONTEXT-ENGINE` — implemented `bootstrap()`, `fingerprint()` |
-| `src/context/compaction.ts` | Compact history at configured threshold (70–80% default) | Wired `compactor.maybeCompact()` into both channels (HTTP + Telegram) |
-| `src/context/token-counter.ts` | Approximate token counts | (already provided — read the file) |
+| `src/context/compaction.ts` | Compact history at configured threshold (70–80% default) | Filled `//REPLACE-CONTEXT-COMPACTION` — implemented `maybeCompact()` with preservation rules; wired it into both channels (HTTP + Telegram) |
+| `src/context/token-counter.ts` | Approximate token counts | Filled `//REPLACE-CONTEXT-TOKENS` (×2) — implemented `estimateTokens()` + `estimateTokensInHistory()` |
 | `src/memory/bank.ts` | Memory bank CRUD | (pre-provided — `save()`, `list()`, `recall()`, `read()`. Read + use it.) |
 | `src/memory/daily-notes.ts` | Append-only daily scratch pad | (pre-provided — `append()`, `read()`, `listDates()`) |
 | `src/memory/consolidator.ts` | Promote daily → bank via LLM | (pre-provided — `consolidate()`, runs on cron in Level 3) |
