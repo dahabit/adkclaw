@@ -559,6 +559,8 @@ npm test src/cron/heartbeat.test.ts
 
 Tests verify: quiet-hours skip, no-action when HEARTBEAT.md is empty, runner invocation when tasks are present.
 
+> **Tie it to L2's Consolidator.** Level 2 introduced `src/memory/consolidator.ts` and noted "Level 3 will give us the cron engine." This is that level — but we don't auto-fire consolidation from a cron job. The natural trigger is the heartbeat: the agent reads `workspace/memory/<today>.md` on each tick and decides whether the day's notes are dense enough to promote. The agent calls `memory_save` (already wired in L2) for each durable item, or invokes `Consolidator.consolidate()` programmatically from a markdown skill. **Why not auto-schedule it?** Because consolidation is a judgment call, not an alarm — and the agent already has every tool it needs.
+
 ## 6. The admin dashboard
 
 `localhost:3000/` should show a live HTML status page with:

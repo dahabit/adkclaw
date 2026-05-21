@@ -613,11 +613,14 @@ End of day (or on demand), the consolidator reads the day's note, asks Gemini to
 
 ### When does consolidation run?
 
-Two triggers:
-- **End-of-day cron** (Level 3 will give us the cron engine — for now, run manually with `npm run consolidate`)
-- **On demand** — the agent can call `consolidate_today` if it explicitly decides "this conversation has enough new facts to promote"
+In Level 2 it's a library you can call manually from a Node REPL — no scheduler yet. The runtime trigger lands in Level 3 alongside the heartbeat:
+
+- **Heartbeat-driven (L3)** — every 30 minutes during work hours, the heartbeat hands the agent a tick. The agent reads `workspace/HEARTBEAT.md` and `workspace/memory/<today>.md` and may decide *"there's enough new material; promote it now"* by calling its `daily_append` / `memory_save` tools or by invoking the `Consolidator` programmatically from a custom skill. There is no `consolidate_today` Gemini tool by default — the agent uses the same memory tools it already has.
+- **End-of-day cron (L3, optional)** — you can add a `cron_add` for a midnight job that imports `Consolidator` and calls `consolidate(yesterday)`. Wire it yourself; the engine exposes the API.
 
 > **Why a separate LLM step?** Without curation, the bank fills with chatter. The consolidator is your editor — it picks what's durable, names it well, and discards noise.
+
+> **What about a `consolidate_today` tool?** Earlier drafts of the workshop exposed one. We removed it because two tools (`daily_append` for capture + `memory_save` for promote) already cover the user-visible surface; a third tool would just rename the same call. If your students want it, the `Consolidator.consolidate()` method is one tool wrapper away — same shape as the other memory tools.
 
 ### Test it
 
