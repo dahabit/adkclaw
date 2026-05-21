@@ -21,13 +21,16 @@ config.json
 set_env.sh
 
 # === Runtime data (per-user; never commit) ===
-data/
-workspace/
+# Anchored to repo root only — unanchored versions silently hid workshop
+# src/memory/ for 17 days (see cba85d6, 91b2f91). Same shape would hide
+# nested data/, workspace/, output/ inside level_N/ or solutions/.
+/data/
+/workspace/
 !workspace.example/
-output/
-**/*.db
-**/*.db-journal
-**/*.pid
+/output/
+/data/*.db
+/data/*.db-journal
+/data/*.pid
 
 # === OS / editor ===
 .DS_Store
@@ -71,7 +74,7 @@ BRD.md
 EXECUTION-PLAN.md
 CLAUDE.md
 /memory/
-plans/
+/plans/
 docs/superpowers/
 __pycache__/
 
