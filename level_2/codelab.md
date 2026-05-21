@@ -403,11 +403,11 @@ For the small bank we start with, both approaches work, but grep is dramatically
 
 Stay simple until simple breaks. **Add embeddings the day grep latency starts hurting**, not before. The instrumentation hint: log `MemoryBank.recall()` duration on every call — your migration trigger is data, not vibes.
 
-### Fill the `MEMORY-BANK` marker — `src/memory/bank.ts`
+### Study the `MemoryBank` — `src/memory/bank.ts` (pre-provided)
 
-The starter ships `src/memory/bank.ts` with imports, `BANK_CATEGORIES` / `BankCategory`, the `BankEntry` / `BankSummary` types, `slugify`, the `MemoryBank` class shell + `bankRoot` field + constructor + `isValidCategory` static + `read()` pre-provided. Open the file and replace each `//REPLACE-MEMORY-BANK` stub.
+> **Pre-provided in the starter** — `src/memory/bank.ts` ships complete because the file is exercised by its own test suite (`bank.test.ts`); marker-blanking would break `npm run verify`. Read it; the design below is the canonical reference. Same applies to `daily-notes.ts` and `consolidator.ts` in §5.
 
-#### `save()` body
+#### `save()` — write one bank entry
 
 ```typescript
     const slug = slugify(name);
@@ -444,7 +444,7 @@ The starter ships `src/memory/bank.ts` with imports, `BANK_CATEGORIES` / `BankCa
     };
 ```
 
-#### `list()` body
+#### `list()` — index every entry across all four categories
 
 ```typescript
     const out: BankSummary[] = [];
@@ -467,7 +467,7 @@ The starter ships `src/memory/bank.ts` with imports, `BANK_CATEGORIES` / `BankCa
     return out.sort((a, b) => b.updatedAt - a.updatedAt);
 ```
 
-#### `recall()` body
+#### `recall()` — case-insensitive substring filter over `list()`
 
 ```typescript
     const all = await this.list(opts?.category);
@@ -522,9 +522,9 @@ Bank entries are **curated** memory. Daily notes are **raw** memory. The consoli
 - **11:02** User decided to defer skill marketplace to Phase 4.
 ```
 
-### Fill the `MEMORY-DAILY` marker — `src/memory/daily-notes.ts`
+### Study `DailyNotes` — `src/memory/daily-notes.ts` (pre-provided)
 
-The starter ships `src/memory/daily-notes.ts` with imports, the `DailyNotes` class shell + `memoryDir` field + constructor + `isoDate`/`pathFor` private helpers + `read`/`listDates` pre-provided. Open the file, find `//REPLACE-MEMORY-DAILY` inside `append()`, and replace the stub body with:
+`src/memory/daily-notes.ts` is also pre-provided. Its `append()` looks like:
 
 ```typescript
     if (!text.trim()) return;
@@ -545,11 +545,9 @@ The starter ships `src/memory/daily-notes.ts` with imports, the `DailyNotes` cla
 
 End of day (or on demand), the consolidator reads the day's note, asks Gemini to extract structured memory, and writes it to the bank:
 
-### Fill the `MEMORY-CONSOLIDATOR` marker — `src/memory/consolidator.ts`
+### Study `Consolidator` — `src/memory/consolidator.ts` (pre-provided)
 
-The starter ships `src/memory/consolidator.ts` with imports, `ConsolidationResult` + `ParsedConsolidation` types, the `CONSOLIDATION_PROMPT` constant, and the `Consolidator` class shell + fields + constructor pre-provided. Open the file and replace both `//REPLACE-MEMORY-CONSOLIDATOR` stubs.
-
-#### `consolidate()` body
+`src/memory/consolidator.ts` is pre-provided. The pipeline `consolidate()` runs at end-of-day:
 
 ```typescript
     const notes = await this.daily.read(date);
@@ -573,9 +571,9 @@ The starter ships `src/memory/consolidator.ts` with imports, `ConsolidationResul
     return { date, saved, errors: [] };
 ```
 
-#### `parseJsonLoose()` body
+#### `parseJsonLoose()` helper
 
-`parseJsonLoose()` strips markdown fences if Gemini wrapped the JSON, then falls back to extracting the first `{...}` block — small models sometimes ignore "JSON only". Replace the helper's stub body with:
+`parseJsonLoose()` strips markdown fences if Gemini wrapped the JSON, then falls back to extracting the first `{...}` block — small models sometimes ignore "JSON only":
 
 ```typescript
   // Strip markdown fences if Gemini wrapped it
