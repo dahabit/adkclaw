@@ -23,21 +23,12 @@ export class FirestoreSessionStore implements SessionStore {
 
   /** Prefetch a session's message history into the buffer. Call before a turn. */
   async loadSession(sessionKey: string): Promise<void> {
-    try {
-      const snap = await this.db
-        .collection('sessions')
-        .doc(sessionKey)
-        .collection('messages')
-        .orderBy('createdAt')
-        .limit(200)
-        .get();
-      this.buffers.set(
-        sessionKey,
-        snap.docs.map((d) => d.data()['content'] as Content),
-      );
-    } catch {
-      this.buffers.set(sessionKey, []);
-    }
+    //REPLACE-FIRESTORE-LOAD
+    // Prefetch the most-recent 200 messages from Firestore into the in-memory
+    // buffer. On failure, fall back to an empty buffer so the turn still runs.
+    // From level_4/codelab.md §5 "Firestore session adapter".
+    void sessionKey;
+    throw new Error('REPLACE-FIRESTORE-LOAD not implemented — see level_4/codelab.md §5');
   }
 
   ensureSession(

@@ -21,33 +21,13 @@ const client = new OAuth2Client();
  * Any failure → 401.
  */
 export async function verifyOidc(req: Request, res: Response, next: NextFunction): Promise<void> {
-  const audience = process.env.OIDC_AUDIENCE;
-  const allowedSa = process.env.OIDC_SERVICE_ACCOUNT;
-  if (!audience || !allowedSa) {
-    res
-      .status(500)
-      .json({ error: 'server misconfigured: OIDC_AUDIENCE or OIDC_SERVICE_ACCOUNT unset' });
-    return;
-  }
-
-  const auth = req.header('authorization');
-  if (!auth?.startsWith('Bearer ')) {
-    res.status(401).json({ error: 'missing bearer token' });
-    return;
-  }
-  const token = auth.slice('Bearer '.length);
-
-  try {
-    const ticket = await client.verifyIdToken({ idToken: token, audience });
-    const payload = ticket.getPayload();
-    if (!payload || payload.email !== allowedSa) {
-      res.status(401).json({ error: 'service account not authorised' });
-      return;
-    }
-    next();
-  } catch {
-    res.status(401).json({ error: 'token verification failed' });
-  }
+  //REPLACE-VERIFY-OIDC
+  // Verify a Google-signed OIDC Bearer token against OIDC_AUDIENCE and
+  // OIDC_SERVICE_ACCOUNT. Fail-closed: any error → 401, never call next().
+  // From level_4/codelab.md §9 "Schedule cron via Cloud Scheduler".
+  void req;
+  void next;
+  res.status(501).json({ error: 'REPLACE-VERIFY-OIDC not implemented — see level_4/codelab.md §9' });
 }
 
 export function assertOidcConfig(): void {

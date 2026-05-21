@@ -250,92 +250,45 @@ Then `WORKSPACE_PATH=/workspace` becomes the new env var.
 >
 > For session-active state (messages, cron metadata), use **Firestore** (next section) — it has strong consistency guarantees within a region.
 
-## 5. Implement the Firestore session adapter
+## 5. Fill the `FIRESTORE-LOAD` marker — Firestore session adapter
 
-`SessionStore` was an interface from L1. The SQLite implementation lives in `src/sessions/store.ts`. We add a Firestore implementation in `src/sessions/firestore-store.ts`.
+`SessionStore` was an interface from L1. The SQLite implementation lives in `src/sessions/store.ts`. The Firestore implementation in `src/sessions/firestore-store.ts` ships **almost complete** — the class shell, `ensureSession()`, `appendAll()`, `history()`, `archiveSession()`, `listSessions()`, and `replaceWithSummary()` are all pre-provided. You fill **one method body**, marked `//REPLACE-FIRESTORE-LOAD`.
 
-> **Async boundary you cannot ignore:** SQLite (`better-sqlite3`) is **synchronous** — `list()` returns `Message[]`. Firestore is **async** — it returns `Promise<Message[]>`. The runner's hot loop expects sync reads, so the Firestore adapter has two honest choices:
+> **Why this one method is the lesson:** the rest of the adapter is mechanical CRUD; `loadSession()` is where the async-boundary trick lives. Get it right and the rest just works.
+
+> **Async boundary you cannot ignore:** SQLite (`better-sqlite3`) is **synchronous** — `history()` returns `Content[]`. Firestore is **async** — it returns `Promise<DocumentSnapshot[]>`. The runner's hot loop expects sync reads, so the Firestore adapter has two honest choices:
 >
-> 1. **Make `SessionStore` async everywhere** — change the interface to `Promise<Message[]>`, propagate `await` through the runner. Cleanest, biggest diff.
+> 1. **Make `SessionStore` async everywhere** — change the interface to `Promise<Content[]>`, propagate `await` through the runner. Cleanest, biggest diff.
 > 2. **Buffer reads at session start** — when a session opens, the adapter prefetches its messages into an in-memory array; the rest of the turn reads from the buffer; appends are async-fire-and-forget with eventual write-through.
 >
-> The production implementation uses **option 2**. The shape below shows the real interface (note `loadSession` is async, but `list` returns the buffered slice synchronously):
+> The production implementation uses **option 2**. `loadSession()` is the prefetch; `history()` reads the buffer synchronously.
+
+Open `src/sessions/firestore-store.ts`, find `//REPLACE-FIRESTORE-LOAD` inside `async loadSession(sessionKey)`, and replace the stub body with:
 
 ```typescript
-import { Firestore } from '@google-cloud/firestore';
-import type { SessionStore, Session, Message } from './store.js';
-
-export class FirestoreSessionStore implements SessionStore {
-  private readonly db: Firestore;
-  private readonly buffers = new Map<string, Message[]>();
-
-  constructor() {
-    this.db = new Firestore();
-  }
-
-  /** Call this before every turn — prefetches the session's message history. */
-  async loadSession(sessionKey: string): Promise<void> {
-    const snap = await this.db
-      .collection('sessions').doc(sessionKey).collection('messages')
-      .orderBy('createdAt').limit(200).get();
-    this.buffers.set(sessionKey, snap.docs.map((d) => d.data() as Message));
-  }
-
-  createSession(opts: { key: string; kind: string; channel: string; model: string; parentKey?: string }) {
-    void this.db.collection('sessions').doc(opts.key).set({
-      key: opts.key,
-      kind: opts.kind,
-      channel: opts.channel,
-      model: opts.model,
-      parentKey: opts.parentKey ?? null,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      archivedAt: null,
-    });
-    this.buffers.set(opts.key, []);
-  }
-
-  appendMessage(sessionKey: string, msg: Omit<Message, 'id'>) {
-    // Update buffer synchronously, write-through to Firestore async (fire-and-forget)
-    const buf = this.buffers.get(sessionKey) ?? [];
-    buf.push({ ...msg, id: '' } as Message);
-    this.buffers.set(sessionKey, buf);
-    void this.db
-      .collection('sessions').doc(sessionKey).collection('messages').doc()
-      .set({ ...msg, createdAt: Date.now() });
-  }
-
-  list(sessionKey: string): Message[] {
-    return this.buffers.get(sessionKey) ?? [];
-  }
-
-  archiveSession(key: string) {
-    void this.db.collection('sessions').doc(key).update({ archivedAt: Date.now() });
-  }
-}
+    try {
+      const snap = await this.db
+        .collection('sessions')
+        .doc(sessionKey)
+        .collection('messages')
+        .orderBy('createdAt')
+        .limit(200)
+        .get();
+      this.buffers.set(
+        sessionKey,
+        snap.docs.map((d) => d.data()['content'] as Content),
+      );
+    } catch {
+      this.buffers.set(sessionKey, []);
+    }
 ```
 
-The runner is updated to call `await sessions.loadSession(sessionKey)` before each turn — that's the only async boundary the adapter introduces. **Failure mode:** if Firestore times out during `loadSession`, the runner gets an empty buffer and the turn proceeds with no history (the agent will reintroduce itself). The `HealingEngine.withRetry` from L3 wraps the load to absorb transient failures.
+Read top-down:
+- **Lines 2–8** (`db.collection(...).get()`): the only `await` in the hot path — the channel calls `loadSession` once per turn, before reading history.
+- **`limit(200)`**: hard cap on the prefetch so long sessions don't blow latency. Older turns get dropped from the in-memory view — they're still in Firestore for audit, just not in the system prompt. (Compaction from L2 handles the bigger truncation.)
+- **Lines 12–14** (`catch`): empty buffer on failure. The turn still runs — the agent loses history for this turn but stays online. The `HealingEngine.withRetry()` from L3 (called by the channel layer) absorbs transient Firestore blips.
 
-A factory picks the backend by env:
-
-```typescript
-// src/sessions/store-factory.ts
-export function createSessionStore(): SessionStore {
-  if (process.env.SESSION_BACKEND === 'firestore') {
-    return new FirestoreSessionStore();
-  }
-  return new SqliteSessionStore({
-    databasePath: process.env.DATABASE_PATH ?? 'data/adkclaw.db',
-  });
-}
-```
-
-In `src/index.ts`:
-
-```typescript
-const sessions = createSessionStore();
-```
+The factory `createSessionStore()` ships pre-provided in `src/sessions/store-factory.ts` — it picks SQLite or Firestore based on `SESSION_BACKEND`. It's wired in `src/index.ts` as `const sessions = createSessionStore(config.paths.database);`.
 
 ### Initialise Firestore — must happen before deploy
 
@@ -534,35 +487,44 @@ gcloud scheduler jobs create http adkclaw-heartbeat \
   --message-body='{"jobId":"heartbeat"}'
 ```
 
-In `src/server/middleware/verify-oidc.ts`, implement the OIDC verifier — **do not skip this**, an unverified `/api/cron/fire` is a public RCE-on-cron endpoint:
+In `src/server/middleware/verify-oidc.ts`, fill the `//REPLACE-VERIFY-OIDC` marker — **do not skip this**, an unverified `/api/cron/fire` is a public RCE-on-cron endpoint. The starter ships the imports, the singleton `OAuth2Client`, the docstring, and the `assertOidcConfig()` startup gate pre-provided. You fill **one method body** inside `verifyOidc()`:
 
 ```typescript
-import { OAuth2Client } from 'google-auth-library';
-import type { Request, Response, NextFunction } from 'express';
-
-const googleClient = new OAuth2Client();
-
-export async function verifyOidc(req: Request, res: Response, next: NextFunction) {
-  const header = req.header('authorization') ?? '';
-  const match = header.match(/^Bearer (.+)$/);
-  if (!match) return res.status(401).json({ error: 'missing bearer token' });
-  try {
-    const ticket = await googleClient.verifyIdToken({
-      idToken: match[1],
-      audience: process.env.SERVICE_URL,   // your Cloud Run URL
-    });
-    const payload = ticket.getPayload();
-    const expectedSa = process.env.CRON_SERVICE_ACCOUNT;
-    if (!payload || (expectedSa && payload.email !== expectedSa)) {
-      return res.status(403).json({ error: 'wrong service account' });
-    }
-    (req as any).oidc = payload;
-    next();
-  } catch (err) {
-    return res.status(401).json({ error: 'invalid token' });
+  const audience = process.env.OIDC_AUDIENCE;
+  const allowedSa = process.env.OIDC_SERVICE_ACCOUNT;
+  if (!audience || !allowedSa) {
+    res
+      .status(500)
+      .json({ error: 'server misconfigured: OIDC_AUDIENCE or OIDC_SERVICE_ACCOUNT unset' });
+    return;
   }
-}
+
+  const auth = req.header('authorization');
+  if (!auth?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'missing bearer token' });
+    return;
+  }
+  const token = auth.slice('Bearer '.length);
+
+  try {
+    const ticket = await client.verifyIdToken({ idToken: token, audience });
+    const payload = ticket.getPayload();
+    if (!payload || payload.email !== allowedSa) {
+      res.status(401).json({ error: 'service account not authorised' });
+      return;
+    }
+    next();
+  } catch {
+    res.status(401).json({ error: 'token verification failed' });
+  }
 ```
+
+Three checks, in order:
+- **Audience** — `verifyIdToken({ audience })` rejects tokens minted for a different Cloud Run service. Without this, a leaked token from any other GCP project's scheduler hits your endpoint.
+- **Signature** — `verifyIdToken` walks Google's public keys; forged tokens fail.
+- **Service account** — `payload.email !== OIDC_SERVICE_ACCOUNT` rejects tokens minted by any account other than the one you allowlisted (the Scheduler SA).
+
+Fail-closed: any error path returns 401 **without** calling `next()`. There is no "soft 401" branch — the only way to reach `next()` is all three checks passing.
 
 Then in `src/server/http.ts`:
 
@@ -762,19 +724,17 @@ From `console.log` to globally-reachable autonomous agent across the workshop. Y
 
 ## Appendix A — Files you touched
 
-| File | Role | What you implemented |
-|------|------|----------------------|
-| `Dockerfile` | Multi-stage build with Playwright base | All four stages |
-| `.dockerignore` | Exclude `node_modules`, `data`, `.env` | New file |
-| `cloudbuild.yaml` | (optional) automated builds | Substrate config |
-| `deploy/secrets.sh` | Create the three secrets | Helper script |
-| `deploy/workspace-bucket.sh` | Create the GCS bucket + upload `workspace/` | Helper script |
-| `deploy/scheduler-jobs.sh` | Create Cloud Scheduler entries | Helper script |
-| `deploy/register-webhook.sh` | Set Telegram webhook post-deploy | Helper script |
-| `src/sessions/firestore-store.ts` | Firestore adapter | Full implementation |
-| `src/sessions/store-factory.ts` | Pick SQLite vs Firestore by env | New |
-| `src/storage/gcs.ts` | (optional) Cloud Storage SDK adapter | Optional helper |
-| `src/lib/logger.ts` | Structured JSON logger for Cloud Logging | New |
+| File | Role | What you did |
+|------|------|--------------|
+| `Dockerfile` | Multi-stage build with Playwright base | (pre-provided) |
+| `.dockerignore` | Exclude `node_modules`, `data`, `.env` | (pre-provided) |
+| `cloudbuild.yaml` | (optional) automated builds | (pre-provided) |
+| `deploy/*.sh` | Secret / bucket / scheduler / webhook helpers | (pre-provided — run them when the §-by-§ instructions say so) |
+| `src/sessions/firestore-store.ts` | Firestore adapter | Filled `//REPLACE-FIRESTORE-LOAD` — implemented `loadSession()` (the only async-boundary method; the other six are pre-provided) |
+| `src/sessions/store-factory.ts` | Pick SQLite vs Firestore by env | (pre-provided) |
+| `src/server/middleware/verify-oidc.ts` | OIDC verifier for Cloud Scheduler → Cloud Run | Filled `//REPLACE-VERIFY-OIDC` — implemented the three checks (audience, signature, service-account allowlist). `assertOidcConfig()` startup gate stays pre-provided. |
+| `src/storage/gcs.ts` | (optional) Cloud Storage SDK adapter | (pre-provided, optional) |
+| `src/lib/logger.ts` | Structured JSON logger for Cloud Logging | (pre-provided) |
 
 ## Appendix B — Troubleshooting
 
