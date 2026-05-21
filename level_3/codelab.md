@@ -293,7 +293,9 @@ Read bottom-up: try the cheap recovery first, escalate only when nothing else wo
 
 ### Step 1 — classify the error
 
-Implement `src/healing/classifier.ts`:
+> **All four healing files (`classifier.ts`, `engine.ts`, `index.ts`, `types.ts`) ship pre-provided.** Tests under `src/healing/` (17 cases covering classification, retry/backoff, fallback, and skip-list policy) lock the behaviour. Read the code below so you understand what each branch protects against, then move on — you don't need to type it in.
+
+Study `src/healing/classifier.ts` (pre-provided):
 
 ```typescript
 export function classifyError(err: unknown): ClassifiedError {
@@ -408,7 +410,9 @@ Tests cover: retryable vs non-retryable classification, `Retry-After` parsing, e
 
 A cron job that fires twice for the same minute (because two daemons restarted at the same time) is a recurring nightmare. The fix is small: **dedupe by minute**.
 
-### Implement `src/cron/engine.ts`
+### Study `src/cron/engine.ts` (pre-provided)
+
+The cron engine ships pre-provided — the SQLite-backed dedupe pattern is what matters, not the boilerplate. Skim the file in your editor; the part below is the heart of it:
 
 ```typescript
 export class CronEngine {
@@ -482,7 +486,9 @@ The cron engine is **scheduled** work. The heartbeat is **periodic** work — ev
 
 ### The respect-the-user constraint
 
-If the heartbeat fires at 3 AM, the user gets a Telegram ping. That's not autonomous; that's annoying. Quiet hours block delivery between 22:00 and 07:00 local time:
+If the heartbeat fires at 3 AM, the user gets a Telegram ping. That's not autonomous; that's annoying. Quiet hours block delivery between 22:00 and 07:00 local time.
+
+`src/cron/heartbeat.ts` ships pre-provided — read it to understand the quiet-hours check; the wiring you control is the `quietHours: { start, end }` constructor arg in `src/index.ts` (default `{ start: 22, end: 7 }`):
 
 ```typescript
 export class Heartbeat {
@@ -531,7 +537,9 @@ Tests verify: quiet-hours skip, no-action when HEARTBEAT.md is empty, runner inv
 - Cron jobs (next fire times)
 - Recent compactions
 
-### Implement in `src/server/http.ts`
+### Study `src/server/http.ts` (pre-provided)
+
+The dashboard HTML + the `/api/admin/status` endpoint both ship pre-provided. Skim the file once so you know where to hook in if you later want extra widgets:
 
 ```typescript
 const DASHBOARD_HTML = `<!doctype html>
@@ -659,20 +667,17 @@ Level 4 ships your agent to **Google Cloud** so it survives losing your laptop. 
 
 ## Appendix A — Files you touched
 
-| File | Role | What you implemented |
-|------|------|----------------------|
-| `src/multi-agent/orchestrator.ts` | Spawn isolated sub-agents | `spawn()`, `spawnParallel()`, `resolveProfile()` |
-| `src/multi-agent/profiles/SearchAgent.ts` | Search profile | Definition + tool allowlist |
-| `src/multi-agent/profiles/ResearcherAgent.ts` | Researcher profile | Definition + tool allowlist |
-| `src/multi-agent/profiles/CommunicatorAgent.ts` | Communicator profile | Definition + tool allowlist |
-| `src/multi-agent/profiles/CoderAgent.ts` | Coder profile | Definition + tool allowlist |
-| `src/healing/classifier.ts` | Classify errors | `classifyError()` |
-| `src/healing/engine.ts` | Recovery primitives | `withRetry()`, `withFallback()`, `protect()` |
-| `src/cron/engine.ts` | Persistent cron | `start()`, `schedule()`, idempotency keys |
-| `src/cron/heartbeat.ts` | Periodic heartbeat | `start()`, `tick()`, quiet hours |
-| `src/server/http.ts` | Admin dashboard | `DASHBOARD_HTML` + `/api/admin/status` |
-| `src/tools/spawn.ts` | Spawn tools | `makeSpawnSearchTool`, etc. |
-| `src/tools/cron.ts` | Cron tools | `makeCronAddTool`, etc. |
+| File | Role | What you did |
+|------|------|--------------|
+| `src/multi-agent/orchestrator.ts` | Spawn isolated sub-agents | Filled `//REPLACE-MULTI-AGENT-SPAWN` — implemented `spawn()` body. Class shell, `resolveProfile()`, `modelFor()`, `spawnParallel()` pre-provided. |
+| `src/multi-agent/profiles/*.ts` | Four sub-agent profiles (Search, Researcher, Communicator, Coder) | (pre-provided — tests in `profiles/index.test.ts` lock the shape) |
+| `src/healing/classifier.ts` | Classify errors | (pre-provided — `classifier.test.ts` covers 9 branches) |
+| `src/healing/engine.ts` | Recovery primitives (`withRetry`, `withFallback`, `protect`) | (pre-provided — `engine.test.ts` covers retry/backoff/skip-list) |
+| `src/cron/engine.ts` | Persistent cron with SQLite-backed idempotency | (pre-provided — read the dedupe pattern) |
+| `src/cron/heartbeat.ts` | Periodic heartbeat with quiet hours | (pre-provided — you tune `quietHours` in `src/index.ts`) |
+| `src/server/http.ts` | Admin dashboard (`DASHBOARD_HTML` + `/api/admin/status`) | (pre-provided — extend if you want extra widgets) |
+| `src/tools/spawn.ts` | Spawn tools (`spawn_search`, `spawn_communicator`, …) | Registered the tool factories in `src/index.ts` |
+| `src/tools/cron.ts` | Cron tools (`cron_add`, `cron_remove`, `cron_list`, `message_user`) | Registered the tool factories in `src/index.ts` |
 
 ## Appendix B — Troubleshooting
 
