@@ -282,7 +282,7 @@ The standalone **Level 5: Harden the Cloud** chapter is **folded into L3 and L4*
 - **DAILY_TOKEN_BUDGET / ADMIN_KEY / ALLOWED_SENDERS** — folded into L3 (`assertDailyTokenBudget`, `assertAdminKey`, `assertAllowedSenders`)
 - **OIDC verification / TELEGRAM_WEBHOOK_SECRET / DLP / Firestore rules / threat model** — folded into L4 (`assertWebhookSecret`, `assertOidcConfig`, `lib/dlp.ts`)
 
-The legacy `level_5/` directory is removed in Stage 3 of the restructure.
+The legacy `level_5/` directory has been removed from the repo; its content (threat model, hardening checks, secret rotation) is folded into L3 and L4 codelabs.
 
 ## 🎉 Congratulations
 

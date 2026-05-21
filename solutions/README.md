@@ -5,10 +5,10 @@ finished state of that level's `level_N/starter/`.
 
 ## Relationship to git tags
 
-The legacy `v0-starter` … `v5-complete` tags are kept for reference. Solutions
-under this directory are the maintained artifact; tags are the historical
-checkpoint for the monolithic `codelab/starter/` flow (which is removed in
-Stage 3 of the restructure).
+The legacy `v0-starter` … `v5-complete` tags are kept in the git history for
+reference (the `codelab/starter/` tree they point at has been removed). Solutions
+under this directory are the maintained artifact; the tags are historical
+archaeology only.
 
 ## Verifying a solution
 

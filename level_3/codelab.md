@@ -42,7 +42,7 @@ The default path below assumes self-study. Branch points are flagged with **(In-
 ### What you will need
 
 - A computer with **Node.js 22+** installed
-- The Level 2 codebase (yours, or fast-forward via `git checkout v2-complete -- codelab/starter/`)
+- A clone of this repo with `cd level_3/starter && npm install` done (the L3 starter ships with all L1+L2 behaviour pre-provided — no fast-forward needed)
 - A free [Gemini API key](https://aistudio.google.com/apikey) (already in `.env`)
 - A [Telegram bot token](https://t.me/BotFather) (already in `.env`)
 - A handful of Gemini Pro + Flash testing turns — comfortably inside the free tier

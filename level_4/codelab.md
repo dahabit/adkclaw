@@ -86,19 +86,15 @@ By the end of this codelab, you will have:
 ## 1. Branch, verify, and prepare
 
 ```bash
-cd ~/adkclaw/codelab/starter   # or your L3 directory
-source ~/adkclaw/set_env.sh
+cd ~/adkclaw/level_4/starter
 git checkout -b level-4
-npm test                       # all L3 tests must still pass
-npm run typecheck
+npm install      # if you haven't already inside this level dir
+npm run verify   # offline checkpoint: tsc --noEmit + vitest run
 ```
 
-> **Verified reference.** The Level 4 starter is tagged `v4-complete`.
-> `git checkout v4-complete -- codelab/starter/` gives this level's end state,
-> and `git diff v3-complete v4-complete -- codelab/starter/` is the
-> implementation diff. Note: Level 4 is verified by `npm run build` +
-> `npm run typecheck` only — the Firestore / Cloud Run / OIDC paths need a GCP
-> project and the Firestore emulator to exercise at runtime.
+`npm run verify` should print `✓ verify passed — this checkpoint is green.` (11 test files, 139 tests). All L1+L2+L3 behaviour ships pre-provided here — L4 layers in the cloud-deploy adapters and the deployment-time security gates.
+
+> **Verified reference.** `solutions/level_4/` is the answer key — its `src/` is byte-identical to `level_4/starter/src/` *except* for the two methods covered by `//REPLACE-*` markers (`FIRESTORE-LOAD` in §5 and `VERIFY-OIDC` in §9). `diff -rq level_4/starter/src solutions/level_4/src` should show only those two files differ. The Firestore / Cloud Run / OIDC paths exercise live only against a real GCP project (or the Firestore emulator) — `npm run verify` covers the typecheck + unit-test surface; the cloud paths need the deploy.
 
 Set up your Google Cloud variables:
 

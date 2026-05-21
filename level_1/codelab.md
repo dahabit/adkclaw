@@ -43,7 +43,7 @@ The default path below assumes self-study. Branch points are flagged with **(In-
 - A free [Gemini API key](https://aistudio.google.com/apikey)
 - A [Telegram bot token](https://t.me/BotFather) (free; send `/newbot`)
 - [Git](https://git-scm.com/)
-- The `codelab/starter/` directory you cloned in Level 0 (or clone fresh — see below)
+- The `level_1/starter/` directory you cloned in Level 0 (or clone fresh — see below)
 
 ## Introduction
 

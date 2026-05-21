@@ -127,7 +127,7 @@ adkclaw/
 └── README.md           ← user-facing intro
 ```
 
-> Legacy `codelab/starter/` and `level_5/` directories will be removed in Stage 3 of the restructure. L5 content (security hardening) is folded into L3 startup gates and L4 deployment-time gates; see `level_3/codelab.md §1.5` and `level_4/codelab.md §6.5`.
+> The legacy `codelab/starter/` and `level_5/` directories have been removed (Stage 3 of the restructure). L5 content (security hardening) is folded into L3 startup gates and L4 deployment-time gates; see `level_3/codelab.md §1.5` and `level_4/codelab.md §6.5`. Historical git tags (`v0-starter` … `v5-complete`) remain in the history for archaeology.
 
 ### `src/` — the reference implementation
 
@@ -299,7 +299,7 @@ This is a powerful debugging tool — it shows exactly where their implementatio
 - Hybrid markers (exact code + optional AI Studio path)
 - L5 hardening folded into L3 (startup gates) and L4 (deploy-time gates)
 
-The legacy tags (`v1-complete` … `v5-complete`) and the `codelab/starter/` tree remain in the repo for now (removed in Stage 3) — they are not the canonical entry point and are not referenced from any current codelab or README.
+The legacy tags (`v1-complete` … `v5-complete`) remain in the git history. The `codelab/starter/` tree has been removed (Stage 3). The tags still point at historical states of that directory and can be checked out by name (`git checkout v3-complete`) for archaeology, but they are not referenced from any current codelab or README.
 
 ### Teaching notes
 

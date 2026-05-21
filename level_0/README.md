@@ -89,14 +89,17 @@ ls
 # Read the three-repo layout + checkpoint tags doc
 cat ARCHITECTURE.md
 
-# The Day-1 starter scaffold — clone-grow-ship
-ls codelab/starter/
+# The per-level starters — each is its own self-contained project
+ls level_1/starter level_2/starter level_3/starter level_4/starter
 
 # The post-Level-4 reference implementation (study, don't clone)
 ls src/
 
 # Per-level codelab instructions (markdown only)
 ls level_0/ level_1/ level_2/ level_3/ level_4/
+
+# Solutions (answer keys) for every level
+ls solutions/
 ```
 
 ### 7. Run the pre-flight check
@@ -216,15 +219,16 @@ A **chatbot** has only Brain. A **RAG system** has Brain + retrieval. **Autonomy
 
 | Folder | Contents | Role |
 |--------|----------|------|
-| `codelab/starter/` | Day-1 starter scaffold (the canvas you grow) | Clone this, build on it |
+| `level_1/starter/` … `level_4/starter/` | Per-level self-contained starters (own `package.json`, `src/` with `//REPLACE-*` markers) | Each level: `cd level_N/starter && npm install && npm run verify` |
 | `level_0/` … `level_4/` | Per-level `codelab.md` + `README.md` + `RESOURCES.md` | Codelab instructions |
+| `solutions/level_1/` … `solutions/level_4/` | Answer keys (filled starters) | Diff against your starter when stuck |
 | `src/` | Post-Level-4 reference implementation (the finished agent) | Study as answer key |
 | `scripts/` | `setup.sh`, `preflight.sh` | Shared bootstrap |
-| `docs/` | `tech-stack.md`, `capabilities.md`, `api.md`, `internals.md` | Reference material |
-| `test/` | End-to-end smoke tests | CI verification |
+| `docs/` | `tech-stack.md`, `capabilities.md`, `api.md`, `internals.md`, `teaching-guide.md` | Reference material |
 | `extensions/` | Optional post-workshop projects (Slack, RAG, voice) | Take it further |
+| `RUNBOOK.md` | Operating your deployed agent after Level 4 | Ops doc, not workshop |
 
-Level checkpoints are git tags (`v1-complete` … `v4-complete`) on the `codelab/starter/` directory — see [`ARCHITECTURE.md`](../ARCHITECTURE.md) for how to fast-forward if you fall behind.
+Level checkpoints are the per-level `npm run verify` (offline `tsc --noEmit` + `vitest run`) inside each `level_N/starter/`. Historical git tags `v1-complete` … `v5-complete` remain in the history for archaeology — see [`ARCHITECTURE.md`](../ARCHITECTURE.md) for context.
 
 ## 🐛 Troubleshooting
 
@@ -244,7 +248,7 @@ Before you continue, verify:
 - [ ] You can name the six pillars without looking
 - [ ] Your `.env` has a real `GEMINI_API_KEY` and `TELEGRAM_BOT_TOKEN` (not the placeholders)
 - [ ] You know your numeric Telegram ID and have it ready for `ALLOWED_SENDERS`
-- [ ] You've cloned the repo and `cd codelab/starter && npm install` completed
+- [ ] You've cloned the repo and `cd level_1/starter && npm install` completed
 
 If any are red, see [`PREWORK.md`](../PREWORK.md) — Day 0 is supposed to start green.
 
