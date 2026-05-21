@@ -31,7 +31,7 @@ import { assertDailyTokenBudget, BudgetGuard } from './agent/budget.js';
 import { assertAdminKey } from './server/middleware/admin-auth.js';
 import { assertOidcConfig } from './server/middleware/verify-oidc.js';
 import { createSessionStore } from './sessions/store-factory.js';
-import { TelegramAdapter } from './channels/telegram.js';
+import { TelegramAdapter, assertAllowedSenders, assertWebhookSecret } from './channels/telegram.js';
 import { createHttpServer } from './server/http.js';
 import { logInfo } from './lib/logger.js';
 
@@ -52,6 +52,8 @@ async function main(): Promise<void> {
   const dailyTokenBudget = assertDailyTokenBudget();
   assertAdminKey();
   assertOidcConfig();
+  assertWebhookSecret();
+  if (config.telegram.botToken) assertAllowedSenders(config.telegram.allowedSenders);
   const budget = new BudgetGuard({ dailyTokenBudget });
 
   const client = new GoogleGenAI({ apiKey: config.gemini.apiKey });

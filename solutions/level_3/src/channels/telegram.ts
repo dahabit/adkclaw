@@ -94,3 +94,24 @@ export class TelegramAdapter {
     }
   }
 }
+
+/**
+ * Call once at startup when Telegram is configured. Throws if ALLOWED_SENDERS is
+ * empty (silent lockout) or contains a non-numeric entry. The handler in this
+ * file silently rejects unknown senders for security, so without this assertion
+ * a misconfigured allowlist looks identical to a working agent that just ignores
+ * messages — exactly the kind of failure students burn an hour on.
+ */
+export function assertAllowedSenders(senders: readonly string[]): void {
+  if (senders.length === 0) {
+    throw new Error(
+      'ALLOWED_SENDERS is required when TELEGRAM_BOT_TOKEN is set. ' +
+        'Add your Telegram numeric ID (DM your bot /start to discover it) and restart.',
+    );
+  }
+  for (const s of senders) {
+    if (!/^\d+$/.test(s)) {
+      throw new Error(`ALLOWED_SENDERS contains non-numeric value: "${s}" (expected digits only)`);
+    }
+  }
+}

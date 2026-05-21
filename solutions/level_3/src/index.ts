@@ -30,7 +30,7 @@ import { AgentRunner } from './agent/runner.js';
 import { assertDailyTokenBudget, BudgetGuard } from './agent/budget.js';
 import { assertAdminKey } from './server/middleware/admin-auth.js';
 import { SessionStore } from './sessions/store.js';
-import { TelegramAdapter } from './channels/telegram.js';
+import { TelegramAdapter, assertAllowedSenders } from './channels/telegram.js';
 import { createHttpServer } from './server/http.js';
 
 // Gemini's context window. Compaction triggers at 80% of it.
@@ -46,9 +46,12 @@ async function main(): Promise<void> {
   }
 
   // L5 hardening folded into L3 — the daemon refuses to start unless
-  // DAILY_TOKEN_BUDGET and ADMIN_KEY are configured.
+  // DAILY_TOKEN_BUDGET and ADMIN_KEY are configured. ALLOWED_SENDERS is also
+  // required when Telegram is configured (otherwise the bot silently locks
+  // everyone out — a misconfiguration that looks identical to "working").
   const dailyTokenBudget = assertDailyTokenBudget();
   assertAdminKey();
+  if (config.telegram.botToken) assertAllowedSenders(config.telegram.allowedSenders);
   const budget = new BudgetGuard({ dailyTokenBudget });
   void budget; // BudgetGuard is wired into request paths in L4.
 

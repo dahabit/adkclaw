@@ -107,3 +107,37 @@ export class TelegramAdapter {
     }
   }
 }
+
+/**
+ * Call once at startup when Telegram is configured. Throws if ALLOWED_SENDERS is
+ * empty (silent lockout) or contains a non-numeric entry.
+ */
+export function assertAllowedSenders(senders: readonly string[]): void {
+  if (senders.length === 0) {
+    throw new Error(
+      'ALLOWED_SENDERS is required when TELEGRAM_BOT_TOKEN is set. ' +
+        'Add your Telegram numeric ID (DM your bot /start to discover it) and restart.',
+    );
+  }
+  for (const s of senders) {
+    if (!/^\d+$/.test(s)) {
+      throw new Error(`ALLOWED_SENDERS contains non-numeric value: "${s}" (expected digits only)`);
+    }
+  }
+}
+
+/**
+ * Call once at startup. Throws if TELEGRAM_MODE=webhook but TELEGRAM_WEBHOOK_SECRET
+ * is unset. Without the secret, telegraf's webhookCallback() validates nothing —
+ * anyone who learns the webhook URL can POST forged updates and impersonate
+ * Telegram. Cloud Run with --allow-unauthenticated makes this trivially exploitable.
+ */
+export function assertWebhookSecret(): void {
+  if (process.env['TELEGRAM_MODE'] !== 'webhook') return;
+  if (!process.env['TELEGRAM_WEBHOOK_SECRET']) {
+    throw new Error(
+      'TELEGRAM_WEBHOOK_SECRET is required when TELEGRAM_MODE=webhook. ' +
+        'Generate: openssl rand -hex 32; store in Secret Manager; register with setWebhook.',
+    );
+  }
+}
