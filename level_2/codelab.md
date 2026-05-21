@@ -342,9 +342,11 @@ The starter ships `src/context/compaction.ts` with imports, `PRESERVATION_RULES`
 
 `SessionStore.replaceWithSummary(key, n, summary)` removes the oldest `n` messages and inserts a single `system` message containing the summary, plus writes a checkpoint row.
 
-### Wire it into the agent loop
+### Wire it into the channel handlers
 
-In `src/index.ts`, after constructing the runner:
+The compactor doesn't live on the agent loop — the runner is single-turn and stateless. Each **channel** (HTTP + Telegram) decides whether to compact *before* it pulls history off the session store. That keeps the policy ("when to summarize") next to the I/O ("when do we read history?") instead of buried in the runner.
+
+In `src/index.ts`, after constructing `sessions`:
 
 ```typescript
 import { Compactor } from './context/compaction.js';
@@ -356,8 +358,20 @@ const compactor = new Compactor({
   summarizerModel: config.gemini.fallbackModel,
 });
 
-// Pass to the runner so it calls maybeCompact() before each turn
+const app = createHttpServer(config, runner, contextEngine, sessions, compactor);
+// ...
+const tg = new TelegramAdapter(config, runner, contextEngine, sessions, compactor);
 ```
+
+In each channel, call `compactor.maybeCompact(session.key)` **before** reading history. From `src/channels/telegram.ts`:
+
+```typescript
+// Compact old turns before reading history, so the run stays under budget.
+await this.compactor.maybeCompact(session.key);
+const history = this.sessions.history(session.key);
+```
+
+`maybeCompact()` is a no-op when the session is below threshold, so it's cheap to call on every turn — no policy logic leaks into the channel.
 
 **Checkpoint** — run `npm run verify`. Green. The compaction path is exercised live in §7's wow demo (the long-session demo).
 
@@ -639,47 +653,26 @@ when_to_invoke: User says "research X", "look into Y", "find sources on Z"
 
 The agent's system prompt advertises the skill's `description` and `when_to_invoke`. When the conditions match, the agent calls the `load_skill` tool, which returns the body — a procedure to follow.
 
-### Implement `src/skills/loader.ts`
+### Read `src/skills/loader.ts` (pre-provided)
+
+`SkillsLoader` is **pre-provided** in your starter — read it, don't rewrite it. The mechanical work (frontmatter parsing, filename whitelisting) is boilerplate; the *lesson* is the runtime extensibility pattern this enables. The unit tests already exercise the loader's surface (frontmatter, missing files, path-traversal rejection), so you can trust the behaviour and focus on wiring it into the agent.
+
+The shape that matters:
 
 ```typescript
 export class SkillsLoader {
-  async list(): Promise<SkillSummary[]> {
-    if (!existsSync(this.skillsDir)) return [];
-    const files = await readdir(this.skillsDir);
-    const out: SkillSummary[] = [];
-    for (const f of files.sort()) {
-      if (!f.endsWith('.md')) continue;
-      const raw = await readFile(join(this.skillsDir, f), 'utf8');
-      const parsed = parseFrontmatter(raw);
-      out.push({
-        name: f.replace(/\.md$/, ''),
-        description: parsed.description,
-        whenToInvoke: parsed.whenToInvoke,
-        updatedAt: (await stat(join(this.skillsDir, f))).mtimeMs,
-      });
-    }
-    return out;
-  }
+  // List all skills (name + description) for the system prompt to advertise.
+  async list(): Promise<SkillSummary[]>;
 
-  async load(name: string): Promise<Skill | null> {
-    const safeName = name.replace(/[^a-zA-Z0-9._-]/g, '');
-    const path = join(this.skillsDir, `${safeName}.md`);
-    if (!existsSync(path)) return null;
-    const raw = await readFile(path, 'utf8');
-    const parsed = parseFrontmatter(raw);
-    return {
-      name: safeName,
-      description: parsed.description,
-      whenToInvoke: parsed.whenToInvoke,
-      body: parsed.body,
-      path,
-      updatedAt: (await stat(path)).mtimeMs,
-    };
-  }
+  // Load one skill body by name. Returns null if not found.
+  // Filename is sanitised — '../../etc/passwd' is normalised to 'etcpasswd' and misses.
+  async load(name: string): Promise<Skill | null>;
 }
 ```
 
-`parseFrontmatter` extracts `description` and `when_to_invoke` from the YAML frontmatter; the body is everything after `---\n`.
+Internally `list()` reads `workspace/skills/*.md`, parses YAML frontmatter to extract `description` and `when_to_invoke`, and returns metadata for the system prompt. `load(name)` whitelists the filename to alphanumerics + `._-` (a defence against `../` traversal), reads the markdown, and returns the parsed body — the *procedure* the agent will follow.
+
+> **Why this is pre-provided.** It's defensive file I/O with no agent-specific logic. The Level 2 lesson is *what skills enable* (runtime extensibility, self-learning loop), not "how do you parse YAML?". Tests under `src/skills/loader.test.ts` ship green; if you want to read the implementation, open the file in your editor — the whole thing fits on one screen.
 
 ### Wire two tools
 
@@ -834,17 +827,17 @@ Level 3 turns this single agent into a **team**. You'll add:
 
 ## Appendix A — Files you touched
 
-| File | Role | What you implemented |
-|------|------|----------------------|
-| `src/context/manager.ts` | Bootstrap system prompt | `bootstrap()`, `fingerprint()` |
-| `src/context/compaction.ts` | Compact history at configured threshold (70–80% default) | `maybeCompact()` with preservation rules |
-| `src/context/token-counter.ts` | Approximate token counts | (already provided) |
-| `src/memory/bank.ts` | Memory bank CRUD | `save()`, `list()`, `recall()`, `read()` |
-| `src/memory/daily-notes.ts` | Append-only daily scratch pad | `append()`, `read()`, `listDates()` |
-| `src/memory/consolidator.ts` | Promote daily → bank via LLM | `consolidate()` |
-| `src/skills/loader.ts` | Markdown skills loader | `list()`, `load()` |
-| `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` | Tool execute methods |
-| `src/tools/skills.ts` | `load_skill`, `list_skills` | Tool execute methods |
+| File | Role | What you did |
+|------|------|--------------|
+| `src/context/manager.ts` | Bootstrap system prompt | Filled `//REPLACE-CONTEXT-ENGINE` — implemented `bootstrap()`, `fingerprint()` |
+| `src/context/compaction.ts` | Compact history at configured threshold (70–80% default) | Wired `compactor.maybeCompact()` into both channels (HTTP + Telegram) |
+| `src/context/token-counter.ts` | Approximate token counts | (already provided — read the file) |
+| `src/memory/bank.ts` | Memory bank CRUD | (pre-provided — `save()`, `list()`, `recall()`, `read()`. Read + use it.) |
+| `src/memory/daily-notes.ts` | Append-only daily scratch pad | (pre-provided — `append()`, `read()`, `listDates()`) |
+| `src/memory/consolidator.ts` | Promote daily → bank via LLM | (pre-provided — `consolidate()`, runs on cron in Level 3) |
+| `src/skills/loader.ts` | Markdown skills loader | (pre-provided — `list()`, `load()`) |
+| `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` | Registered the tool factories in `src/index.ts` |
+| `src/tools/skills.ts` | `load_skill`, `list_skills` | Registered the tool factories in `src/index.ts` |
 
 ## Appendix B — Troubleshooting
 
