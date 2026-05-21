@@ -106,29 +106,28 @@ Everything in `src/` is custom code. Specifically:
 
 ```
 adkclaw/
-├── src/                ← reference implementation (finished agent)
-├── level_0/ … level_5/ ← per-level workshop structure
-│   ├── level_1/
-│   │   ├── starter/    ← self-contained Level 1 starter (NEW per-level model)
+├── src/                ← reference implementation (finished agent — post-L4)
+├── level_0/ … level_4/ ← per-level workshop structure
+│   ├── level_N/
+│   │   ├── starter/    ← self-contained Level N starter
 │   │   │   ├── package.json, tsconfig.json, src/, workspace.example/
-│   │   │   ├── docs/teaching-guide.md
 │   │   │   └── scripts/verify.ts (offline checkpoint)
-│   │   ├── codelab.md  ← anchored to level_1/starter/ markers
+│   │   ├── codelab.md  ← anchored to level_N/starter/ markers
 │   │   └── README.md
-│   ├── level_2/ … level_5/ (currently follow old codelab/starter + tag model)
 │
 ├── solutions/
-│   ├── level_1/        ← complete answer key (generated from v1-complete tag)
+│   ├── level_1/ … level_4/  ← complete answer keys (one per level)
 │   │   ├── package.json, tsconfig.json, src/, workspace/
-│   │   ├── docs/teaching-guide.md
 │   │   └── README.md
 │
-├── codelab/starter/    ← legacy monolithic scaffold (still exists, used by L2–L5)
-├── docs/               ← repo-root documentation
+├── docs/               ← repo-root documentation (teaching-guide.md, tech-stack.md)
 ├── systemd/            ← Linux service unit
 ├── workshop.config.json ← shared metadata (model IDs, level durations)
+├── RUNBOOK.md          ← operating your deployed agent (L4 graduates)
 └── README.md           ← user-facing intro
 ```
+
+> Legacy `codelab/starter/` and `level_5/` directories will be removed in Stage 3 of the restructure. L5 content (security hardening) is folded into L3 startup gates and L4 deployment-time gates; see `level_3/codelab.md §1.5` and `level_4/codelab.md §6.5`.
 
 ### `src/` — the reference implementation
 
@@ -182,47 +181,37 @@ A vector database is *not* better here for the first 100K facts. It's faster to 
 - `adkclaw.db` — SQLite DB (sessions, messages, cron jobs, compaction checkpoints, audit log)
 - Gitignored. Everything in here is rebuildable from `workspace/` + the LLM.
 
-### The per-level structure (new for Level 1)
-
-**Level 1 is now live in the new format.** Levels 2–5 are being migrated.
+### The per-level structure
 
 Each level has its own **self-contained starter**:
 
 ```
-level_1/
+level_N/
 ├── starter/          ← self-contained starter (own package.json, src/, workspace.example/)
 │   ├── package.json  ← students run "npm install" here
 │   ├── tsconfig.json
 │   ├── src/          ← source with //REPLACE-* markers and throwing stubs
-│   ├── docs/teaching-guide.md
 │   └── scripts/verify.ts ← offline checkpoint (tsc + vitest)
-├── codelab.md        ← re-anchored to starter/ with marker numbers
+├── codelab.md        ← anchored to starter/ with marker locations
 └── README.md         ← build flow guide
 ```
 
-Students work in `level_N/starter/`, fill `//REPLACE-*` markers, run `npm run verify` to type-check and test offline (no Gemini key needed for the checkpoint).
+Students work in `level_N/starter/`, fill `//REPLACE-*` markers as the codelab instructs, and run `npm run verify` to type-check and test offline (no Gemini key needed for the checkpoint). The answer key lives at `solutions/level_N/`.
 
-### The legacy `codelab/` (Levels 2–5)
-
-```
-codelab/
-├── starter/          ← monolithic scaffold (still used by L2–L5)
-```
-
-Levels 2–5 still follow the old flow: students grow one `codelab/starter/`, checkpoint via git tags (`v2-complete`, `v3-complete`, etc.). The per-level-starter migration is in progress.
+**Marker placement rule (test-conflict invariant):** a file with tests under `src/` cannot carry a REPLACE marker — the stub would break the test on first `verify`. So files like `src/healing/engine.ts` (which ships with 8 retry/fallback tests) stay pre-provided in the starter; the codelab teaches them as "study this", not "fill this". Markers concentrate on one or two central patterns per level, where the lesson is the *implementation* itself.
 
 ---
 
 ## 4.5 Teaching with the per-level starters
 
-**This section is for instructors.** Level 1 is now live in the new format; Levels 2–5 are being migrated. Here's how the per-level-starter model works in the classroom.
+**This section is for instructors.** All four levels (L1–L4) ship in the per-level-starter format. Here's how the model works in the classroom.
 
 ### Student workflow
 
-Instead of one monolithic `codelab/starter/`, each level is a **standalone project**:
+Each level is a **standalone project**:
 
 ```bash
-cd ~/adkclaw/level_1/starter
+cd ~/adkclaw/level_N/starter
 npm install
 npm run verify              # offline checkpoint: tsc --noEmit + vitest run
 ```
@@ -298,18 +287,19 @@ This is a powerful debugging tool — it shows exactly where their implementatio
 
 ### Structure differences from the old model
 
-**Old (Levels 2–5, still in use):**
+**Old (pre-restructure, no longer used):**
 - One monolithic `codelab/starter/` for all levels
 - No offline checkpoint; students see examples only
 - Progress tracked via git tags (`v1-complete`, `v2-complete`, …)
 
-**New (Level 1, pilot):**
+**Current (Stage 2, in production for L1–L4):**
 - Per-level `level_N/starter/` — self-contained
 - `npm run verify` as the per-section checkpoint
 - Answer keys in `solutions/level_N/`
 - Hybrid markers (exact code + optional AI Studio path)
+- L5 hardening folded into L3 (startup gates) and L4 (deploy-time gates)
 
-The new model is **in production for Level 1**. Levels 2–5 are being migrated to the same pattern.
+The legacy tags (`v1-complete` … `v5-complete`) and the `codelab/starter/` tree remain in the repo for now (removed in Stage 3) — they are not the canonical entry point and are not referenced from any current codelab or README.
 
 ### Teaching notes
 
@@ -647,8 +637,9 @@ These are the things that bite if you skip them:
 | **Level 1** | Brain, Tools, Personality | `agent/runner.ts`, basic tools, `IDENTITY.md`, Telegram |
 | **Level 2** | Memory | `context/`, `memory/`, compaction, daily notes, bank |
 | **Level 3** | Self-healing, Sub-agents | `healing/`, `multi-agent/`, cron, heartbeat, A2A |
-| **Level 4** | Cloud deployment | Cloud Run, Firestore, Cloud Scheduler, webhook |
-| **Level 5** | Production hardening | Admin auth, OIDC, Cloud DLP, Firestore rules, secret rotation |
+| **Level 4** | Cloud deployment + production hardening | Cloud Run, Firestore, Cloud Scheduler, Telegram webhook + secret, OIDC, Cloud DLP, Firestore rules, secret rotation |
+
+Production hardening (previously taught as a standalone Level 5) is now folded across L3 and L4: the daemon-startup gates (`DAILY_TOKEN_BUDGET`, `ADMIN_KEY`, `ALLOWED_SENDERS`) land in L3 alongside the sub-agent army; the deploy-time gates (`OIDC_*`, `TELEGRAM_WEBHOOK_SECRET`, DLP scanning) land in L4 alongside the cloud-deploy work. The reasoning: a sub-agent army with cron is exactly where a runaway loop becomes a wallet event, so the budget gate has to land *before* you ship sub-agents.
 
 Each level after Level 1 builds on the previous foundation. Self-healing is woven through Levels 3+, never a footnote.
 
