@@ -34,7 +34,7 @@ By the end of this level, you will have:
 ## 📋 Prerequisites
 
 - ✅ **Level 1 completed** — your agent runs on Telegram with conversation memory
-- ✅ Cloud Shell environment + `set_env.sh` sourced
+- ✅ `level_2/starter/` checked out (`cd adkclaw/level_2/starter && npm install`)
 - ✅ Familiarity with markdown frontmatter
 
 ## 🚀 Quick Start
@@ -42,43 +42,31 @@ By the end of this level, you will have:
 ### 1. Clone and bootstrap
 
 ```bash
-cd ~/adkclaw/codelab/starter  # Level 2 is being migrated from the monolithic starter
-source ~/adkclaw/set_env.sh
+cd ~/adkclaw/level_2/starter
 npm install
-npm run typecheck
+npm run verify   # offline: tsc --noEmit + vitest run — should be green
 ```
 
-**Note:** Level 1 is now live in the new per-level-starter format (`level_1/starter/`). Levels 2–5 are being migrated and currently still follow this traditional monolithic starter + git-tag-checkpoint model.
+**Note:** Levels 1–4 each have a self-contained per-level starter under `level_N/starter/` with offline `npm run verify` checkpoints. The answer key for this level is `solutions/level_2/`. Level 5 content is folded into Levels 3 and 4.
 
-### 2. Implement the context bootstrap
+### 2. Fill the context-engine markers
 
-Open `src/context/manager.ts` and find the `// REPLACE` markers. Implement:
+Open `src/context/manager.ts` and find the four `//REPLACE-CONTEXT-ENGINE` markers. The class shell, constants, and helpers ship pre-provided — you fill four method bodies:
 
-| Section | What to write |
-|---------|---------------|
+| Method | What you implement |
+|--------|--------------------|
 | `bootstrap()` | Read workspace files in order: IDENTITY → USER → SOUL → AGENTS → MEMORY → today's daily note → bank index → skills → HEARTBEAT |
-| `fingerprint()` | Aggregate mtime of every file we read |
+| `fingerprint()` | Aggregate mtime of every file `bootstrap()` reads — cache invalidation |
+| `indexBank()` | Sample `workspace/bank/{cat}/` into a compact index for the system prompt |
 | `loadSkills()` | Enumerate `workspace/skills/*.md`, parse frontmatter, surface descriptions |
 
-### 3. Implement the memory bank
+### 3. Fill the compaction markers
 
-Open `src/memory/bank.ts`. Implement:
+`src/context/token-counter.ts` (two `//REPLACE-CONTEXT-TOKENS`) — implement `estimateTokens()` and `estimateTokensInHistory()`. `src/context/compaction.ts` (one `//REPLACE-CONTEXT-COMPACTION`) — implement `maybeCompact()` body. The `Compactor` class shell and `PRESERVATION_RULES` are pre-provided.
 
-| Method | What it does |
-|--------|-------------|
-| `save(category, content, tags)` | Write a markdown file to `workspace/bank/<category>/<id>.md` with frontmatter |
-| `recall(category?, query?)` | Grep across bank entries, return matches with relevance |
-| `list(category)` | List entry IDs + titles |
+### 4. Memory bank, daily notes, consolidator, skills loader (pre-provided)
 
-### 4. Implement compaction
-
-Open `src/context/compaction.ts`. Implement:
-
-| Method | What it does |
-|--------|-------------|
-| `checkThreshold(history)` | Returns true at 80% of model context window |
-| `compact(history)` | Send oldest N turns to LLM with strict "preserve IDs/URLs/decisions" prompt |
-| `saveCheckpoint(...)` | Write to `compaction_checkpoints` table for audit |
+`src/memory/bank.ts`, `src/memory/daily-notes.ts`, `src/memory/consolidator.ts`, and `src/skills/loader.ts` ship pre-provided — tests in each `*.test.ts` lock the behaviour (frontmatter parsing, path-traversal rejection, JSON-loose parsing, etc.). Read them; you don't reimplement them.
 
 ### 5. Run the daemon
 
@@ -206,17 +194,17 @@ when_to_invoke: User says "research X", "look into Y", "find sources on Z"
 
 ## 📁 Files Overview
 
-| File | Purpose | What you implement |
-|------|---------|-------------------|
-| `src/context/manager.ts` | Bootstrap system prompt | `bootstrap()`, `fingerprint()`, `loadSkills()` |
-| `src/context/compaction.ts` | Compact history at 80% | `checkThreshold()`, `compact()`, `saveCheckpoint()` |
-| `src/context/token-counter.ts` | Approximate token counting | (provided) |
-| `src/memory/bank.ts` | Memory bank CRUD | `save()`, `recall()`, `list()` |
-| `src/memory/daily-notes.ts` | Daily scratch pad | `append()` |
-| `src/memory/consolidator.ts` | Promote daily → bank | `consolidate()` |
-| `src/skills/loader.ts` | Markdown skill loader | `load()` |
-| `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` tools | All execute methods |
-| `src/tools/skills.ts` | `load_skill`, `list_skills` tools | All execute methods |
+| File | Purpose | What you do |
+|------|---------|-------------|
+| `src/context/manager.ts` | Bootstrap system prompt | Fill `//REPLACE-CONTEXT-ENGINE` (×4): `bootstrap()`, `fingerprint()`, `indexBank()`, `loadSkills()` |
+| `src/context/compaction.ts` | Compact history at the configured threshold | Fill `//REPLACE-CONTEXT-COMPACTION`: `maybeCompact()` body |
+| `src/context/token-counter.ts` | Approximate token counting | Fill `//REPLACE-CONTEXT-TOKENS` (×2): `estimateTokens()` + `estimateTokensInHistory()` |
+| `src/memory/bank.ts` | Memory bank CRUD | (pre-provided — tests lock the surface) |
+| `src/memory/daily-notes.ts` | Daily scratch pad | (pre-provided) |
+| `src/memory/consolidator.ts` | Promote daily → bank | (pre-provided — runs from L3 heartbeat) |
+| `src/skills/loader.ts` | Markdown skill loader | (pre-provided — `list()` + `load()` with path-traversal defence) |
+| `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` | Register factories in `src/index.ts` |
+| `src/tools/skills.ts` | `load_skill`, `list_skills` | Register factories in `src/index.ts` |
 
 ## 🏁 Ready for Level 3?
 

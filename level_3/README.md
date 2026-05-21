@@ -35,26 +35,25 @@ By the end of this level, you will have:
 ## 📋 Prerequisites
 
 - ✅ **Level 2 completed** — agent has persistent memory + skills
-- ✅ Cloud Shell environment + `set_env.sh` sourced
+- ✅ `level_3/starter/` checked out (`cd adkclaw/level_3/starter && npm install`)
 
 ## 🚀 Quick Start
 
 ### 1. Clone and bootstrap
 
 ```bash
-cd ~/adkclaw/codelab/starter  # Level 3 is being migrated from the monolithic starter
-source ~/adkclaw/set_env.sh
+cd ~/adkclaw/level_3/starter
 npm install
-npm run typecheck
+npm run verify   # offline: tsc --noEmit + vitest run — should be green
 ```
 
-**Note:** Level 1 is now live in the new per-level-starter format (`level_1/starter/`). Levels 2–5 are being migrated and currently still follow this traditional monolithic starter + git-tag-checkpoint model.
+**Note:** Levels 1–4 each have a self-contained per-level starter under `level_N/starter/` with offline `npm run verify` checkpoints. The answer key for this level is `solutions/level_3/`. Three L5 startup gates (DAILY_TOKEN_BUDGET, ADMIN_KEY, ALLOWED_SENDERS) are folded into L3 — set them in `.env` or the daemon won't boot.
 
-### 2. Implement the orchestrator
+### 2. Fill the one marker in this level
 
-`src/multi-agent/orchestrator.ts` — `spawn()` method. Critical: **fork context, don't share parent history**.
+`src/multi-agent/orchestrator.ts` ships with `//REPLACE-MULTI-AGENT-SPAWN` inside `spawn()`. Fill the body — that's the central pattern. Critical: **fork context, don't share parent history**. See codelab §2 for the exact fill.
 
-### 3. Implement the four profiles
+### 3. The four sub-agent profiles (pre-provided)
 
 | Profile | File | Tools allowed | Default model |
 |---------|------|---------------|--------------|
@@ -63,13 +62,15 @@ npm run typecheck
 | CommunicatorAgent | `src/multi-agent/profiles/CommunicatorAgent.ts` | message_user only | Flash |
 | CoderAgent | `src/multi-agent/profiles/CoderAgent.ts` | filesystem, shell, code_fix | Pro |
 
-### 4. Implement the recovery pyramid
+Tests in `profiles/index.test.ts` lock the shape.
 
-`src/healing/classifier.ts` — categorize errors. `src/healing/engine.ts` — `withRetry`, `withFallback`, `protect`.
+### 4. The recovery pyramid (pre-provided)
 
-### 5. Implement cron with idempotency
+`src/healing/classifier.ts` and `src/healing/engine.ts` ship pre-provided — 17 tests lock the behaviour (retry, backoff, fallback, skip-list). Read the code; the codelab §3 explains the pattern.
 
-`src/cron/engine.ts` — load jobs from SQLite, schedule via node-cron, generate `<jobId>:<floor(ms/60000)>` keys for `cron_runs` UNIQUE constraint.
+### 5. Cron with idempotency (pre-provided)
+
+`src/cron/engine.ts` ships pre-provided. The lesson is the SQLite-backed dedupe: `(job_id, idempotency_key)` UNIQUE constraint stops double-fires. Read codelab §4.
 
 ### 6. Run the daemon
 
@@ -192,15 +193,17 @@ try {
 
 ## 📁 Files Overview
 
-| File | What you implement |
-|------|-------------------|
-| `src/multi-agent/orchestrator.ts` | `spawn()`, `resolveProfile()`, isolation logic |
-| `src/multi-agent/profiles/{Search,Researcher,Communicator,Coder}Agent.ts` | All four profile definitions |
-| `src/healing/classifier.ts` | `classifyError()` — error → category mapping |
-| `src/healing/engine.ts` | `withRetry()`, `withFallback()`, `protect()` |
-| `src/cron/engine.ts` | Job scheduling + idempotency |
-| `src/cron/heartbeat.ts` | Periodic self-check + quiet hours |
-| `src/server/http.ts` | `DASHBOARD_HTML` constant + admin route |
+| File | What you do |
+|------|------------|
+| `src/multi-agent/orchestrator.ts` | Fill `//REPLACE-MULTI-AGENT-SPAWN` — implement `spawn()` body |
+| `src/multi-agent/profiles/*.ts` | (pre-provided — read the four profile shapes) |
+| `src/healing/classifier.ts` | (pre-provided — tests cover 9 error branches) |
+| `src/healing/engine.ts` | (pre-provided — `withRetry`/`withFallback`/`protect`) |
+| `src/cron/engine.ts` | (pre-provided — read the dedupe pattern) |
+| `src/cron/heartbeat.ts` | (pre-provided — tune `quietHours` in `src/index.ts`) |
+| `src/server/http.ts` | (pre-provided — dashboard HTML + `/api/admin/status`) |
+| `src/agent/budget.ts` | (pre-provided — `assertDailyTokenBudget` + `BudgetGuard`) |
+| `src/server/middleware/admin-auth.ts` | (pre-provided — `ADMIN_KEY` gate for `/api/admin/*`) |
 | `bin/adkclaw` | `bg`/`stop`/`status`/`logs`/`open` commands |
 
 ## 🏁 Ready for Level 4?

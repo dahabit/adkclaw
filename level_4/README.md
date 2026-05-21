@@ -47,13 +47,12 @@ By the end of this level, you will have:
 ### 1. Clone and verify
 
 ```bash
-cd ~/adkclaw/codelab/starter  # Level 4 is being migrated from the monolithic starter
-source ~/adkclaw/set_env.sh
+cd ~/adkclaw/level_4/starter
 npm install
-npm run typecheck
+npm run verify   # offline: tsc --noEmit + vitest run — should be green
 ```
 
-**Note:** Level 1 is now live in the new per-level-starter format (`level_1/starter/`). Levels 2–5 are being migrated and currently still follow this traditional monolithic starter + git-tag-checkpoint model.
+**Note:** Levels 1–4 each have a self-contained per-level starter under `level_N/starter/` with offline `npm run verify` checkpoints. The answer key for this level is `solutions/level_4/`. L4 ships two REPLACE markers: `//REPLACE-FIRESTORE-LOAD` (§5) and `//REPLACE-VERIFY-OIDC` (§9). All L5 security gates are folded in — set every env var in your deploy script.
 
 ### 2. Containerize
 
@@ -241,19 +240,15 @@ if (process.env.TELEGRAM_MODE === 'webhook') {
 
 ## 📁 Files Overview
 
-| File | What you implement |
-|------|-------------------|
-| `Dockerfile` | Multi-stage build |
-| `.dockerignore` | Excludes `node_modules`, `data`, `.env` |
-| `cloudbuild.yaml` | (optional) automated builds |
-| `deploy/secrets.sh` | Creates the three secrets |
-| `deploy/workspace-bucket.sh` | Creates the GCS bucket + uploads workspace |
-| `deploy/scheduler-jobs.sh` | Creates Cloud Scheduler entries |
-| `deploy/register-webhook.sh` | Registers Telegram webhook post-deploy |
-| `src/sessions/firestore-store.ts` | Firestore adapter |
-| `src/sessions/store-factory.ts` | Picks SQLite vs Firestore based on env |
-| `src/storage/gcs.ts` | (optional) Cloud Storage SDK adapter |
-| `src/lib/logger.ts` | Structured logger (JSON to stdout for Cloud Logging) |
+| File | What you do |
+|------|------------|
+| `Dockerfile`, `.dockerignore`, `cloudbuild.yaml` | (pre-provided) |
+| `deploy/*.sh` | (pre-provided helpers — run them when the codelab says so) |
+| `src/sessions/firestore-store.ts` | Fill `//REPLACE-FIRESTORE-LOAD` — implement `loadSession()` body |
+| `src/sessions/store-factory.ts` | (pre-provided — picks SQLite vs Firestore by `SESSION_BACKEND`) |
+| `src/server/middleware/verify-oidc.ts` | Fill `//REPLACE-VERIFY-OIDC` — implement the three OIDC checks |
+| `src/storage/gcs.ts` | (pre-provided, optional) |
+| `src/lib/logger.ts` | (pre-provided — structured JSON for Cloud Logging) |
 
 ## ➡️ What's Next
 
@@ -280,9 +275,14 @@ You've built and shipped an autonomous agent. Where to go from here:
 
 If any are red, do not declare done. Cloud Run with a public unauthenticated cron endpoint is a liability.
 
-## ➡️ Next Level
+## ➡️ Where the L5 content went
 
-Your agent ships. Now make it production-grade. **[Level 5: Harden the Cloud →](../level_5/README.md)** — threat-model your deployed agent and wire nine concrete security gates that the daemon refuses to start without.
+The standalone **Level 5: Harden the Cloud** chapter is **folded into L3 and L4** as of the Stage 2 restructure. You don't need to start a separate level — the security gates are already wired and refusing to start without their env vars (see L3 §1.5 and L4 §6.5 in the codelabs):
+
+- **DAILY_TOKEN_BUDGET / ADMIN_KEY / ALLOWED_SENDERS** — folded into L3 (`assertDailyTokenBudget`, `assertAdminKey`, `assertAllowedSenders`)
+- **OIDC verification / TELEGRAM_WEBHOOK_SECRET / DLP / Firestore rules / threat model** — folded into L4 (`assertWebhookSecret`, `assertOidcConfig`, `lib/dlp.ts`)
+
+The legacy `level_5/` directory is removed in Stage 3 of the restructure.
 
 ## 🎉 Congratulations
 

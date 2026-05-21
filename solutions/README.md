@@ -5,10 +5,10 @@ finished state of that level's `level_N/starter/`.
 
 ## Relationship to git tags
 
-`solutions/level_1/` is generated from the verified tag `v1-complete`
-(`git show v1-complete:codelab/starter/`). The legacy tags `v0-starter` …
-`v5-complete` are kept for reference. Solutions are the maintained artifact;
-tags are the historical checkpoint.
+The legacy `v0-starter` … `v5-complete` tags are kept for reference. Solutions
+under this directory are the maintained artifact; tags are the historical
+checkpoint for the monolithic `codelab/starter/` flow (which is removed in
+Stage 3 of the restructure).
 
 ## Verifying a solution
 
@@ -25,5 +25,7 @@ in the solution.
 
 ## Cumulative property
 
-Solutions grow monotonically: `solutions/level_2/src` (added in Stage 2) will
-be a strict superset of `solutions/level_1/src`. Stage 1 ships `level_1` only.
+Solutions grow monotonically: each `solutions/level_N/src` is a strict
+superset of `solutions/level_{N-1}/src`. As of Stage 2, all four levels
+(`solutions/level_1` through `solutions/level_4`) ship complete. L5 hardening
+is folded into L3 (startup gates) and L4 (OIDC, webhook secret, DLP).
