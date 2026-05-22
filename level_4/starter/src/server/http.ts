@@ -4,11 +4,9 @@ import type { AgentRunner } from '../agent/runner.js';
 import type { ContextEngine } from '../context/manager.js';
 import type { Compactor } from '../context/compaction.js';
 import type { CronEngine } from '../cron/engine.js';
-import type { BudgetGuard } from '../agent/budget.js';
 import type { SessionStore } from '../sessions/store.js';
 import type { Config } from '../types/index.js';
 import { adminAuth } from './middleware/admin-auth.js';
-import { verifyOidc } from './middleware/verify-oidc.js';
 
 const DASHBOARD_HTML = `<!doctype html>
 <meta charset="utf-8" />
@@ -24,11 +22,10 @@ const DASHBOARD_HTML = `<!doctype html>
 <div class="card"><h2>Cron jobs</h2><pre id="cron">loading…</pre></div>
 <script>
   fetch('/api/admin/status', { headers: { 'x-admin-key': localStorage.getItem('adkclaw-admin-key') || '' } })
-    .then((r) => r.json())
-    .then((s) => {
-      document.getElementById('sessions').textContent = JSON.stringify(s.sessions, null, 2);
-      document.getElementById('cron').textContent = JSON.stringify(s.cron, null, 2);
-    });
+    .then((r) => r.json()).then((s) => {
+    document.getElementById('sessions').textContent = JSON.stringify(s.sessions, null, 2);
+    document.getElementById('cron').textContent = JSON.stringify(s.cron, null, 2);
+  });
 </script>`;
 
 export function createHttpServer(
@@ -37,7 +34,6 @@ export function createHttpServer(
   contextEngine: ContextEngine,
   sessions: SessionStore,
   compactor: Compactor,
-  budget: BudgetGuard,
   cronEngine?: CronEngine,
 ): Express {
   const app = express();
@@ -47,7 +43,8 @@ export function createHttpServer(
     res.json({ ok: true });
   });
 
-  // Admin surfaces — gated by the x-admin-key header (see admin-auth.ts).
+  // Live admin dashboard — a static auto-refreshing page, no build step.
+  // L5 hardening folded in: gated by adminAuth middleware (x-admin-key header).
   app.get('/', adminAuth, (_req, res) => {
     res.type('html').send(DASHBOARD_HTML);
   });
@@ -66,18 +63,6 @@ export function createHttpServer(
     });
   });
 
-  // Cloud Scheduler trigger — only Google-authenticated callers (verified OIDC)
-  // may fire a cron job. An unverified endpoint here would be a public RCE.
-  app.post('/api/cron/fire', verifyOidc, async (req, res) => {
-    const { jobId } = req.body as { jobId?: string };
-    if (!jobId || !cronEngine || !cronEngine.has(jobId)) {
-      res.status(404).json({ error: 'unknown jobId' });
-      return;
-    }
-    const result = await cronEngine.fireNow(jobId);
-    res.json({ ok: result.success, result: result.result });
-  });
-
   app.post('/api/chat', async (req, res) => {
     const { sessionKey, message, channel, senderId } = req.body as {
       sessionKey?: string;
@@ -87,13 +72,6 @@ export function createHttpServer(
     };
     if (!sessionKey || !message) {
       res.status(400).json({ error: 'sessionKey and message are required' });
-      return;
-    }
-
-    // Level 5 — refuse the turn if the sender is over their daily token cap.
-    const verdict = budget.check(senderId ?? null);
-    if (!verdict.ok) {
-      res.json({ text: verdict.refusalText ?? 'Daily token budget reached.', toolCallCount: 0 });
       return;
     }
 

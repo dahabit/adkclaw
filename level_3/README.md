@@ -1,41 +1,41 @@
-# Level 3: The Agent Army
+# Level 3: Memory & Skills
 
-![Level 3: The Agent Army](img/recovery-pyramid.png)
+![Level 3: Memory & Skills](img/memory-architecture.png)
 
-**Spawn specialized sub-agents, build the recovery pyramid that ensures your agent never crashes, and add cron + heartbeat so it works while you sleep.**
+**Give your agent a memory that survives reboots — and the ability to learn new skills from markdown files at runtime, with no redeploy.**
 
-One agent is a tool. Many agents collaborating is a system. Today you build the system. You'll spawn isolated sub-agents with forked context (never sharing parent history), implement the five-tier recovery pyramid (retry → fallback → recover → degrade → escalate) that turns "the agent never crashes" into a design constraint, schedule cron jobs that survive restart with idempotency keys, and add a heartbeat loop with quiet hours so your agent runs 24/7 without waking you at 3 AM.
+In Level 2 your agent forgot you the moment a session expired. Today it learns to remember **forever** — across reboots, days, even weeks. You'll build the three-tier memory model (in-context history → daily notes → memory bank), implement compaction at 80% to survive 1M-token context windows, and create a markdown-skills loader that lets your agent gain new capabilities by reading new files.
 
 ## 🎯 What You'll Learn
 
 | Concept | Description |
 |---------|-------------|
-| **Sub-agent orchestration** | Isolated sessions, forked context, goal ancestry |
-| **Specialized profiles** | SearchAgent (Flash), ResearcherAgent (Pro), CommunicatorAgent, CoderAgent |
-| **Tool allowlists per profile** | Each profile sees only its tools |
-| **Recovery pyramid** | Retry → Fallback → Recover → Degrade → Escalate |
-| **Error classification** | Retryable vs escalatable categories |
-| **Exponential backoff** | 1s → 2s → 4s with rate-limit headers |
-| **Cron with idempotency keys** | Minute-bucket dedup prevents missed-tick double-fires |
-| **Heartbeat with quiet hours** | Periodic self-check that respects 22:00–07:00 |
-| **Admin dashboard** | Live HTML status at `/`, auto-refreshing |
+| **Three-tier memory model** | Conversation history → daily notes → structured memory bank |
+| **Context bootstrap** | Assemble system prompt from `workspace/` files in a fixed order |
+| **Mtime-based caching** | Cache invalidation by aggregate file mtime fingerprint |
+| **Compaction at 80%** | Summarize oldest history, preserve IDs/URLs/decisions |
+| **Memory bank taxonomy** | `bank/{facts,decisions,projects,people}/` — structured retrieval beats vector search at small scale |
+| **Daily notes** | One file per day, append-only, raw scratch pad |
+| **Consolidator pattern** | Promote daily notes → bank entries with curation |
+| **Markdown skills** | Drop a `.md` file → agent gains a capability at next bootstrap |
+| **Skill self-creation** | Agent watches its own session, drafts new skill files |
 
 ## ✅ What You'll Build
 
 By the end of this level, you will have:
 
-- 🤖 A `MultiAgentOrchestrator` that spawns isolated sub-agents
-- 👥 Four specialized profiles (Search/Researcher/Communicator/Coder)
-- 🛡️ A `HealingEngine` enforcing the recovery pyramid
-- 🔍 An error classifier that decides retry vs escalate
-- ⏰ A `CronEngine` with persistent jobs + idempotency keys
-- 💓 A heartbeat loop that respects quiet hours
-- 📊 A live admin dashboard at `localhost:3000/`
+- 🧠 A `ContextEngine` that assembles the system prompt from workspace files in fixed order
+- 💾 A `MemoryBank` with 4-folder taxonomy (facts/decisions/projects/people)
+- 📝 Daily notes that capture raw events into `workspace/memory/YYYY-MM-DD.md`
+- ⚡ Compaction at 80% utilization with `compaction_checkpoints` audit table
+- 🎓 A markdown skills loader that surfaces skills in the system prompt
+- 🪄 The "self-learning loop" where the agent drafts new skill files
 
 ## 📋 Prerequisites
 
-- ✅ **Level 2 completed** — agent has persistent memory + skills
+- ✅ **Level 2 completed** — your agent runs on Telegram with conversation memory
 - ✅ `level_3/starter/` checked out (`cd adkclaw/level_3/starter && npm install`)
+- ✅ Familiarity with markdown frontmatter
 
 ## 🚀 Quick Start
 
@@ -47,185 +47,185 @@ npm install
 npm run verify   # offline: tsc --noEmit + vitest run — should be green
 ```
 
-**Note:** Levels 1–4 each have a self-contained per-level starter under `level_N/starter/` with offline `npm run verify` checkpoints. The answer key for this level is `solutions/level_3/`. Three L5 startup gates (DAILY_TOKEN_BUDGET, ADMIN_KEY, ALLOWED_SENDERS) are folded into L3 — set them in `.env` or the daemon won't boot.
+**Note:** Levels 1–4 each have a self-contained per-level starter under `level_N/starter/` with offline `npm run verify` checkpoints. The answer key for this level is `solutions/level_3/`. Level 5 content is folded into Levels 3 and 4.
 
-### 2. Fill the one marker in this level
+### 2. Fill the context-engine markers
 
-`src/multi-agent/orchestrator.ts` ships with `//REPLACE-MULTI-AGENT-SPAWN` inside `spawn()`. Fill the body — that's the central pattern. Critical: **fork context, don't share parent history**. See codelab §2 for the exact fill.
+Open `src/context/manager.ts` and find the four `//REPLACE-CONTEXT-ENGINE` markers. The class shell, constants, and helpers ship pre-provided — you fill four method bodies:
 
-### 3. The four sub-agent profiles (pre-provided)
+| Method | What you implement |
+|--------|--------------------|
+| `bootstrap()` | Read workspace files in order: IDENTITY → USER → SOUL → AGENTS → MEMORY → today's daily note → bank index → skills → HEARTBEAT |
+| `fingerprint()` | Aggregate mtime of every file `bootstrap()` reads — cache invalidation |
+| `indexBank()` | Sample `workspace/bank/{cat}/` into a compact index for the system prompt |
+| `loadSkills()` | Enumerate `workspace/skills/*.md`, parse frontmatter, surface descriptions |
 
-| Profile | File | Tools allowed | Default model |
-|---------|------|---------------|--------------|
-| SearchAgent | `src/multi-agent/profiles/SearchAgent.ts` | web_search, web_fetch | Flash |
-| ResearcherAgent | `src/multi-agent/profiles/ResearcherAgent.ts` | + memory_*, spawn_search | Pro |
-| CommunicatorAgent | `src/multi-agent/profiles/CommunicatorAgent.ts` | message_user only | Flash |
-| CoderAgent | `src/multi-agent/profiles/CoderAgent.ts` | filesystem, shell, code_fix | Pro |
+### 3. Fill the compaction markers
 
-Tests in `profiles/index.test.ts` lock the shape.
+`src/context/token-counter.ts` (two `//REPLACE-CONTEXT-TOKENS`) — implement `estimateTokens()` and `estimateTokensInHistory()`. `src/context/compaction.ts` (one `//REPLACE-CONTEXT-COMPACTION`) — implement `maybeCompact()` body. The `Compactor` class shell and `PRESERVATION_RULES` are pre-provided.
 
-### 4. The recovery pyramid (pre-provided)
+### 4. Memory bank, daily notes, consolidator, skills loader (pre-provided)
 
-`src/healing/classifier.ts` and `src/healing/engine.ts` ship pre-provided — 17 tests lock the behaviour (retry, backoff, fallback, skip-list). Read the code; the codelab §3 explains the pattern.
+`src/memory/bank.ts`, `src/memory/daily-notes.ts`, `src/memory/consolidator.ts`, and `src/skills/loader.ts` ship pre-provided — tests in each `*.test.ts` lock the behaviour (frontmatter parsing, path-traversal rejection, JSON-loose parsing, etc.). Read them; you don't reimplement them.
 
-### 5. Cron with idempotency (pre-provided)
-
-`src/cron/engine.ts` ships pre-provided. The lesson is the SQLite-backed dedupe: `(job_id, idempotency_key)` UNIQUE constraint stops double-fires. Read codelab §4.
-
-### 6. Run the daemon
+### 5. Run the daemon
 
 ```bash
 npm run dev
 ```
 
-### 7. Test the wow demos
+### 6. Test the wow demo
 
-**Sub-agent spawn:**
-```
-You: Research Google ADK in depth and save findings.
-Bot: Spawning ResearcherAgent... [9 tool calls later]
-     ✓ Saved 4 facts to bank/facts/. Summary attached.
-```
+On Telegram or via REPL:
 
-**Recovery pyramid (live):**
-```bash
-# Pull the network mid-conversation
-$ ifconfig en0 down
-[Telegram] What's the current Flutter version?
-[1s] retry... [2s] retry... [4s] retry...
-[fallback Pro → Flash also fails]
-Bot: I can't reach the web right now. Last I knew, Flutter 3.27 was stable.
-$ ifconfig en0 up
+```
+You: Remember I prefer SQLite over Postgres for v1 projects.
+Bot: Got it — saved to bank/decisions/dec-...md ✓
+
+[bin/adkclaw stop && bin/adkclaw bg]   ← restart the daemon
+
+You: What database do I prefer for v1?
+Bot: SQLite over Postgres — you told me earlier today.
+     (bank/decisions/dec-2026-05-04-sqlite.md)
 ```
 
-**Cron + heartbeat:**
-```
-You: Every weekday at 9 a.m., search Google ADK news. Ping me only if something new shipped.
-Bot: Scheduled. Job ID: cron_a8f2.
-$ sqlite3 data/adkclaw.db "SELECT * FROM cron_jobs;"   ← shows persisted job
-[restart daemon — job survives]
-[next 9 a.m. — fires autonomously]
-```
+The agent **survived a restart** because the decision lives on disk, not in RAM.
 
-**Admin dashboard:**
-```bash
-$ bin/adkclaw open
-# Browser opens http://localhost:3000/
-# Live: sessions, tokens, channel breakdown, sub-agent activity
+### 7. Demonstrate skill self-creation
+
+```
+You: Save what we just did as a skill called "remember-decisions".
+Bot: Done — workspace/skills/remember-decisions.md.
+     Restart and I'll advertise it in my system prompt.
 ```
 
-## 🏆 Light Up Your Level 3 Badge
+`cat workspace/skills/remember-decisions.md` shows the agent's draft. Restart; it's now a listed skill.
 
-**Trigger**: a sub-agent spawns (any of `spawn_search` / `spawn_researcher` / `spawn_communicator` / `spawn_coder` / generic `spawn_agent`) AND returns a result without erroring out of the recovery pyramid.
+## 🏆 Light Up Your Level 2 Badge
 
-If you registered at [adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox) (see [Level 0 → Connect to the Cohort Fleet](../level_0/README.md#-optional-connect-to-the-cohort-fleet)), your third pillar lights up on the fleet view. If not registered, no-op.
+**Trigger**: memory bank gets its first fact AND compaction runs once. The agent calls `mark_level_complete` with `level: 2` after both happen in the same session.
+
+If you registered at [adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox) (see [Level 1 → Connect to the Cohort Fleet](../level_1/README.md#-optional-connect-to-the-cohort-fleet)), your second pillar lights up on the fleet view. If not registered, no-op.
 
 ## 📖 Full Codelab
 
-**[📚 Level 3 Codelab →](https://codelabs.developers.google.com/adkclaw-level-3/instructions)**
+For detailed step-by-step instructions:
+
+**[📚 Level 2 Codelab →](https://codelabs.developers.google.com/adkclaw-level-2/instructions)**
 
 ## 🏗️ Architecture
 
 ```
-                          ESCALATE  ↑ tell the user
-                            DEGRADE ↑ reduced capability
-                              RECOVER ↑ restart subsystem
-                              FALLBACK ↑ Pro → Flash
-                              RETRY ↑ exponential backoff
+┌─────────────────────────────────────────────────────────────────┐
+│                     Three-Tier Memory                           │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│   Conversation history   ← in-context (survives a single turn)  │
+│            ↓ (compaction at 80%)                                 │
+│                                                                  │
+│   Daily notes            ← workspace/memory/YYYY-MM-DD.md        │
+│            ↓ (consolidator promotes)                             │
+│                                                                  │
+│   Memory bank            ← workspace/bank/{facts,decisions,      │
+│                            projects,people}/*.md                 │
+│                                                                  │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
 ## 🔑 Key Patterns
 
-### Sub-agent with forked context (NON-NEGOTIABLE)
+### Context bootstrap with mtime cache
 
 ```typescript
-// src/multi-agent/orchestrator.ts
-async spawn(req: SpawnRequest): Promise<SpawnResult> {
-  const childKey = `subagent:${req.parentSessionKey}:${randomKey()}`;
-  this.sessions.createSession({ key: childKey, kind: 'isolated', parentKey: req.parentSessionKey });
+// src/context/manager.ts
+bootstrap(): BootstrapResult {
+  const fingerprint = this.fingerprint();
+  if (this.cacheKey === fingerprint && this.cached) return this.cached;
 
-  // CRITICAL: child does NOT see parent's history
-  const extraSystemPrompt = framing + profileText + goalText;
-  const allowedToolNames = profile?.toolAllowlist;
+  // Read files in fixed order: IDENTITY → USER → SOUL → AGENTS → MEMORY → today → bank → skills → HEARTBEAT
+  const sections = [...];
+  const result = { systemPrompt: sections.join('\n\n---\n\n'), ... };
 
-  return await this.runner.run({
-    sessionKey: childKey,
-    message: req.task,
-    extraSystemPrompt,
-    allowedToolNames,
-    ...
+  this.cached = result;
+  this.cacheKey = fingerprint;
+  return result;
+}
+```
+
+### Compaction at 80%
+
+```typescript
+// src/context/compaction.ts
+if (tokenCount > MODEL_WINDOW * 0.8) {
+  const oldestN = history.slice(0, Math.floor(history.length / 2));
+  const summary = await llm.summarize(oldestN, {
+    preserve: ['IDs', 'URLs', 'file paths', 'decisions', 'task status'],
   });
+  history.splice(0, oldestN.length, summaryMessage(summary));
+  store.saveCheckpoint(sessionKey, summary, oldestN.length);
 }
 ```
 
-### Recovery pyramid
+### Markdown skill file
 
-```typescript
-// src/healing/engine.ts
-async protect<T>(primary: () => Promise<T>, fallback: () => Promise<T>) {
-  return this.withFallback(() => this.withRetry(primary), fallback);
-}
-```
+```markdown
+---
+name: research-topic
+description: Use when the user asks for research on a topic
+when_to_invoke: User says "research X", "look into Y", "find sources on Z"
+---
 
-### Cron idempotency key
-
-```typescript
-// src/cron/engine.ts
-const idempotencyKey = `${jobId}:${Math.floor(Date.now() / 60000)}`;
-try {
-  db.prepare('INSERT INTO cron_runs (job_id, idempotency_key, fired_at) VALUES (?, ?, ?)')
-    .run(jobId, idempotencyKey, Date.now());
-  await runJob();
-} catch (e) {
-  if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') return; // dedup hit, skip
-  throw e;
-}
+## Steps
+1. web_search the topic
+2. For each top result: web_fetch + extract key facts
+3. Cross-reference, dedupe against memory bank
+4. Save new facts to bank/facts/
+5. Return structured summary with citations
 ```
 
 ## 🐛 Troubleshooting
 
 | Issue | Solution |
 |-------|----------|
-| Sub-agent hangs forever | Add timeout via `Promise.race()` — covered in chapter 1 |
-| Auth errors retry instead of escalating | Classifier missing `auth` in skip list — check `classifier.ts` |
-| Cron job double-fires | Idempotency key not unique. Check `cron_runs` UNIQUE constraint. |
-| Heartbeat fires at 3 AM | Quiet hours not enforced. Check `heartbeat.ts` time check. |
+| `Compaction failed: insufficient context` | Threshold too high. Make sure it's 80%, not 95%. |
+| Bank entries not surfacing in recall | Check the index isn't being cached past file changes. Verify mtime in fingerprint. |
+| Skill file not appearing in system prompt | Frontmatter parse error. Validate YAML in `workspace/skills/*.md`. |
+| Daily note not appended | Check `daily_append` tool's path resolution. TZ env var matters. |
 
 ## 📁 Files Overview
 
-| File | What you do |
-|------|------------|
-| `src/multi-agent/orchestrator.ts` | Fill `//REPLACE-MULTI-AGENT-SPAWN` — implement `spawn()` body |
-| `src/multi-agent/profiles/*.ts` | (pre-provided — read the four profile shapes) |
-| `src/healing/classifier.ts` | (pre-provided — tests cover 9 error branches) |
-| `src/healing/engine.ts` | (pre-provided — `withRetry`/`withFallback`/`protect`) |
-| `src/cron/engine.ts` | (pre-provided — read the dedupe pattern) |
-| `src/cron/heartbeat.ts` | (pre-provided — tune `quietHours` in `src/index.ts`) |
-| `src/server/http.ts` | (pre-provided — dashboard HTML + `/api/admin/status`) |
-| `src/agent/budget.ts` | (pre-provided — `assertDailyTokenBudget` + `BudgetGuard`) |
-| `src/server/middleware/admin-auth.ts` | (pre-provided — `ADMIN_KEY` gate for `/api/admin/*`) |
-| `bin/adkclaw` | `bg`/`stop`/`status`/`logs`/`open` commands |
+| File | Purpose | What you do |
+|------|---------|-------------|
+| `src/context/manager.ts` | Bootstrap system prompt | Fill `//REPLACE-CONTEXT-ENGINE` (×4): `bootstrap()`, `fingerprint()`, `indexBank()`, `loadSkills()` |
+| `src/context/compaction.ts` | Compact history at the configured threshold | Fill `//REPLACE-CONTEXT-COMPACTION`: `maybeCompact()` body |
+| `src/context/token-counter.ts` | Approximate token counting | Fill `//REPLACE-CONTEXT-TOKENS` (×2): `estimateTokens()` + `estimateTokensInHistory()` |
+| `src/memory/bank.ts` | Memory bank CRUD | (pre-provided — tests lock the surface) |
+| `src/memory/daily-notes.ts` | Daily scratch pad | (pre-provided) |
+| `src/memory/consolidator.ts` | Promote daily → bank | (pre-provided — runs from L3 heartbeat) |
+| `src/skills/loader.ts` | Markdown skill loader | (pre-provided — `list()` + `load()` with path-traversal defence) |
+| `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` | Register factories in `src/index.ts` |
+| `src/tools/skills.ts` | `load_skill`, `list_skills` | Register factories in `src/index.ts` |
 
-## 🏁 Ready for Level 4?
+## 🏁 Ready for Level 3?
 
 Before you continue, verify:
 
-- [ ] A sub-agent returned a real result to the parent (test: parent calls `spawn_researcher({task: "..."})`, gets a structured reply)
-- [ ] Cron fired at least twice without double-running — check `cron_runs` table for unique keys
-- [ ] Heartbeat is publishing every 30 minutes (check `workspace/HEARTBEAT.md` mtime)
-- [ ] Healing engine retried at least one transient error — check logs for `[healing] retry attempt=2`
-- [ ] Admin dashboard at `localhost:3000/` shows live state
+- [ ] Memory bank has at least one fact you saved (`workspace/bank/facts/*.md` exists)
+- [ ] Compaction has fired at least once — check the daemon logs for `[compaction] tokensBefore=...`
+- [ ] At least one custom skill file in `workspace/skills/` is being picked up at runtime
+- [ ] Restart the daemon and the agent recalls something from a previous session
+- [ ] You can explain when grep beats embeddings and when it doesn't
 
-If sub-agent isolation is broken (parent context leaking), do not proceed to L4. Cloud Run amplifies cost mistakes.
+If compaction never fires, your test conversation is too short. Have ~50 turns with the agent before validating.
 
 ## ➡️ Next Level
 
-Your agent runs 24/7 on your laptop. Time to put it on Google Cloud, reachable from any phone, anywhere.
+Your agent has memory. Time to give it a team and bulletproof reliability.
 
-**[Level 4: Ship to the Cloud →](../level_4/README.md)**
+**[Level 4: The Agent Army →](../level_4/README.md)**
 
-Containerize, deploy to Cloud Run, migrate state to Firestore, switch Telegram to webhook mode, schedule cron via Cloud Scheduler. Your agent becomes truly global.
+You'll spawn specialized sub-agents (Search, Researcher, Communicator, Coder), implement the recovery pyramid for self-healing, and add cron + heartbeat for true autonomy.
 
 ---
 
-*Your agent has a team now, and never crashes. Onward.* 🤖🤖🤖
+*Your agent remembers now. The journey continues.* 🧠

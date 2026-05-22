@@ -12,15 +12,13 @@ export const webSearchTool: AgentTool = {
     properties: { query: { type: 'string' } },
     required: ['query'],
   },
+  //REPLACE-TOOL-WEB
+  // Implement both web_search and web_fetch execute bodies.
+  // For now, web_search returns a stub so the loop works end-to-end.
+  // web_fetch actually fetches and returns the page content.
+  // Fill this in from level_2/codelab.md §4.
   async execute(args) {
-    const query = String(args.query ?? '');
-    if (!query) return { error: 'query is required' };
-    // Stub for now — returns a placeholder so you can see the loop wire
-    // through end-to-end. Level 3 swaps this for Gemini search grounding.
-    return {
-      success: true,
-      result: `(stub) search results for "${query}". Level 3 wires real grounding.`,
-    };
+    throw new Error('REPLACE-TOOL-WEB not implemented — see level_2/codelab.md §4');
   },
 };
 
@@ -36,11 +34,6 @@ export const webFetchTool: AgentTool = {
     required: ['url'],
   },
   async execute(args) {
-    const url = String(args.url ?? '');
-    if (!url) return { error: 'url is required' };
-    const res = await fetch(url);
-    if (!res.ok) return { error: `HTTP ${res.status} for ${url}` };
-    const text = await res.text();
-    return { success: true, result: text.slice(0, 16_000) };
+    throw new Error('REPLACE-TOOL-WEB not implemented — see level_2/codelab.md §4');
   },
 };

@@ -12,13 +12,13 @@ archaeology only.
 
 ## Verifying a solution
 
-    cd solutions/level_1 && npm install && npm run verify
+    cd solutions/level_2 && npm install && npm run verify
 
 `verify` is offline: `tsc --noEmit` + `vitest run`. No Gemini key, no network.
 
 ## Diffing a starter against its answer key
 
-    diff -ru level_1/starter/src solutions/level_1/src
+    diff -ru level_2/starter/src solutions/level_2/src
 
 Every `//REPLACE-*` marker in the starter corresponds to a filled-in region
 in the solution.
@@ -27,5 +27,5 @@ in the solution.
 
 Solutions grow monotonically: each `solutions/level_N/src` is a strict
 superset of `solutions/level_{N-1}/src`. As of Stage 2, all four levels
-(`solutions/level_1` through `solutions/level_4`) ship complete. L5 hardening
+(`solutions/level_2` through `solutions/level_5`) ship complete. L5 hardening
 is folded into L3 (startup gates) and L4 (OIDC, webhook secret, DLP).

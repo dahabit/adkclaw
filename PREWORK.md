@@ -55,7 +55,7 @@ You have two paths. Both are fully supported.
 - Requirements:
   - Node.js **22 or newer** (`node --version`). Install via [nodejs.org](https://nodejs.org/) or `nvm install 22`.
   - `git`. Install via [git-scm.com](https://git-scm.com/).
-  - `gcloud` CLI for Level 4. Install via [cloud.google.com/sdk/docs/install](https://cloud.google.com/sdk/docs/install).
+  - `gcloud` CLI for Level 5. Install via [cloud.google.com/sdk/docs/install](https://cloud.google.com/sdk/docs/install).
   - Apple Silicon: works natively, no Rosetta needed.
   - Windows: use [WSL 2](https://learn.microsoft.com/en-us/windows/wsl/install) (Ubuntu). Native PowerShell is not supported.
 
@@ -65,7 +65,7 @@ Pick one path and stick with it for the whole workshop. Switching mid-session lo
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/level_1/starter
+cd adkclaw/level_2/starter
 npm install
 cd -                           # back to repo root
 ./scripts/preflight.sh
@@ -77,13 +77,13 @@ The preflight script checks 7 things:
 |---|---|---|
 | 1 | Node.js version | `node --version` reports 22.0.0 or newer |
 | 2 | git installed | `git --version` works |
-| 3 | gcloud CLI | installed (warning only, required for Level 4) |
+| 3 | gcloud CLI | installed (warning only, required for Level 5) |
 | 4 | GCP project set | `gcloud config get-value project` returns a project ID |
 | 5 | Gemini API key | present in `.env` and longer than 30 chars |
 | 6 | Telegram bot token | present in `.env` and longer than 20 chars |
 | 7 | Vertex AI API enabled | `gcloud services list` includes `aiplatform.googleapis.com` |
 
-If you don't have a `.env` yet, that's expected — you'll create it in step 1 of Level 0. You can re-run preflight any time.
+If you don't have a `.env` yet, that's expected — you'll create it in step 1 of Level 1. You can re-run preflight any time.
 
 ### Day −1 — final checklist
 
@@ -98,7 +98,7 @@ Anything red? Drop a message in the cohort support channel — your instructor's
 
 ## Day 0 — what happens
 
-You'll start with **Level 0 (architecture tour)** — a guided walkthrough of the agent you're about to build. Then you go straight into **Level 1 (Build the Brain)** where you wire the agent loop, register three tools, give it a personality, and put it on Telegram.
+You'll start with **Level 1 (Architecture Tour)** — a guided walkthrough of the agent you're about to build. Then you go straight into **Level 2 (Build the Brain)** where you wire the agent loop, register three tools, give it a personality, and put it on Telegram.
 
 By the end of Day 1 you'll be having a real conversation with your own agent.
 
@@ -119,6 +119,6 @@ By the end of Day 1 you'll be having a real conversation with your own agent.
 - Your Gemini API key is sensitive. Never paste it into a browser form, screenshot it, or commit it. Keep it in `.env` and on disk only.
 - The workshop fits inside Gemini's free tier with comfortable headroom for testing.
 - Cloud Run scales to zero between requests, so a deployed agent costs nothing while idle.
-- If you want to throw away everything at the end of the workshop, `scripts/graduate-cleanup.sh` (Level 4) deletes everything cleanly.
+- If you want to throw away everything at the end of the workshop, `scripts/graduate-cleanup.sh` (Level 5) deletes everything cleanly.
 
 You're ready. See you on Day 1.

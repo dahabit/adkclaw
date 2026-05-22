@@ -2,7 +2,6 @@
 import { Telegraf, type Context } from 'telegraf';
 import type { AgentRunner } from '../agent/runner.js';
 import type { ContextEngine } from '../context/manager.js';
-import type { Compactor } from '../context/compaction.js';
 import type { SessionStore } from '../sessions/store.js';
 import type { Config } from '../types/index.js';
 
@@ -16,7 +15,6 @@ export class TelegramAdapter {
     private readonly runner: AgentRunner,
     private readonly contextEngine: ContextEngine,
     private readonly sessions: SessionStore,
-    private readonly compactor: Compactor,
   ) {
     this.bot = new Telegraf(config.telegram.botToken);
 
@@ -53,14 +51,11 @@ export class TelegramAdapter {
       senderIdStr,
       this.config.gemini.defaultModel,
     );
-
-    // Compact old turns before reading history, so the run stays under budget.
-    await this.compactor.maybeCompact(session.key);
     const history = this.sessions.history(session.key);
 
     const result = await this.runner.run({
       session,
-      systemPrompt: this.contextEngine.bootstrap().systemPrompt,
+      systemPrompt: this.contextEngine.bootstrap(),
       history,
       userText: text,
     });

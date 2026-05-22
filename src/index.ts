@@ -65,7 +65,7 @@ async function main() {
     if (!process.env.DAILY_TOKEN_BUDGET)
       fatal('DAILY_TOKEN_BUDGET is required (see level_5/codelab.md §4).');
     if (!process.env.TELEGRAM_WEBHOOK_SECRET)
-      fatal('TELEGRAM_WEBHOOK_SECRET is required (see level_4/codelab.md §8).');
+      fatal('TELEGRAM_WEBHOOK_SECRET is required (see level_5/codelab.md §8).');
   }
   if (warnings.length > 0) {
     console.warn('⚠️  Configuration warnings (daemon will start but with reduced functionality):');

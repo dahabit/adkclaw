@@ -10,35 +10,35 @@
   "node_version": "22",
   "levels": [
     {
-      "id": 0,
+      "id": 1,
       "slug": "intro",
       "title": "Architecture Tour",
       "duration_min": 60,
       "type": "presentation"
     },
     {
-      "id": 1,
+      "id": 2,
       "slug": "build-the-brain",
       "title": "Build the Brain",
       "duration_min": 120,
       "type": "hands-on"
     },
     {
-      "id": 2,
+      "id": 3,
       "slug": "memory-and-skills",
       "title": "Memory & Skills",
       "duration_min": 120,
       "type": "hands-on"
     },
     {
-      "id": 3,
+      "id": 4,
       "slug": "agent-army",
       "title": "The Agent Army",
       "duration_min": 120,
       "type": "hands-on"
     },
     {
-      "id": 4,
+      "id": 5,
       "slug": "cloud-deploy",
       "title": "Ship to the Cloud",
       "duration_min": 150,

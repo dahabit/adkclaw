@@ -11,7 +11,7 @@ cd "$(dirname "$0")/.." || exit 1
 
 if [ "$#" -ne 2 ]; then
   echo "Usage: $0 <input.md> <output.ar.md>"
-  echo "Example: $0 level_1/README.md level_1/README.ar.md"
+  echo "Example: $0 level_2/README.md level_2/README.ar.md"
   exit 1
 fi
 

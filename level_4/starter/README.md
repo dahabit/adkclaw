@@ -26,10 +26,10 @@
 
 | Level | Folder you'll create |
 |-------|----------------------|
-| Level 1 | `src/agent/`, `src/tools/`, `src/sessions/`, `src/channels/`, `src/server/` |
-| Level 2 | `src/memory/`, `src/context/compaction.ts`, `src/skills/` |
-| Level 3 | `src/multi-agent/`, `src/healing/`, `src/cron/` |
-| Level 4 | `Dockerfile`, `src/storage/gcs.ts`, `src/sessions/firestore-store.ts` |
+| Level 2 | `src/agent/`, `src/tools/`, `src/sessions/`, `src/channels/`, `src/server/` |
+| Level 3 | `src/memory/`, `src/context/compaction.ts`, `src/skills/` |
+| Level 4 | `src/multi-agent/`, `src/healing/`, `src/cron/` |
+| Level 5 | `Dockerfile`, `src/storage/gcs.ts`, `src/sessions/firestore-store.ts` |
 
 ---
 
@@ -51,7 +51,7 @@ npm run dev
 # → 🤖 AdkClaw scaffold v0 — start Level 1 to build the brain
 ```
 
-**You're done.** Open `level_1/codelab.md` (or [`adkclaw.dev/codelabs/level-1`](https://adkclaw.dev)) to start building the agent loop.
+**You're done.** Open `level_2/codelab.md` (or [`adkclaw.dev/codelabs/level-1`](https://adkclaw.dev)) to start building the agent loop.
 
 ---
 

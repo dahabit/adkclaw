@@ -60,7 +60,7 @@ export function migrate(): number {
 
   console.error(
     `\nExported ${sessions.length} sessions + ${messages.length} messages.\n` +
-      'Pipe stdout into your Firestore import script (see level_4/codelab.md §5).',
+      'Pipe stdout into your Firestore import script (see level_5/codelab.md §5).',
   );
   db.close();
   return 0;

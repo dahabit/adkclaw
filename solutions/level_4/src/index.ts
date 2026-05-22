@@ -29,11 +29,9 @@ import {
 import { AgentRunner } from './agent/runner.js';
 import { assertDailyTokenBudget, BudgetGuard } from './agent/budget.js';
 import { assertAdminKey } from './server/middleware/admin-auth.js';
-import { assertOidcConfig } from './server/middleware/verify-oidc.js';
-import { createSessionStore } from './sessions/store-factory.js';
-import { TelegramAdapter, assertAllowedSenders, assertWebhookSecret } from './channels/telegram.js';
+import { SessionStore } from './sessions/store.js';
+import { TelegramAdapter, assertAllowedSenders } from './channels/telegram.js';
 import { createHttpServer } from './server/http.js';
-import { logInfo } from './lib/logger.js';
 
 // Gemini's context window. Compaction triggers at 80% of it.
 const MODEL_WINDOW = 1_000_000;
@@ -47,20 +45,20 @@ async function main(): Promise<void> {
     throw new Error('Invalid configuration — see errors above.');
   }
 
-  // Level 5 hardening — the daemon refuses to start unless every security
-  // gate is configured. A throw here exits the process (see main().catch).
+  // L5 hardening folded into L3 — the daemon refuses to start unless
+  // DAILY_TOKEN_BUDGET and ADMIN_KEY are configured. ALLOWED_SENDERS is also
+  // required when Telegram is configured (otherwise the bot silently locks
+  // everyone out — a misconfiguration that looks identical to "working").
   const dailyTokenBudget = assertDailyTokenBudget();
   assertAdminKey();
-  assertOidcConfig();
-  assertWebhookSecret();
   if (config.telegram.botToken) assertAllowedSenders(config.telegram.allowedSenders);
   const budget = new BudgetGuard({ dailyTokenBudget });
+  void budget; // BudgetGuard is wired into request paths in L4.
 
   const client = new GoogleGenAI({ apiKey: config.gemini.apiKey });
   const healing = new HealingEngine();
 
-  // Session backend: SQLite locally, Firestore on Cloud Run (SESSION_BACKEND).
-  const sessions = createSessionStore(config.paths.database);
+  const sessions = new SessionStore(config.paths.database);
   const contextEngine = new ContextEngine(config.paths.workspace);
   const compactor = new Compactor({
     client,
@@ -71,6 +69,7 @@ async function main(): Promise<void> {
 
   const registry = new ToolRegistry();
   registerCoreTools(registry);
+  // Level 2 tools — memory bank, daily notes, markdown skills.
   registry.register(makeMemorySaveTool());
   registry.register(makeMemoryRecallTool());
   registry.register(makeDailyAppendTool());
@@ -79,6 +78,7 @@ async function main(): Promise<void> {
 
   const runner = new AgentRunner(client, registry, config, healing);
 
+  // Level 3 — sub-agent orchestration.
   const orchestrator = new MultiAgentOrchestrator({ runner, sessions, contextEngine, config });
   registry.register(makeSpawnAgentTool(orchestrator));
   registry.register(makeSpawnSearchTool(orchestrator));
@@ -86,6 +86,8 @@ async function main(): Promise<void> {
   registry.register(makeSpawnResearcherTool(orchestrator));
   registry.register(makeSpawnCoderTool(orchestrator));
 
+  // Delivery routes an unprompted message back to a channel. `telegram` is
+  // assigned below — the closure reads it lazily.
   let telegram: TelegramAdapter | null = null;
   const delivery: DeliveryFn = async (channel, target, text) => {
     if (channel === 'telegram' && telegram) {
@@ -95,12 +97,13 @@ async function main(): Promise<void> {
     console.log(`[delivery:${channel}:${target}] ${text}`);
   };
 
+  // Level 3 — cron + heartbeat.
   const cronEngine = new CronEngine({
     runner,
     sessions,
     contextEngine,
     model: config.gemini.defaultModel,
-    databasePath: config.paths.database,
+    db: sessions.getDatabase(),
     delivery,
   });
   registry.register(makeCronAddTool(cronEngine));
@@ -122,31 +125,17 @@ async function main(): Promise<void> {
   cronEngine.start();
   heartbeat.start();
 
-  const app = createHttpServer(
-    config,
-    runner,
-    contextEngine,
-    sessions,
-    compactor,
-    budget,
-    cronEngine,
-  );
-
-  if (config.telegram.botToken) {
-    telegram = new TelegramAdapter(config, runner, contextEngine, sessions, compactor);
-    // Webhook mode (Cloud Run): mount telegraf's callback on the HTTP server.
-    if (process.env['TELEGRAM_MODE'] === 'webhook') {
-      app.use(telegram.webhookCallback('/api/telegram'));
-    }
-  }
-
+  const app = createHttpServer(config, runner, contextEngine, sessions, compactor, cronEngine);
   app.listen(config.server.port, () => {
     console.log(`[http] listening on http://${config.server.host}:${config.server.port}`);
   });
 
-  if (telegram) await telegram.launch();
+  if (config.telegram.botToken) {
+    telegram = new TelegramAdapter(config, runner, contextEngine, sessions, compactor);
+    await telegram.launch();
+  }
 
-  logInfo(`${config.agent.name} is online`, { port: config.server.port });
+  console.log(`🤖 ${config.agent.name} is online.`);
 }
 
 main().catch((err) => {

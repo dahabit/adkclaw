@@ -6,51 +6,27 @@ Curated links + ideas for students AND instructors. Same template as L3.
 
 ## Reference docs
 
-### Cloud Run
-- [Cloud Run docs — gen2 services](https://cloud.google.com/run/docs/about-instance-autoscaling) — autoscaling, concurrency, cold starts
-- [Cloud Run pricing](https://cloud.google.com/run/pricing) — free tier + per-millisecond billing
-- [Cloud Run + GCS FUSE](https://cloud.google.com/run/docs/configuring/services/cloud-storage-volume-mounts) — the workspace mount we use
-- [Container contract](https://cloud.google.com/run/docs/container-contract) — `PORT`, `/api/health`, signal handling
+### Sub-agents and orchestration
+- [Anthropic — Multi-agent orchestration patterns](https://www.anthropic.com/research/building-effective-agents) — orchestrator-worker, evaluator-optimiser, parallelisation
+- [LangGraph multi-agent](https://langchain-ai.github.io/langgraph/concepts/multi_agent/) — alternate vendor's framing (graph framework)
+- [ADK 2.0 graph framework](https://google.github.io/adk-docs/) — Google's official multi-agent direction (Cloud Next 2026)
+- [Google's Marathon Planner codelab](https://codelabs.developers.google.com/marathon-planner) — sub-agents in production
 
-### Cloud Build
-- [`--source=.` behaviour](https://cloud.google.com/run/docs/deploying-source-code) — what happens behind that flag
-- [`cloudbuild.yaml` reference](https://cloud.google.com/build/docs/build-config-file-schema) — automated multi-step builds
-- [Caching strategies](https://cloud.google.com/build/docs/optimize-builds/speeding-up-builds) — speed up your builds
+### Resilience and error recovery
+- [Google SRE Book — Cascading Failures](https://sre.google/sre-book/addressing-cascading-failures/) — canonical reference for retry + backoff
+- [AWS Builders' Library — Timeouts, retries, and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) — exponential backoff math
+- [Anthropic — Tool use error handling](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/overview) — fallback patterns
+- [Gemini error reference](https://ai.google.dev/gemini-api/docs/troubleshooting) — what each status code means
 
-### Secret Manager
-- [Secret Manager quickstart](https://cloud.google.com/secret-manager/docs/quickstart) — create, version, access
-- [IAM for secrets](https://cloud.google.com/secret-manager/docs/access-control) — grant `secretAccessor` to the SA
-- [Mounting secrets in Cloud Run](https://cloud.google.com/run/docs/configuring/secrets) — env-var vs file mount
+### Cron and scheduled work
+- [`node-cron` docs](https://www.npmjs.com/package/node-cron) — the library we use
+- [Cron expression reference](https://crontab.guru/) — interactive cron syntax helper
+- [Cloud Scheduler (preview for L4)](https://cloud.google.com/scheduler/docs) — what we migrate to
+- [SQLite UNIQUE constraint](https://www.sqlite.org/lang_createtable.html#uniqueconst) — the idempotency trick
 
-### Firestore
-- [Firestore data model](https://firebase.google.com/docs/firestore/data-model) — collections + documents
-- [Firestore Node SDK](https://www.npmjs.com/package/@google-cloud/firestore) — what we use
-- [Firestore best practices](https://cloud.google.com/firestore/docs/best-practices) — index design, write batching
-- [Firestore emulator](https://cloud.google.com/firestore/docs/emulator) — for local tests
-
-### Cloud Storage
-- [Storage quickstart](https://cloud.google.com/storage/docs/quickstart-gcloud) — bucket creation
-- [GCS FUSE](https://cloud.google.com/storage/docs/cloud-storage-fuse) — mounting buckets as filesystems
-- [Strong consistency rules](https://cloud.google.com/storage/docs/consistency) — what GCS guarantees
-
-### Cloud Scheduler
-- [Cloud Scheduler quickstart](https://cloud.google.com/scheduler/docs/quickstart) — create HTTP jobs
-- [OIDC auth for Cloud Run](https://cloud.google.com/scheduler/docs/http-target-auth) — the JWT we verify
-- [Cron syntax](https://cloud.google.com/scheduler/docs/configuring/cron-job-schedules) — slightly different from `node-cron`
-
-### Cloud Logging
-- [Structured logs](https://cloud.google.com/logging/docs/structured-logging) — JSON to stdout
-- [Logs Explorer queries](https://cloud.google.com/logging/docs/view/logging-query-language) — LQL reference
-- [Log-based metrics](https://cloud.google.com/logging/docs/logs-based-metrics) — alerting on patterns
-
-### Custom domains
-- [Cloud Run domain mappings](https://cloud.google.com/run/docs/mapping-custom-domains) — A/AAAA records
-- [SSL/TLS certificate provisioning](https://cloud.google.com/run/docs/mapping-custom-domains#dns_update) — auto-managed
-
-### Telegram webhook mode
-- [Telegram bot webhooks](https://core.telegram.org/bots/webhooks) — official guide
-- [`setWebhook` API](https://core.telegram.org/bots/api#setwebhook) — full options
-- [`getWebhookInfo`](https://core.telegram.org/bots/api#getwebhookinfo) — debugging
+### Observability
+- [Cloud Logging structured logs](https://cloud.google.com/logging/docs/structured-logging) — what we'll switch to in L5
+- [Server-Sent Events (SSE) MDN](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) — for the production dashboard's stream endpoint
 
 ---
 
@@ -58,94 +34,107 @@ Curated links + ideas for students AND instructors. Same template as L3.
 
 | For our pillar | Google codelab | Why |
 |----------------|----------------|-----|
-| Cloud Run | [Run a Node.js app on Cloud Run](https://codelabs.developers.google.com/codelabs/cloud-run-deploy) | Same deploy flow |
-| Firestore | [Build a Firestore-backed Cloud Run service](https://codelabs.developers.google.com/codelabs/cloud-run-firestore) | Adapter pattern in Python |
-| Secret Manager | [Use Secret Manager with Cloud Run](https://codelabs.developers.google.com/codelabs/cloud-run-secrets) | Same `--set-secrets` flow |
-| Cloud Scheduler | [Triggering Cloud Run with Cloud Scheduler](https://codelabs.developers.google.com/codelabs/cloud-run-scheduler) | OIDC auth pattern |
-| Multi-region | [Cloud Run + Cloud Load Balancer](https://codelabs.developers.google.com/cloud-run-multi-region) | Phase 2 stretch |
+| Multi-agent orchestration | [Build agents with ADK Foundation](https://codelabs.developers.google.com/devsite/codelabs/build-agents-with-adk-foundation) | Same orchestrator pattern in Python |
+| Specialised sub-agents | [Marathon Planner Codelab](https://codelabs.developers.google.com/marathon-planner) | Five specialised agents collaborating |
+| Resilience patterns | [Reliability for AI agents](https://cloud.google.com/architecture/reliability-best-practices-ai-agents) | Cloud-native patterns applied to agents |
+| Cron and triggers | [Cloud Scheduler quickstart](https://cloud.google.com/scheduler/docs/quickstart) | Foreshadow of L4 |
+| Live dashboards | [Cloud Run + Firestore real-time dashboards](https://cloud.google.com/firestore/docs/listen) | The L4 production version |
 
 ---
 
 ## Sample prompts to demo (test your agent with these)
 
-### After Chapter 6 (Deploy)
-```bash
-curl $SERVICE_URL/api/health
-curl -X POST $SERVICE_URL/api/chat -H 'content-type: application/json' \
-  -d '{"sessionKey":"test","message":"Hello"}'
+### After Chapter 2 (Sub-agents)
+```
+Spawn a researcher to investigate Google ADK 2.0 graph framework.
+Have a search sub-agent find me the top 3 results for "Vertex Vector Search pricing".
+Tell the coder sub-agent to check if data/sessions.db has the cron_jobs table.
 ```
 
-### After Chapter 7 (Telegram webhook)
+### After Chapter 3 (Recovery pyramid)
 ```
-[on phone] Hi from anywhere on Earth!
-[on phone] Are you running locally or in the cloud?
-[on phone] What region are you in?
+[disable network] What is the current Flutter version?
+                  (verifies retry → fallback → degrade)
+
+Tell me the current Flutter version using a deliberately bad API key.
+                  (verifies auth errors escalate immediately)
+
+[rate-limit yourself by spamming] Search for Flutter news 10 times.
+                  (verifies rate-limit retry honours Retry-After)
 ```
 
-### After Chapter 8 (Cloud Scheduler)
-```bash
-gcloud scheduler jobs run adkclaw-test --location=$REGION
-gcloud logging read 'resource.type="cloud_run_revision" jsonPayload.cron_job_id="test"' --limit=3
+### After Chapter 4 (Cron)
+```
+Every weekday at 9 AM, search Google ADK news. Ping me only if something new shipped.
+Schedule a one-time job 5 minutes from now to remind me to drink water.
+List my scheduled jobs.
+Remove the water-reminder job.
+```
+
+### After Chapter 5 (Heartbeat)
+```
+Add to HEARTBEAT.md: "OPEN: Check Vertex AI release notes weekly."
+[wait 30 min during working hours]
+                  (verifies heartbeat picks up the open task)
 ```
 
 ### Stress-test prompts
 ```
-[10 simultaneous chats from 10 phones] Hi.
-                  (tests --concurrency=10 cap)
+Spawn 4 researchers in parallel to investigate 4 different topics.
+                  (tests spawnParallel + token cost)
 
-[While idle for 20 min] Hi.
-                  (tests cold start latency)
+[disable network for 5 minutes] Continue chatting normally.
+                  (tests degraded operation persistence)
 
-[Force a 5xx via web_fetch on a deliberately broken URL]
-                  (tests the cloud logging error capture)
+Schedule a cron for "* * * * *" (every minute).
+                  (tests rapid-fire idempotency under restart)
 ```
 
 ---
 
 ## Inspiration — articles, talks, tweets
 
-### On serverless agent architecture
-- [Anthropic — Building production-ready agents](https://www.anthropic.com/research) — production patterns
-- [Cloud Run for AI workloads](https://cloud.google.com/blog/products/ai-machine-learning) — why scale-to-zero suits agent traffic
-- [Adam Riggs-Zeigen — "Why we moved from Heroku to Cloud Run"](https://cloud.google.com/customers) — migration economics
+### On multi-agent systems
+- [Anthropic — Building effective agents](https://www.anthropic.com/research/building-effective-agents) — workflow vs agent, when to use which
+- [Lilian Weng — Multi-agent collaboration](https://lilianweng.github.io/posts/2023-06-23-agent/) — academic survey
+- [DeepMind — AlphaCode 2's two-stage architecture](https://www.deepmind.com/research) — generation + verification as two specialised agents
 
-### On observability
-- [Google SRE Workbook — Monitoring](https://sre.google/workbook/monitoring/) — what to alert on
-- [Charity Majors — High-cardinality observability](https://charity.wtf/) — why structured logs > stack traces
+### On resilience patterns
+- [Google SRE Workbook — Implementing SLOs](https://sre.google/workbook/implementing-slos/) — what "never crashes" actually means in practice
+- [Charity Majors on observability](https://charity.wtf/) — production debugging mindset
+- [Marc Brooker — Backoff with jitter](https://brooker.co.za/blog/2015/03/21/backoff.html) — why jitter matters at scale
 
-### On cost optimisation
-- [Cloud Run pricing calculator](https://cloud.google.com/products/calculator/) — model your usage
-- [Free tier reference](https://cloud.google.com/free) — what stays free at small scale
-- [Mark Edmondson — "Cloud Run Always Free"](https://code.markedmondson.me/) — practitioner write-ups
+### On scheduled work
+- [Mike Perham — Sidekiq's design](https://github.com/sidekiq/sidekiq/wiki/Design) — idempotency keys and at-least-once semantics
+- [Google — Scheduling at scale (Borg paper)](https://research.google/pubs/large-scale-cluster-management-at-google-with-borg/) — the philosophical ancestor of Cloud Scheduler
 
 ---
 
 ## Deep dives — for students who want to go beyond Level 4
 
-### After Chapter 2 (Containerisation)
-- Read `Dockerfile` and the GitHub Actions workflow that builds + deploys on push
-- Compare with [Distroless Node images](https://github.com/GoogleContainerTools/distroless) — security/size trade-offs
-- Look at how Playwright base contributes ~700 MB; consider alternatives if `browser_*` tools aren't needed
+### After Chapter 2 (Sub-agents)
+- Read [`src/multi-agent/orchestrator.ts`](https://github.com/dahabit/adkclaw/blob/main/src/multi-agent/orchestrator.ts) — the production version with `spawnParallel()` (capped at 4 concurrent)
+- Read [`src/multi-agent/profiles/`](https://github.com/dahabit/adkclaw/tree/main/src/multi-agent/profiles) — all four profile definitions
+- Read [`src/tools/spawn.ts`](https://github.com/dahabit/adkclaw/blob/main/src/tools/spawn.ts) — how the spawn-tools wire allowlists into the runner
 
-### After Chapter 5 (Firestore adapter)
-- Read the production `FirestoreSessionStore` — uses Firestore's listener API for cron persistence
-- Look at the migration script `scripts/migrate-sqlite-to-firestore.ts` for one-off imports
-- Read [Firestore best practices](https://cloud.google.com/firestore/docs/best-practices) on hot keys and write contention
+### After Chapter 3 (Recovery pyramid)
+- Read [`src/healing/classifier.ts`](https://github.com/dahabit/adkclaw/blob/main/src/healing/classifier.ts) — production version with retry-after parsing
+- Read [`src/healing/engine.ts`](https://github.com/dahabit/adkclaw/blob/main/src/healing/engine.ts) — `protect()` combining retry + fallback
+- Read [`src/healing/types.ts`](https://github.com/dahabit/adkclaw/blob/main/src/healing/types.ts) — full error-type discriminated union
 
-### After Chapter 6 (Deploy)
-- Read [`cloudbuild.yaml`](https://github.com/dahabit/adkclaw/blob/main/cloudbuild.yaml) — automated builds on git push
-- Walk through Artifact Registry to see your image versions
-- Look at Cloud Run revisions — every deploy is a new revision; you can roll back instantly
+### After Chapter 4 (Cron)
+- Read [`src/cron/engine.ts`](https://github.com/dahabit/adkclaw/blob/main/src/cron/engine.ts) — production version with `cron_runs` audit table
+- Read the SQLite migration — `CREATE UNIQUE INDEX cron_runs_idempotency...`
+- Compare with Cloud Scheduler in L4 — different idempotency model (Cloud Scheduler retries on 5xx)
 
-### After Chapter 8 (Cloud Scheduler)
-- Read the OIDC verification middleware — JWT validation against Google's certs
-- Compare with Cloud Tasks — pull-based work queues for longer jobs
-- Look at Pub/Sub triggers as an alternative for cross-service events
+### After Chapter 5 (Heartbeat)
+- Read [`src/cron/heartbeat.ts`](https://github.com/dahabit/adkclaw/blob/main/src/cron/heartbeat.ts) — full version with lock-row pattern
+- Note how the runner's `beforeTurn` callback can rewrite `HEARTBEAT.md` to clear handled tasks
 
-### After Chapter 10 (Custom domain)
-- Read about [Identity-Aware Proxy](https://cloud.google.com/iap) for putting auth in front of your Cloud Run service
-- Look at Cloud Armor for DDoS protection at the edge
-- Consider Cloud CDN for caching static assets
+### After Chapter 6 (Dashboard)
+- Read [`src/server/http.ts`](https://github.com/dahabit/adkclaw/blob/main/src/server/http.ts) — production version with SSE stream
+- Read the dashboard CSS — Style A tokens (slate-blue, cloud-blue, Space Grotesk)
+- Look at how L4 puts the dashboard behind Cloud Run authentication
 
 ---
 
@@ -155,43 +144,40 @@ Quick reference for instructors during Q&A.
 
 | Question | Point them to | One-liner |
 |----------|---------------|-----------|
-| "Should I use AWS Lambda instead?" | Cloud Run vs Lambda comparison | "Cloud Run gives you containers + 15min request timeout; Lambda is faster cold start but has 10MB image limit. Containers are more flexible." |
-| "What about Vercel / Render?" | Multi-cloud thinking | "Both are great. Cloud Run is what we teach because the curriculum is Google-stack — same patterns work on those." |
-| "How do I run the agent without Telegram?" | HTTP-only mode | "Don't set `TELEGRAM_BOT_TOKEN`. The HTTP `/api/chat` endpoint works alone." |
-| "Can I use Cloud SQL instead of Firestore?" | Adapter pattern | "Yes — implement `SessionStore` for postgres. Add `SESSION_BACKEND=postgres`. ~200 LOC, same shape." |
-| "How do I deploy from CI?" | GitHub Actions + Workload Identity Federation | "Set up WIF, no service-account JSON keys. Build + deploy on push. Phase 2 stretch." |
-| "What about Vertex AI Agent Builder for production?" | Vertex AI Agents | "Great for workflows. AdkClaw teaches the underlying pattern. You can migrate to Agent Builder once your shape is stable." |
-| "Costs at scale?" | Cloud Run + Gemini calculator | "Infra cost is negligible per request. Gemini Pro is the dominant variable cost — route sub-agents to Flash." |
-| "Can I serve from multiple regions?" | Cloud Load Balancer | "Yes — deploy to two regions, put a global LB in front. Phase 2." |
-| "What's the cold-start time?" | Cloud Run gen2 | "~2–3 seconds for our 1 GB image. Set `--min-instances=1` to keep it warm (note: warm instances bill continuously)." |
-| "Can I run multiple agents from one service?" | Multi-tenant routing | "Yes — namespace by `senderId` in `SessionStore`. Phase 4 multi-tenant feature in roadmap." |
-| "Is HTTPS automatic?" | Cloud Run TLS | "Yes — `.run.app` and custom domains both auto-provision SSL via Google's CA." |
-| "Where does Logs Explorer keep my logs?" | Cloud Logging retention | "30 days free retention. Export to BigQuery for longer." |
+| "How is this different from LangGraph?" | `docs/technical-decisions.md` | "Same idea, different abstraction layer. LangGraph hides the spawn pattern; we want students to see it." |
+| "Can I use Vertex AI Agent Builder instead?" | Vertex AI Agent docs | "Yes — for pre-built workflows. AdkClaw teaches the underlying pattern so you can migrate either way." |
+| "What about A2A protocol?" | Cloud Next 2026 announcement | "Phase 4 stretch. Once two AdkClaw agents can speak A2A, they can collaborate across networks." |
+| "Why not retry on 4xx?" | Classifier table | "4xx is a client error — your code is wrong. Retrying makes it wrong again. Fix the code." |
+| "What's the max retries?" | `withRetry` opts | "Default 3. We cap because longer retries push past Telegram's response window." |
+| "Can I have a global Researcher pool?" | Workspace co-mounting | "Yes — same workspace, multiple parents share the same Researcher. They'll race on the same memory bank, idempotent by design." |
+| "Heartbeat too slow?" | `intervalMs` config | "Set lower in `.env` (default 30 min). Don't go below 5 min — Gemini Pro turns add up." |
+| "Can the cron call a sub-agent?" | Yes, via `delivery` | "The cron's action can reference a sub-agent profile. Production tool: `cron_add` accepts `via: 'researcher'`." |
+| "How do I add a Slack channel?" | Channel adapter pattern | "Implement `MessageNormalizer` → `runner.run()` → `bot.deliver()`. Same shape as Telegram. Shipped as Phase 4 plugin in roadmap." |
+| "What if Gemini is down for 30 minutes?" | Fallback degraded mode | "Agent answers from training data only. Logs the outage. Picks up the moment Gemini recovers." |
+| "Can two agents share the dashboard?" | Per-instance dashboards | "Each daemon runs its own. For aggregated multi-agent view, see L4 + Firestore queries." |
+| "Why isolate sub-agent sessions?" | Audit + crash isolation | "Each child's session is a queryable trace. If a child crashed, you can replay it independently." |
 
 ---
 
 ## Cohort fleet view
 
-After completing L4, students light up the **fourth (final) pillar** on the fleet:
+After completing L3, students light up the **third pillar** on the fleet:
 **[adkclaw.dev/e/<event>/fleet](https://adkclaw.dev/e/sandbox/fleet)**
 
-The L4 badge unlocks when the agent's `mark_level_complete` call carries `level: 4` + `region` + `publicAgentUrl`. The platform pings the `publicAgentUrl/api/health` to verify it's live, then displays it on the student's profile at `adkclaw.dev/u/<username>` for sharing.
-
-This is the final pillar. Students who finish all four are on the leaderboard.
+The L3 badge unlocks when a sub-agent successfully spawns AND returns a non-error result. Students who complete fastest see their third pillar light first.
 
 ---
 
 ## Privacy + ethics notes for instructors
 
-- Cloud Run logs are private to the GCP project, but Cloud Logging is **searchable**. Tell students to scrub PII (emails, phone numbers, free-text addresses) from logged messages.
-- The `--allow-unauthenticated` flag exposes EVERY route, including `/api/admin`. Phase 2 hardening: add IAP or app-level auth.
-- Firestore reads + writes incur quota and cost. A spammy user can rack up bills. Tell students to add per-`senderId` rate limiting.
-- The Telegram webhook receives raw user messages over the public internet. Telegram authenticates with a webhook secret; verify it.
-- Custom-domain SSL certs are auto-provisioned by Google. They expire on rotation. If a student's site goes 502 in 90 days, that's why — the domain was deleted but the cert wasn't rotated.
+- Sub-agents inherit the **workspace** memory bank. Tell students: anything they put in a fact is visible to every sub-agent. If they want privacy, namespace the workspace.
+- The `ALLOWED_SENDERS` allowlist is per-channel. The cron + heartbeat send via the same channel; tell students to triple-check the allowlist before scheduling.
+- Heartbeat quiet hours apply to **delivery**, not **work**. The agent can still process; it just won't ping. If a student wants the agent to also pause work at night, add a `process_only_during_work_hours` flag.
+- The recovery pyramid logs every retry. Tell students to scrub PII from error messages before shipping to production logs (a Phase 2 cleanup).
 
 ---
 
 ## Where to put feedback
 
-- Open an issue: [github.com/dahabit/adkclaw/issues](https://github.com/dahabit/adkclaw/issues) with the label `level-4`
+- Open an issue: [github.com/dahabit/adkclaw/issues](https://github.com/dahabit/adkclaw/issues) with the label `level-3`
 - Or DM Ahmed: [@dahabdev on X](https://x.com/dahabdev)

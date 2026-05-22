@@ -1,17 +1,17 @@
 author: AdkClaw Team (Ahmed Abu Eldahab — Google Developer Expert in Dart & Flutter, MENA Dev community)
-summary: Give your agent persistent memory that survives reboots, and the ability to learn new skills from markdown files at runtime. Build the context engine, the memory bank, daily notes, the consolidator, and the markdown-skills loader.
-id: adkclaw-codelab-2-memory-and-skills
-categories: ai,ml,gemini,adk,typescript,nodejs,agents,memory
+summary: Wrap a Gemini API call in the core ADK pattern — think → act → observe → respond. Build the agent loop, register three tools, give your agent a name and a personality, and put it on Telegram.
+id: adkclaw-codelab-2-build-the-brain
+categories: ai,ml,gemini,adk,typescript,nodejs,agents
 environments: Web
 status: Published
 feedback link: https://github.com/dahabit/adkclaw/issues
 analytics account: 0
 
-# Level 2 — Memory & Skills
+# Level 2 — Build the Brain
 
 ## Before you begin
 
-In Level 1 your agent had a brain, three tools, a personality, and a Telegram channel — but it forgot you the moment a session expired. Today it learns to **remember forever** and **gain new skills at runtime, with no redeploy**. This is **Level 2 of 5** in the AdkClaw series.
+In this codelab, you will wrap one Gemini API call in **a loop**, give it three **tools**, hand it a **personality** through markdown files, and put it on **Telegram** so you can talk to it from your phone. This is **Level 2 of 5** in the AdkClaw series — the first level where you write code.
 
 **PLEASE READ:** This codelab works in either of two environments:
 
@@ -20,846 +20,862 @@ In Level 1 your agent had a brain, three tools, a personality, and a Telegram ch
 
 The default path below assumes self-study. Branch points are flagged with **(In-person only)** or **(Self-study only)**.
 
-### Prerequisites
+### Prerequisites checklist
 
-- Completed [Level 1 — Build the Brain](https://github.com/dahabit/adkclaw/tree/main/level_1)
-- A working agent on Telegram from L1 (you'll extend its repo, not start fresh)
-- Familiarity with [TypeScript](https://www.typescriptlang.org/) / [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-- A working terminal and editor
+Before starting, verify you have:
+
+- ✓ Completed [Level 1 — Architecture Tour](https://github.com/dahabit/adkclaw/tree/main/level_1)
+- ✓ Node.js 22 or later (`node --version` ≥ v22.0.0)
+- ✓ A free [Gemini API key](https://aistudio.google.com/apikey) ready to paste
+- ✓ A [Telegram bot token](https://t.me/BotFather) (send `/newbot` to @BotFather; free)
+- ✓ [Git](https://git-scm.com/) installed
+- ✓ A text editor (VS Code, Vim, etc.)
+- ✓ Familiarity with [TypeScript](https://www.typescriptlang.org/) / [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) basics
 
 ### What you will learn
 
-- The **three-tier memory model**: in-context history → daily notes → memory bank
-- The **context bootstrap pattern**: assemble the system prompt from `workspace/` files in a fixed order, with mtime-based caching
-- **Compaction at 80%**: summarise the oldest turns when conversation history pushes against the model window, with strict preservation rules for IDs, URLs, and decisions
-- The **memory bank taxonomy** (`facts` / `decisions` / `projects` / `people`) — why structured beats vector search at small scale
-- **Daily notes** — append-only timestamped scratch pad, one file per day
-- The **consolidator pattern** — promote daily notes into the bank with an LLM-curation step
-- **Markdown skills** — drop a `.md` file in `workspace/skills/` and the agent gains a capability at the next bootstrap
-- The **self-learning loop** — the agent watches its own session and drafts new skill files
+- The core ADK pattern: `think → act → observe → respond` — the agent loop
+- [Function calling](https://ai.google.dev/gemini-api/docs/function-calling) in Gemini and the `AgentTool` shape that defines callable tools
+- Permission tiers (`allow` / `ask` / `deny`) — the human-in-the-loop pattern
+- How three tools (`web_search`, `web_fetch`, `filesystem`) are enough for a real agent
+- Personality engineering — `IDENTITY.md` + `SOUL.md` + `agent.yaml` give the agent its voice
+- Telegram via [telegraf](https://telegraf.js.org/) and the `/start` self-service ID-discovery pattern
+- SQLite session storage keyed by `<channel>:<senderId>` — same agent, multiple users
 
 ### What you will need
 
 - A computer with **Node.js 22+** installed (`node --version` ≥ v22.0.0)
-- A clone of this repo with `cd level_2/starter && npm install` done
-- A free [Gemini API key](https://aistudio.google.com/apikey) (already in your `.env` from L1)
-- A [Telegram bot token](https://t.me/BotFather) (already in your `.env` from L1)
-- A handful of Gemini Pro testing turns and a few compaction calls — comfortably inside the free tier
+- A free [Gemini API key](https://aistudio.google.com/apikey)
+- A [Telegram bot token](https://t.me/BotFather) (free; send `/newbot`)
+- [Git](https://git-scm.com/)
+- The `level_2/starter/` directory you cloned in Level 1 (or clone fresh — see below)
 
 ## Introduction
 
-A conversation is a fragile thing. The window closes when memory fills up. The session ends when the daemon restarts. The day ends when you go to sleep. None of this should be the agent's problem.
+You have used `client.models.generateContent()`. That is a function call, not an agent. Three things separate the two:
 
-What an autonomous agent needs is **a memory that lives outside the conversation**. Three layers:
+1. **The loop** — the LLM may emit *tool calls* instead of text. The runtime runs them, appends the results, and calls the LLM again. Repeat until the model emits text.
+2. **Tools** — concrete functions the LLM can invoke: read a file, fetch a URL, search the web. Tools are how the agent acts on the world.
+3. **Persistent personality** — system instructions assembled from markdown files in a `workspace/` directory. The agent has a name, a tone, and a backstory that survives reboots.
 
-1. **In-context history** — the live conversation, capped by the model window. Goes away when the session resets. Cheap, fast, lossless.
-2. **Daily notes** — the agent's raw scratch pad. One markdown file per day. Append-only. Survives reboots, lossless on the day, but unstructured.
-3. **The memory bank** — curated, structured, durable. Four categories: `facts`, `decisions`, `projects`, `people`. Each entry is one markdown file. Survives reboots, structured for retrieval, and the LLM does the curation work overnight.
-
-Skills are the parallel idea applied to **behaviour**: instead of editing source code to change what the agent can do, you drop a markdown file describing a procedure, and the agent's system prompt advertises it. The agent picks it up on the next turn. **Personality is data; behaviour is data; memory is data.**
-
-By the end of this level your agent will remember a fact you told it three days ago, survive a daemon restart with the conversation context intact, and gain a new "research" skill from a single markdown file.
+By the end of this level your agent will speak on Telegram, remember the conversation across turns within a session, and call tools when it needs information. It will not survive a reboot yet — that is Level 2.
 
 ### What you will build
 
 By the end of this codelab, you will have:
 
-- A `ContextEngine` that assembles the system prompt from workspace files in a fixed order, cached by aggregate mtime fingerprint
-- A `Compactor` that summarises old turns at 80% of the model window, preserving IDs, URLs, and decisions
-- A `MemoryBank` with four categories (`facts` / `decisions` / `projects` / `people`), each entry a markdown file with frontmatter
-- A `DailyNotes` append-only writer for `workspace/memory/YYYY-MM-DD.md`
-- A `Consolidator` that promotes daily notes into bank entries via Gemini-as-curator
-- A `SkillsLoader` that lists and loads markdown skills from `workspace/skills/`
-- Five new tools on the agent: `memory_save`, `memory_recall`, `daily_append`, `load_skill`, `list_skills`
-- A clean `npm run build` + `npm run typecheck`, with `npm test` green across the new memory, daily-notes, and skills-loader modules
-- A wow demo: tell your agent something, restart the daemon, ask it back.
+- An `AgentRunner` class wrapping the Gemini API in a tool-calling loop (capped at 15 rounds)
+- A `ToolRegistry` with three tools: `web_search`, `web_fetch`, `filesystem`
+- A SQLite-backed `SessionStore` that persists every message
+- A Telegram bot that talks to your agent from your phone
+- A populated `workspace/` (your agent's personality on disk)
+- An HTTP API at `localhost:3000` powering the `adkclaw chat` terminal REPL
+- A clean `npm run build` and `npm run typecheck`, with the pre-filled `npm test` suites still green
 
 ## 1. Scaffold and verify
 
-Clone the workshop and install Level 2's starter:
+If you skipped Level 1, start here. Otherwise jump to Chapter 2.
+
+### Clone the starter
+
+In the **terminal**, run:
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
 cd adkclaw/level_2/starter
-npm install
 ```
 
-The starter ships as a self-contained TypeScript project. Each L2 concept lives in a file with a `//REPLACE-*` marker + a throwing stub — you fill the markers as you go.
+### Install dependencies and verify the toolchain
 
-### Verify the starter compiles
+```bash
+npm install
+npm run typecheck
+```
+
+**Example output**:
+
+```
+> adkclaw@0.1.0 typecheck
+> tsc --noEmit
+```
+
+A clean exit means the four pre-filled folders compile. You are ready.
+
+**Tip:** if `npm install` is slow, `node_modules` is ~600 MB (Playwright is the bulk). For Level 1 you do not strictly need Playwright; set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` to skip the browser binaries.
+
+### Verify the starter compiles and tests pass
+
+Before you write any code, verify that the starter's type checks and tests pass. The starter comes with `//REPLACE-*` markers standing in for code you will write in the chapters ahead.
 
 ```bash
 npm run verify
 ```
 
-This type-checks the project (`tsc --noEmit`) and runs the test suite offline (`vitest run` — no Gemini key, no network). A green pass confirms the starter skeleton compiles and the pre-filled modules are correct. **You'll run `npm run verify` after every section** — it's your checkpoint that nothing regressed.
-
-> **Why per-section verify matters:** L2 layers four new modules on top of L1. If anything breaks, you isolate it to the section you just finished instead of debugging the whole project at the end. The verify gate is structural — `tsc` and `vitest` only, no live agent — so it stays green regardless of which markers are still unfilled.
-
-## 2. The Context Engine — bootstrap from workspace
-
-The system prompt is **not hardcoded**. It is assembled fresh every turn from markdown files in `workspace/`. This is what makes the agent's behaviour editable at runtime: change a file, the next turn picks it up.
-
-### The read order (matters)
+**Example output**:
 
 ```
-IDENTITY.md         who am I
-USER.md             who is talking to me
-SOUL.md             how do I talk
-AGENTS.md           behavioural rules
-MEMORY.md           what I know long-term (curated)
-TOOLS.md            notes about my tool set
-memory/<today>.md   raw daily scratch pad
-bank/<index>        count + sample of structured memories
-skills/             markdown skills (name + one-line description)
-HEARTBEAT.md        open tasks
+> adkclaw@0.1.0 verify
+> tsc --noEmit && vitest run
+
+✓ src/config/index.test.ts (1 test)
+✓ src/cli/setup.test.ts (2 tests)
 ```
 
-Order is load-bearing. Later sections layer on earlier ones. Identity sets the frame; user describes the audience; soul tunes the voice; rules and memory then make sense.
+The verify step type-checks the project (`tsc --noEmit`) and runs the test suite offline (`vitest run` — no Gemini key or network needed). A green pass at this stage confirms the starter skeleton compiles and the pre-filled modules are correct. As you fill in the `//REPLACE-*` markers in each chapter, `npm run verify` is your checkpoint — it should stay green.
 
-### The mtime-fingerprint cache
+### Configure the wizard
 
-If we reread every file every turn, hot paths slow down. The trick: compute an aggregate **fingerprint** from the `mtime` of every file we read. Cache the bootstrap by fingerprint. If `ANY` file's mtime changes, the fingerprint changes, the cache misses, and we rebuild.
+```bash
+npm run setup
+```
 
-That's all it takes for "edit a workspace file → next turn knows" to work.
+Follow the prompts. Pick a name (`Dudu`, `Buddy`, anything you like) and tone (`friendly` recommended). Paste your Gemini API key and Telegram bot token when asked.
 
-### Implement `src/context/manager.ts`
+The wizard writes `.env`, `agent.yaml`, and a populated `workspace/` from the templates.
 
-The starter ships `src/context/manager.ts` with the `ContextEngine` class shell, the `CORE_FILES` and `BANK_CATEGORIES` constants, and the helpers (`todayDate`, `safeRead`, `safeMtime`, `extractSkillDescription`) pre-provided. You fill four method bodies, all marked `//REPLACE-CONTEXT-ENGINE`.
+### ✅ Section recap
 
-#### `bootstrap()` — assemble the system prompt
+By the end of this section you will:
+- Have a clean `npm run typecheck` and `npm run verify` confirming the starter compiles.
+- Have a `.env` file with your Gemini API key and Telegram bot token.
+- Have `agent.yaml` and a populated `workspace/` with your agent's name and tone.
 
-Open `src/context/manager.ts`, find `//REPLACE-CONTEXT-ENGINE` inside `bootstrap()`, and replace the stub body with:
+**Key takeaway:** The starter has 4 pre-filled folders under `src/` (types, config, cli, index stub) — everything else is a `//REPLACE-*` marker you will fill in.
+
+## 2. Make your first Gemini call
+
+Prove the SDK works before adding any complexity.
+
+### Create a scratch file and test the Gemini API
+
+In your **editor**, create a new file `src/hello-gemini.ts` with this content:
 
 ```typescript
-    const fingerprint = this.fingerprint();
-    if (this.cacheKey === fingerprint && this.cached) return this.cached;
+// src/hello-gemini.ts
+import 'dotenv/config';
+import { GoogleGenAI } from '@google/genai';
 
-    const sections: BootstrapSection[] = [];
-
-    for (const { filename, heading } of CORE_FILES) {
-      const content = safeRead(resolve(this.workspacePath, filename));
-      if (content && content.trim()) {
-        sections.push({ source: filename, heading, content: content.trim() });
-      }
-    }
-
-    const today = todayDate();
-    const daily = safeRead(resolve(this.workspacePath, 'memory', `${today}.md`));
-    if (daily && daily.trim()) {
-      sections.push({
-        source: `memory/${today}.md`,
-        heading: `Daily note (${today})`,
-        content: daily.trim(),
-      });
-    }
-
-    const bankIndex = this.indexBank();
-    if (bankIndex) {
-      sections.push({ source: 'bank/', heading: 'Memory Bank Index', content: bankIndex });
-    }
-
-    const skills = this.loadSkills();
-    if (skills) {
-      sections.push({ source: 'skills/', heading: 'Available Skills', content: skills });
-    }
-
-    const heartbeat = safeRead(resolve(this.workspacePath, 'HEARTBEAT.md'));
-    if (heartbeat && heartbeat.trim()) {
-      sections.push({
-        source: 'HEARTBEAT.md',
-        heading: 'Heartbeat Tasks',
-        content: heartbeat.trim(),
-      });
-    }
-
-    const systemPrompt = sections.map((s) => `# ${s.heading}\n\n${s.content}`).join('\n\n---\n\n');
-
-    const result: BootstrapResult = { systemPrompt, sections, totalChars: systemPrompt.length };
-    this.cached = result;
-    this.cacheKey = fingerprint;
-    return result;
-```
-
-#### `fingerprint()` — invalidate cache when any source changes
-
-Find `//REPLACE-CONTEXT-ENGINE` inside `private fingerprint(): string` and replace the stub body with:
-
-```typescript
-    const parts: string[] = [];
-    for (const { filename } of CORE_FILES) {
-      parts.push(`${filename}:${safeMtime(resolve(this.workspacePath, filename))}`);
-    }
-    const today = todayDate();
-    parts.push(
-      `memory/${today}.md:${safeMtime(resolve(this.workspacePath, 'memory', `${today}.md`))}`,
-    );
-    parts.push(`HEARTBEAT.md:${safeMtime(resolve(this.workspacePath, 'HEARTBEAT.md'))}`);
-    parts.push(`skills:${safeMtime(resolve(this.workspacePath, 'skills'))}`);
-    parts.push(`bank:${safeMtime(resolve(this.workspacePath, 'bank'))}`);
-    const skillsDir = resolve(this.workspacePath, 'skills');
-    if (existsSync(skillsDir)) {
-      try {
-        for (const f of readdirSync(skillsDir).sort()) {
-          if (f.endsWith('.md')) parts.push(`skills/${f}:${safeMtime(resolve(skillsDir, f))}`);
-        }
-      } catch {
-        // ignore
-      }
-    }
-    return parts.join('|');
-```
-
-#### `indexBank()` — sample the bank into a system-prompt slice
-
-Find `//REPLACE-CONTEXT-ENGINE` inside `private indexBank(): string | null` and replace the stub body with:
-
-```typescript
-    const bankRoot = resolve(this.workspacePath, 'bank');
-    if (!existsSync(bankRoot)) return null;
-    const lines: string[] = [];
-    for (const cat of BANK_CATEGORIES) {
-      const dir = resolve(bankRoot, cat);
-      if (!existsSync(dir)) continue;
-      try {
-        const entries = readdirSync(dir).filter((f) => f.endsWith('.md'));
-        if (entries.length === 0) continue;
-        const sample = entries.slice(0, 10).join(', ');
-        const more = entries.length > 10 ? ', ...' : '';
-        lines.push(`- **${cat}** (${entries.length}): ${sample}${more}`);
-      } catch {
-        // skip
-      }
-    }
-    return lines.length > 0 ? lines.join('\n') : null;
-```
-
-#### `loadSkills()` — advertise available markdown skills
-
-Find `//REPLACE-CONTEXT-ENGINE` inside `private loadSkills(): string | null` and replace the stub body with:
-
-```typescript
-    const dir = resolve(this.workspacePath, 'skills');
-    if (!existsSync(dir)) return null;
-    try {
-      const files = readdirSync(dir).filter((f) => f.endsWith('.md'));
-      if (files.length === 0) return null;
-      const out: string[] = [];
-      for (const f of files.sort()) {
-        const content = safeRead(resolve(dir, f));
-        if (!content) continue;
-        out.push(`- **${f.replace(/\.md$/, '')}** — ${extractSkillDescription(content)}`);
-      }
-      return out.length > 0 ? out.join('\n') : null;
-    } catch {
-      return null;
-    }
-```
-
-> **Important:** `fingerprint()` MUST sample every file/directory that `bootstrap()` reads. Miss one (the bank, the skills directory, HEARTBEAT.md) and the cache won't invalidate when that source changes — your "edit a file → next turn knows" demo will silently break.
-
-**Checkpoint** — run `npm run verify`. Still green. The four method bodies type-check together; the live behaviour (re-bootstrap on edit) is exercised in §7's wow demo.
-
-> **Common pitfall**: students sometimes use `Date.now()` in the fingerprint. Don't. The fingerprint must depend on **file content's mtime**, not the wall clock.
-
-## 3. Compaction at long-context boundaries — surviving long conversations
-
-Gemini 2.5 Pro has a 1M-token window. That sounds infinite — but a chatty agent can fill it in a week, and reasoning quality **degrades smoothly** below the ceiling, not at a cliff edge. Compaction is how you keep the agent fresh without losing what matters.
-
-> **Where to set the threshold:** there's no magic number. We default to **70–80% of the model window** because empirically that's where latency starts to climb on hot prompts. Lower the threshold (60%) for cost-sensitive setups; raise it (90%) if your turns are short and you want to preserve maximum recent context. The threshold is a `Compactor` constructor option — change it as your traffic shape changes.
-
-### The strategy
-
-1. **Threshold check** — count tokens in the active history (since the last compaction checkpoint). If it exceeds the configured threshold, compact.
-2. **Pick oldest fraction** — by default, the oldest 60% of messages.
-3. **Summarise with strict preservation** — send those messages to a cheap model (Gemini 2.5 Flash) with a prompt that **mandates preservation** of:
-   - All task IDs, URLs, file paths, opaque identifiers
-   - Active tasks and their current status
-   - The user's last request
-   - Decisions and the reasoning behind them
-   - TODOs, open questions, blockers
-4. **Replace** — splice the summary into the history in place of the old turns.
-5. **Save a checkpoint** — write the summary to a `compaction_checkpoints` table for audit.
-
-### Why a separate cheap model?
-
-The summarisation call is **structural overhead**, not user-facing reasoning. Flash is ~10x cheaper than Pro and good enough at this task. The agent's main loop still uses Pro.
-
-### Fill the `CONTEXT-TOKENS` marker — `src/context/token-counter.ts`
-
-The starter ships `src/context/token-counter.ts` with the imports and two function signatures pre-provided. Open the file, find both `//REPLACE-CONTEXT-TOKENS` markers, and replace each stub body:
-
-```typescript
-  // body of estimateTokens()
-  if (!text) return 0;
-  return Math.ceil(text.length / 4);
-```
-
-```typescript
-  // body of estimateTokensInHistory()
-  let total = 0;
-  for (const c of history) {
-    for (const part of c.parts ?? []) {
-      if (typeof part.text === 'string') total += estimateTokens(part.text);
-      if (part.functionCall) total += estimateTokens(JSON.stringify(part.functionCall));
-      if (part.functionResponse) total += estimateTokens(JSON.stringify(part.functionResponse));
-    }
+async function main() {
+  const apiKey = process.env['GEMINI_API_KEY'];
+  if (!apiKey) {
+    throw new Error('GEMINI_API_KEY is not set. Re-run `npm run setup`.');
   }
-  return total;
-```
 
-For exact counts later, swap in `client.models.countTokens({ model, contents })`.
+  const client = new GoogleGenAI({ apiKey });
+  const response = await client.models.generateContent({
+    model: 'gemini-3.1-pro-preview',
+    contents: 'Hello, what is your name?',
+  });
 
-### Fill the `CONTEXT-COMPACTION` marker — `src/context/compaction.ts`
+  console.log(response.text);
+}
 
-The starter ships `src/context/compaction.ts` with imports, `PRESERVATION_RULES`, `CompactorOptions` / `CompactionResult` interfaces, the `contentToLine` helper, and the `Compactor` class shell + constructor pre-provided. Open the file, find `//REPLACE-CONTEXT-COMPACTION` inside `maybeCompact()`, and replace the stub body with:
-
-```typescript
-    const history = this.sessions.history(sessionKey);
-    const tokensBefore = estimateTokensInHistory(history);
-    if (tokensBefore < this.thresholdTokens || history.length < 4) return null;
-
-    const cutoff = Math.max(1, Math.floor(history.length * this.summarizeFraction));
-    const oldest = history.slice(0, cutoff);
-    const transcript = oldest.map(contentToLine).join('\n');
-
-    let summary = '';
-    try {
-      const response = await this.client.models.generateContent({
-        model: this.summarizerModel,
-        contents: `${PRESERVATION_RULES}\n\nCONVERSATION TO SUMMARIZE:\n${transcript}`,
-      });
-      summary = (response.text ?? '').trim();
-    } catch (e) {
-      summary = `[Compaction failed: ${e instanceof Error ? e.message : String(e)}]`;
-    }
-    if (!summary) return null;
-
-    this.sessions.replaceWithSummary(sessionKey, cutoff, summary);
-    const tokensAfter = estimateTokensInHistory(this.sessions.history(sessionKey));
-    return { tokensBefore, tokensAfter, summary, summarizedMessageCount: cutoff };
-```
-
-`SessionStore.replaceWithSummary(key, n, summary)` removes the oldest `n` messages and inserts a single `system` message containing the summary, plus writes a checkpoint row.
-
-### Wire it into the channel handlers
-
-The compactor doesn't live on the agent loop — the runner is single-turn and stateless. Each **channel** (HTTP + Telegram) decides whether to compact *before* it pulls history off the session store. That keeps the policy ("when to summarize") next to the I/O ("when do we read history?") instead of buried in the runner.
-
-In `src/index.ts`, after constructing `sessions`:
-
-```typescript
-import { Compactor } from './context/compaction.js';
-
-const compactor = new Compactor({
-  client,
-  sessions,
-  thresholdTokens: Math.floor(MODEL_WINDOW * 0.8),
-  summarizerModel: config.gemini.fallbackModel,
+main().catch((err) => {
+  console.error(err);
+  process.exit(1);
 });
-
-const app = createHttpServer(config, runner, contextEngine, sessions, compactor);
-// ...
-const tg = new TelegramAdapter(config, runner, contextEngine, sessions, compactor);
 ```
 
-In each channel, call `compactor.maybeCompact(session.key)` **before** reading history. From `src/channels/telegram.ts`:
+In the **terminal**, run:
+
+```bash
+npx tsx src/hello-gemini.ts
+```
+
+**Example output** (yours may be a little different):
+
+```
+I am an AI assistant created by Google. I do not have a personal name in
+the human sense — but I am here to help. What can I do for you today?
+```
+
+That works. But it is not an agent — it is a one-shot function call. There is no loop, no tools, no memory. The next chapter wraps a single call in **the loop** that turns it into an agent.
+
+> ⚠️ **Watch out:** if you got `Error: API key is invalid`, re-check your `.env`. The wizard might have appended a stray newline; open `.env` in your editor and verify the key has no leading/trailing whitespace.
+
+### Clean up
+
+Delete the scratch file — you no longer need it. The real entry point is `src/index.ts` (which you'll complete in §6 by replacing the `//REPLACE-MAIN-ENTRY` marker).
+
+```bash
+rm src/hello-gemini.ts
+npm run verify
+```
+
+The verify should still pass green.
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Confirm the Gemini SDK is reachable and your API key works.
+- Understand the difference between a one-shot `generateContent()` call and an agent loop.
+
+**Key takeaway:** A single function call is not an agent — you need a loop that runs tools and feeds results back.
+
+## 3. The agent loop
+
+The core ADK pattern. Once you have this, every other chapter is filling in tools.
+
+### The pattern
+
+```
+┌──── user message ─────┐
+▼                       │
+[ generateContent ]     │
+       │                │
+       ▼                │
+function calls?         │
+  ├── YES → run → append → ┘ (loop)
+  └── NO  → return text
+```
+
+The LLM may emit **tool calls** instead of text. The runtime runs each call, appends the result back to the conversation, then calls the LLM again. The loop ends when the model emits text instead of more tool calls.
+
+### Open `src/agent/runner.ts` and fill the agent loop
+
+In your **editor**, open `src/agent/runner.ts`. You will see the class skeleton with an `async run()` method marked with `//REPLACE-AGENT-LOOP`. Replace the marker and the throwing stub with this implementation:
 
 ```typescript
-// Compact old turns before reading history, so the run stays under budget.
-await this.compactor.maybeCompact(session.key);
-const history = this.sessions.history(session.key);
-```
+    const history: Content[] = [...req.history, { role: 'user', parts: [{ text: req.userText }] }];
+    let toolCalls = 0;
 
-`maybeCompact()` is a no-op when the session is below threshold, so it's cheap to call on every turn — no policy logic leaks into the channel.
+    const sdkTools: Array<{ functionDeclarations: object[] }> = [
+      { functionDeclarations: this.registry.toFunctionDeclarations() },
+    ];
 
-**Checkpoint** — run `npm run verify`. Green. The compaction path is exercised live in §7's wow demo (the long-session demo).
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
+      const response = await this.client.models.generateContent({
+        model: this.config.gemini.defaultModel,
+        contents: history,
+        config: { systemInstruction: req.systemPrompt, tools: sdkTools },
+      });
 
-> **Common pitfall**: students sometimes summarise the **last** N messages. Don't — those are the most recent context the agent needs. Summarise the **oldest**.
+      const calls: FunctionCall[] = response.functionCalls ?? [];
 
-## 4. The Memory Bank — structured long-term memory
+      // No tool calls? The model is done — return its text answer.
+      if (calls.length === 0) {
+        const text = response.text ?? '';
+        history.push({ role: 'model', parts: [{ text }] });
+        return { reply: text, toolCalls, rounds: round + 1, newHistory: history };
+      }
 
-The bank is your agent's encyclopedia. Four categories, each one a folder of markdown files:
+      // Otherwise: record the request, run each tool, append the responses.
+      history.push({ role: 'model', parts: calls.map((call) => ({ functionCall: call })) });
 
-```
-workspace/bank/
-├── facts/         # atomic verified facts about the world or the user
-├── decisions/     # choices made, with rationale
-├── projects/      # ongoing work, with status
-└── people/        # people in the user's circle
-```
-
-Each entry is one markdown file with YAML frontmatter:
-
-```markdown
----
-name: Prefer SQLite over Postgres for v1 projects
-category: decisions
-slug: prefer-sqlite-over-postgres-for-v1-projects
-created_at: 2026-05-04T12:00:00.000Z
-updated_at: 2026-05-04T12:00:00.000Z
----
-SQLite is faster for single-host workloads and removes the need for a separate
-DB process. Switch to Postgres only when concurrency or replication demands it.
-```
-
-### Why grep first, vectors later?
-
-Two different search problems. Grep wins on **exact-term match** (the user types "SQLite" and an entry titled "Prefer SQLite over Postgres" is the obvious hit). Vector search wins on **semantic recall** (the user types "what databases do I prefer?" and you want to retrieve the SQLite decision even though the word "database" never appears in the entry).
-
-For the small bank we start with, both approaches work, but grep is dramatically simpler:
-
-| Bank size | Grep latency | Vector latency | Recommendation |
-|-----------|--------------|----------------|----------------|
-| <500 entries | ~10ms | ~50ms (cold) | **Grep** — semantic gains rarely justify infrastructure |
-| 500–5,000 | ~50–200ms | ~50ms | **Grep with monitoring** — start logging `recall()` latency. If it crosses 200ms regularly, that's the migration signal. |
-| >5,000 | >500ms | ~50ms | **Vertex AI Vector Search** — the interface stays identical, only `recall()` changes. |
-
-Stay simple until simple breaks. **Add embeddings the day grep latency starts hurting**, not before. The instrumentation hint: log `MemoryBank.recall()` duration on every call — your migration trigger is data, not vibes.
-
-### Study the `MemoryBank` — `src/memory/bank.ts` (pre-provided)
-
-> **Pre-provided in the starter** — `src/memory/bank.ts` ships complete because the file is exercised by its own test suite (`bank.test.ts`); marker-blanking would break `npm run verify`. Read it; the design below is the canonical reference. Same applies to `daily-notes.ts` and `consolidator.ts` in §5.
-
-#### `save()` — write one bank entry
-
-```typescript
-    const slug = slugify(name);
-    const dir = join(this.bankRoot, category);
-    await mkdir(dir, { recursive: true });
-    const path = join(dir, `${slug}.md`);
-
-    const now = new Date();
-    let createdAt = now.getTime();
-    if (existsSync(path)) {
-      createdAt = (await stat(path)).birthtimeMs || (await stat(path)).mtimeMs;
+      const responseParts: Part[] = [];
+      for (const call of calls) {
+        toolCalls++;
+        const ctx: ToolContext = {
+          session: req.session,
+          workspacePath: this.config.paths.workspace,
+          config: this.config,
+        };
+        const result = await this.registry.invoke(call.name ?? '', call.args ?? {}, ctx);
+        responseParts.push({
+          functionResponse: { name: call.name ?? '', response: { result } },
+        });
+      }
+      history.push({ role: 'user', parts: responseParts });
     }
 
-    const frontmatter = [
-      '---',
-      `name: ${name}`,
-      `category: ${category}`,
-      `slug: ${slug}`,
-      `created_at: ${new Date(createdAt).toISOString()}`,
-      `updated_at: ${now.toISOString()}`,
-      '---',
-      '',
-    ].join('\n');
-
-    await writeFile(path, frontmatter + content.trim() + '\n', 'utf8');
     return {
-      category,
-      name,
-      slug,
-      content: content.trim(),
-      path,
-      createdAt,
-      updatedAt: now.getTime(),
+      reply: '(Tool round limit reached — stopping for safety.)',
+      toolCalls,
+      rounds: MAX_TOOL_ROUNDS,
+      newHistory: history,
     };
 ```
 
-#### `list()` — index every entry across all four categories
+### Open `src/tools/registry.ts` and fill the registry methods
 
+In your **editor**, open `src/tools/registry.ts`. You will see the class skeleton with a `//REPLACE-TOOL-REGISTRY` marker over the `toFunctionDeclarations()` and `invoke()` methods. Replace both method bodies (after the comment, before the closing brace of each) with these implementations:
+
+**For `toFunctionDeclarations()`**:
 ```typescript
-    const out: BankSummary[] = [];
-    const cats: readonly BankCategory[] = category ? [category] : BANK_CATEGORIES;
-    for (const cat of cats) {
-      const dir = join(this.bankRoot, cat);
-      if (!existsSync(dir)) continue;
-      for (const f of await readdir(dir)) {
-        if (!f.endsWith('.md')) continue;
-        const path = join(dir, f);
-        const raw = await readFile(path, 'utf8');
-        const body = raw.replace(/^---\n[\s\S]*?\n---\n+/, '');
-        const preview = body.split('\n').slice(0, 2).join(' ').slice(0, 200);
-        const s = await stat(path);
-        const slug = f.replace(/\.md$/, '');
-        const name = raw.match(/^name:\s*(.+)$/m)?.[1]?.trim() ?? slug;
-        out.push({ category: cat, slug, name, preview, updatedAt: s.mtimeMs });
-      }
+    return this.list().map((t) => ({
+      name: t.name,
+      description: t.description,
+      parameters: t.parameters,
+    }));
+```
+
+**For `async invoke()`**:
+```typescript
+    const tool = this.tools.get(name);
+    if (!tool) {
+      return { error: `Unknown tool: ${name}` };
     }
-    return out.sort((a, b) => b.updatedAt - a.updatedAt);
+    if (tool.permission === 'deny') {
+      return { error: `Tool denied by policy: ${name}` };
+    }
+    try {
+      return await tool.execute(args as Record<string, unknown>, ctx);
+    } catch (err) {
+      return { error: err instanceof Error ? err.message : String(err) };
+    }
 ```
 
-#### `recall()` — case-insensitive substring filter over `list()`
+> 🎯 **Goal:** the `MAX_TOOL_ROUNDS = 15` constant is your safety circuit breaker. If a tool description is wrong or the model misbehaves, the agent could loop forever. The cap is a non-negotiable guard rail.
 
-```typescript
-    const all = await this.list(opts?.category);
-    if (!query.trim()) return all.slice(0, opts?.limit ?? 20);
-    const q = query.toLowerCase();
-    return all
-      .filter((e) => e.name.toLowerCase().includes(q) || e.preview.toLowerCase().includes(q))
-      .slice(0, opts?.limit ?? 20);
-```
+### Verify your progress
 
-### Wire the tools
-
-In `src/tools/memory.ts`, three tools wrap the bank:
-
-| Tool | Args | What it does |
-|------|------|-------------|
-| `memory_save` | `{ category, name, content }` | Save one bank entry |
-| `memory_recall` | `{ query?, category?, limit? }` | Search bank entries |
-| `daily_append` | `{ text }` | Append to today's daily note (Section 5) |
-
-Register them in `src/index.ts`:
-
-```typescript
-registry.register(makeMemorySaveTool(bank));
-registry.register(makeMemoryRecallTool(bank));
-registry.register(makeDailyAppendTool(daily));
-```
-
-### Test it
+In the **terminal**, run:
 
 ```bash
-npm test src/memory/bank.test.ts
+npm run verify
 ```
 
-Tests verify save/list/recall round-trip, slug normalisation, and frontmatter parsing.
+The type-checker confirms the loop and registry compile correctly. Tests still pass.
 
-> **Common pitfall**: students sometimes pass `tags` as a third argument. The bank doesn't take tags — categories provide enough partition. If you need richer query, add it to the body and let `recall()` grep.
+### ✅ Section recap
 
-## 5. Daily Notes + Consolidator — the promotion pipeline
+By the end of this section you will:
+- Understand the `think → act → observe → respond` loop: call the model, extract tool calls, run them, append results, loop until the model returns text.
+- See the loop in action: each iteration tracks round count and tool calls.
+- Implement the `ToolRegistry` to convert tool objects into Gemini function declarations.
 
-Bank entries are **curated** memory. Daily notes are **raw** memory. The consolidator promotes the second into the first overnight.
+**Key takeaway:** The agent loop ends when the LLM emits text instead of a tool call. `MAX_TOOL_ROUNDS=15` is the circuit breaker — without it a misbehaving agent runs forever.
 
-### Daily notes — append-only
+## 4. Three core tools
 
-`workspace/memory/YYYY-MM-DD.md` — one file per day, append-only. The agent (and you) drop notes into it during the day:
+An agent without tools is a chatbot. Here are the three minimums.
 
-```markdown
-# Daily Notes — 2026-05-04
+### Open `src/tools/web.ts` and fill both tool implementations
 
-- **09:14** Started Level 2. User mentioned preferring SQLite over Postgres.
-- **09:42** Sent a quick research summary on Vertex Vector Search.
-- **11:02** User decided to defer skill marketplace to Phase 4.
+In your **editor**, open `src/tools/web.ts`. You will see the tool skeletons with a `//REPLACE-TOOL-WEB` marker. Replace the `async execute` body of **both** `webSearchTool` and `webFetchTool` with these implementations:
+
+**For `webSearchTool.execute()`**:
+```typescript
+    const query = String(args.query ?? '');
+    if (!query) return { error: 'query is required' };
+    // Stub for now — returns a placeholder so you can see the loop wire
+    // through end-to-end. Level 3 swaps this for Gemini search grounding.
+    return {
+      success: true,
+      result: `(stub) search results for "${query}". Level 3 wires real grounding.`,
+    };
 ```
 
-### Study `DailyNotes` — `src/memory/daily-notes.ts` (pre-provided)
+**For `webFetchTool.execute()`**:
+```typescript
+    const url = String(args.url ?? '');
+    if (!url) return { error: 'url is required' };
+    const res = await fetch(url);
+    if (!res.ok) return { error: `HTTP ${res.status} for ${url}` };
+    const text = await res.text();
+    return { success: true, result: text.slice(0, 16_000) };
+```
 
-`src/memory/daily-notes.ts` is also pre-provided. Its `append()` looks like:
+### Open `src/tools/filesystem.ts` and fill the filesystem tool
+
+In your **editor**, open `src/tools/filesystem.ts`. You will see the tool skeleton with a `//REPLACE-TOOL-FILESYSTEM` marker. Replace the `async execute` body with this implementation:
 
 ```typescript
-    if (!text.trim()) return;
-    await mkdir(this.memoryDir, { recursive: true });
-    const path = this.pathFor(date);
-    const stamp = date.toTimeString().slice(0, 5);
-    const entry = `\n- **${stamp}** ${text.trim()}`;
-    if (existsSync(path)) {
-      const current = await readFile(path, 'utf8');
-      await writeFile(path, current.trimEnd() + '\n' + entry + '\n', 'utf8');
-    } else {
-      const header = `# Daily Notes — ${this.isoDate(date)}\n${entry}\n`;
-      await writeFile(path, header, 'utf8');
+    const action = String(args.action ?? '');
+    const target = safePath(ctx.workspacePath, String(args.path ?? ''));
+
+    if (action === 'read') {
+      const text = await readFile(target, 'utf8');
+      return { success: true, result: text };
     }
+    if (action === 'write') {
+      await mkdir(resolve(target, '..'), { recursive: true });
+      const content = String(args.content ?? '');
+      await writeFile(target, content, 'utf8');
+      return { success: true, result: `Wrote ${content.length} bytes.` };
+    }
+    if (action === 'list') {
+      const entries = await readdir(target, { withFileTypes: true });
+      const lines = entries.map((e) => `${e.isDirectory() ? 'dir ' : 'file'}  ${e.name}`);
+      return { success: true, result: lines.join('\n') || '(empty)' };
+    }
+    return { error: `Unknown action: ${action}` };
 ```
 
-### The consolidator
+Note: the `safePath()` helper is already defined in the file — it prevents directory-traversal attacks by ensuring all operations stay inside the workspace.
 
-End of day (or on demand), the consolidator reads the day's note, asks Gemini to extract structured memory, and writes it to the bank:
+### Open `src/tools/index.ts` and fill the tool registration
 
-### Study `Consolidator` — `src/memory/consolidator.ts` (pre-provided)
-
-`src/memory/consolidator.ts` is pre-provided. The pipeline `consolidate()` runs at end-of-day:
+In your **editor**, open `src/tools/index.ts`. You will see the `registerCoreTools()` function with a `//REPLACE-TOOL-REGISTER` marker. Replace the function body with this implementation:
 
 ```typescript
-    const notes = await this.daily.read(date);
-    if (!notes?.trim()) return { date, saved: 0, errors: ['No daily notes'] };
+  registry.register(webSearchTool);
+  registry.register(webFetchTool);
+  registry.register(filesystemTool);
+```
 
-    const response = await this.client.models.generateContent({
-      model: this.model,
-      contents: `${CONSOLIDATION_PROMPT}\n${notes}`,
+> ❌ **Common pitfall:** the tool's `description` field is the **only signal** the LLM has when picking which tool to call.
+> - Bad: `"description": "Run commands"` — unclear scope, output, constraints
+> - Good: `"description": "Read files inside the workspace. Returns full file contents or an error."` — clear scope, output, and boundaries
+
+Spend more time on descriptions than feels necessary. Bad descriptions are the #1 reason agents pick the wrong tool.
+
+### Verify your progress
+
+In the **terminal**, run:
+
+```bash
+npm run verify
+```
+
+The type-checker confirms all three tools compile and wire together correctly. Tests still pass.
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Register three tools: `web_search`, `web_fetch`, `filesystem`.
+- Understand how the `ToolRegistry` converts tool definitions into Gemini function declarations.
+- See how the `invoke()` method runs tools, catches errors, and returns results.
+
+**Key takeaway:** Three tools is the minimum for a useful agent: search the web, fetch a URL, and read/write files. The `description` field is load-bearing — it is how the LLM decides which tool to call.
+
+## 5. Personality on disk
+
+The `workspace/` directory is your agent's brain on disk. Each turn, the runtime reads a fixed list of markdown files and stitches them into the system prompt. To change your agent's behavior, you edit Markdown — no daemon restart required.
+
+### The personality stack
+
+| File | Purpose |
+|------|---------|
+| `IDENTITY.md` | Who the agent is — name, role, backstory |
+| `SOUL.md` | How it talks — tone, quirks, what it loves |
+| `USER.md` | About the human it talks to — your name, your context |
+| `AGENTS.md` | Behavioral rules — what it will not do, how it asks for permission |
+| `MEMORY.md` | Long-term curated memory (cap ~20 K tokens — Level 2 grows this) |
+| `agent.yaml` | Machine-readable identity (`name`, `tone`, `traits`) |
+
+The wizard you ran in Chapter 1 already populated these from the `workspace.example/` templates. You will now customize them using one of two approaches: the Hybrid AI-Studio path (optional) or hand-writing.
+
+### Customize `workspace/SOUL.md` and `IDENTITY.md` — Two Paths
+
+#### Path 1: Hybrid AI-Studio (Optional)
+
+If you want the AI to help draft your agent's personality, paste this prompt into **[Gemini at aistudio.google.com](https://aistudio.google.com/)** (with your Gemini API key already added):
+
+```
+I am building an agent named [YOUR_AGENT_NAME] with tone [YOUR_TONE].
+My name is [YOUR_NAME].
+
+Draft two markdown files:
+
+1. SOUL.md — [YOUR_AGENT_NAME]'s voice, personality, and philosophy (tone, quirks, what it values)
+2. IDENTITY.md — [YOUR_AGENT_NAME]'s origin story, context, and role (who it is, what it does)
+
+Each file should be 50–100 words. Use a conversational, direct voice. No placeholders.
+```
+
+Copy the output, paste it into `workspace/SOUL.md` and `workspace/IDENTITY.md` in your editor, and skip to "Verify your progress" below.
+
+#### Path 2: Write It Yourself (Fallback)
+
+In your **editor**, open `workspace/SOUL.md` and `workspace/IDENTITY.md`. The starter shipped templates — each file begins with a `<!-- REPLACE-AGENT-PERSONALITY -->` HTML comment marker. Replace that marker and the template content below it with your own voice. The templates look like this:
+
+**SOUL.md**:
+```markdown
+# {{AGENT_NAME}}'s Soul
+
+You are {{AGENT_NAME}} — but that is just your codename. If {{USER_NAME}}
+gives you a nickname like Dudu, Buddy, or Coco, embrace it warmly. Your
+real name is whatever they call you.
+
+You are warm, direct, and honest about uncertainty. Use humor sparingly. When
+you do not know something, say so and offer to find out.
+```
+
+Replace the templates with your own voice. The `{{AGENT_NAME}}` and `{{USER_NAME}}` placeholders are hints — rewrite them as actual names or remove them. Make it sound like your agent talking to you.
+
+> ℹ️ **Note:** the next turn picks up the change — no restart needed. The `ContextEngine` caches personality files by mtime fingerprint.
+
+### Open `src/context/manager.ts` and fill the context engine
+
+In your **editor**, open `src/context/manager.ts`. You will see the `ContextEngine` class with a `//REPLACE-CONTEXT-BOOTSTRAP` marker over the `bootstrap()` method. Replace the method body with this implementation:
+
+```typescript
+    const fingerprint = this.computeFingerprint();
+    if (this.cache?.fingerprint === fingerprint) {
+      return this.cache.prompt;
+    }
+
+    const sections: string[] = [];
+    for (const file of CORE_FILES) {
+      const path = resolve(this.workspacePath, file);
+      if (!existsSync(path)) continue;
+      const text = readFileSync(path, 'utf8').trim();
+      if (text) sections.push(text);
+    }
+
+    const prompt = sections.join('\n\n---\n\n');
+    this.cache = { fingerprint, prompt };
+    return prompt;
+```
+
+The `computeFingerprint()` helper is already defined. The mtime fingerprint means edits to workspace files invalidate the cache on the next turn — no daemon restart needed.
+
+### Verify your progress
+
+In the **terminal**, run:
+
+```bash
+npm run verify
+```
+
+The type-checker confirms the context engine compiles correctly. Tests still pass.
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Understand the personality stack: `IDENTITY.md`, `SOUL.md`, `USER.md`, `AGENTS.md`, `MEMORY.md`, and `agent.yaml`.
+- Have customized your agent's voice via `SOUL.md` and `IDENTITY.md`.
+- See how `ContextEngine.bootstrap()` assembles the system prompt on every turn.
+
+**Key takeaway:** Personality lives in `workspace/*.md` files, not in source code. Edit a workspace file, and the change is live on the next turn — no restart needed.
+
+## 6. Sessions and channels — Telegram + CLI
+
+An agent in your terminal is not autonomous. Telegram puts it in your pocket.
+
+### Open `src/sessions/store.ts` and fill the session storage methods
+
+In your **editor**, open `src/sessions/store.ts`. You will see the class skeleton with a `//REPLACE-SESSION-STORE` marker over the `history()` and `appendAll()` methods. Replace both method bodies with these implementations:
+
+**For `history()`**:
+```typescript
+    const rows = this.db
+      .prepare(`SELECT content_json FROM messages WHERE session_key = ? ORDER BY id ASC`)
+      .all(sessionKey) as Array<{ content_json: string }>;
+    return rows.map((r) => JSON.parse(r.content_json) as Content);
+```
+
+**For `appendAll()`**:
+```typescript
+    const stmt = this.db.prepare(
+      `INSERT INTO messages (session_key, role, content_json, created_at) VALUES (?, ?, ?, ?)`,
+    );
+    const now = Date.now();
+    const tx = this.db.transaction(() => {
+      for (const c of contents) {
+        stmt.run(sessionKey, c.role ?? 'user', JSON.stringify(c), now);
+      }
+      this.db.prepare(`UPDATE sessions SET updated_at = ? WHERE key = ?`).run(now, sessionKey);
     });
-    const parsed = parseJsonLoose(response.text ?? '');
-
-    let saved = 0;
-    for (const cat of BANK_CATEGORIES) {
-      for (const item of parsed[cat] ?? []) {
-        if (item.name && item.content) {
-          await this.bank.save(cat, item.name, item.content);
-          saved += 1;
-        }
-      }
-    }
-    return { date, saved, errors: [] };
+    tx();
 ```
 
-#### `parseJsonLoose()` helper
+Session keys are `<channel>:<senderId>` — same agent, multiple users, no leakage. SQLite via `better-sqlite3` is synchronous, embedded, and zero-config.
 
-`parseJsonLoose()` strips markdown fences if Gemini wrapped the JSON, then falls back to extracting the first `{...}` block — small models sometimes ignore "JSON only":
+### Open `src/channels/telegram.ts` and fill the Telegram handler
+
+In your **editor**, open `src/channels/telegram.ts`. You will see the class skeleton with a `//REPLACE-CHANNEL-TELEGRAM` marker over the `handleMessage()` method. Replace the method body with this implementation:
 
 ```typescript
-  // Strip markdown fences if Gemini wrapped it
-  const stripped = text
-    .replace(/^```(?:json)?\s*/i, '')
-    .replace(/\s*```\s*$/i, '')
-    .trim();
-  try {
-    return JSON.parse(stripped) as ParsedConsolidation;
-  } catch {
-    // Try to extract first {...} block
-    const match = stripped.match(/\{[\s\S]*\}/);
-    if (match) {
-      try {
-        return JSON.parse(match[0]) as ParsedConsolidation;
-      } catch {
-        return {};
-      }
+    const senderId = ctx.from?.id;
+    if (!senderId) return;
+    const senderIdStr = String(senderId);
+
+    // ALLOWED_SENDERS holds numeric IDs only — silently reject everyone else.
+    if (!this.config.telegram.allowedSenders.includes(senderIdStr)) {
+      console.log(`[telegram] rejected sender ${senderIdStr}`);
+      return;
     }
-    return {};
+
+    const message = ctx.message;
+    const text = message && 'text' in message ? message.text : '';
+    if (!text) return;
+
+    const session = this.sessions.ensureSession(
+      `telegram:${senderIdStr}`,
+      'telegram',
+      senderIdStr,
+      this.config.gemini.defaultModel,
+    );
+    const history = this.sessions.history(session.key);
+
+    const result = await this.runner.run({
+      session,
+      systemPrompt: this.contextEngine.bootstrap(),
+      history,
+      userText: text,
+    });
+
+    this.sessions.appendAll(session.key, result.newHistory.slice(history.length));
+
+    // Telegram caps messages at ~4000 chars — chunk if needed.
+    let reply = result.reply || '(no reply)';
+    while (reply.length > 0) {
+      await ctx.reply(reply.slice(0, MAX_MESSAGE_LENGTH));
+      reply = reply.slice(MAX_MESSAGE_LENGTH);
+    }
+```
+
+> ⚠️ **Watch out:** `ALLOWED_SENDERS` must contain **numeric IDs**, not `@username`. Telegram's API only sends numeric IDs to bots. Setting `ALLOWED_SENDERS=dahabdev` looks right but silently rejects every message. Use `/start` on Telegram to discover your numeric ID.
+
+### Open `src/server/http.ts` and fill the HTTP server
+
+In your **editor**, open `src/server/http.ts`. You will see the `createHttpServer()` function with a `//REPLACE-SERVER-HTTP` marker. Replace the function body with this implementation:
+
+```typescript
+  const app = express();
+  app.use(express.json({ limit: '256kb' }));
+
+  app.get('/api/health', (_req, res) => {
+    res.json({ ok: true });
+  });
+
+  app.post('/api/chat', async (req, res) => {
+    const { sessionKey, message, channel, senderId } = req.body as {
+      sessionKey?: string;
+      message?: string;
+      channel?: string;
+      senderId?: string;
+    };
+    if (!sessionKey || !message) {
+      res.status(400).json({ error: 'sessionKey and message are required' });
+      return;
+    }
+
+    try {
+      const session = sessions.ensureSession(
+        sessionKey,
+        channel ?? 'cli',
+        senderId ?? 'cli',
+        config.gemini.defaultModel,
+      );
+      const history = sessions.history(session.key);
+      const result = await runner.run({
+        session,
+        systemPrompt: contextEngine.bootstrap(),
+        history,
+        userText: message,
+      });
+      sessions.appendAll(session.key, result.newHistory.slice(history.length));
+      res.json({ text: result.reply, toolCallCount: result.toolCalls });
+    } catch (err) {
+      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
+    }
+  });
+
+  return app;
+```
+
+### Open `src/index.ts` and fill the main entry point
+
+In your **editor**, open `src/index.ts`. You will see the main function with a `//REPLACE-MAIN-ENTRY` marker. Replace the function body with this implementation:
+
+```typescript
+  const config = loadConfig();
+  const { errors, warnings } = validateConfig(config);
+  for (const w of warnings) console.warn(`[config] ${w}`);
+  if (errors.length > 0) {
+    for (const e of errors) console.error(`[config] ${e}`);
+    throw new Error('Invalid configuration — see errors above.');
   }
+
+  const client = new GoogleGenAI({ apiKey: config.gemini.apiKey });
+  const registry = new ToolRegistry();
+  registerCoreTools(registry);
+
+  const sessions = new SessionStore(config.paths.database);
+  const contextEngine = new ContextEngine(config.paths.workspace);
+  const runner = new AgentRunner(client, registry, config);
+
+  const app = createHttpServer(config, runner, contextEngine, sessions);
+  app.listen(config.server.port, () => {
+    console.log(`[http] listening on http://${config.server.host}:${config.server.port}`);
+  });
+
+  if (config.telegram.botToken) {
+    const tg = new TelegramAdapter(config, runner, contextEngine, sessions);
+    await tg.launch();
+  }
+
+  console.log(`🤖 ${config.agent.name} is online.`);
 ```
 
-### When does consolidation run?
+### Verify your progress
 
-In Level 2 it's a library you can call manually from a Node REPL — no scheduler yet. The runtime trigger lands in Level 3 alongside the heartbeat:
-
-- **Heartbeat-driven (L3)** — every 30 minutes during work hours, the heartbeat hands the agent a tick. The agent reads `workspace/HEARTBEAT.md` and `workspace/memory/<today>.md` and may decide *"there's enough new material; promote it now"* by calling its `daily_append` / `memory_save` tools or by invoking the `Consolidator` programmatically from a custom skill. There is no `consolidate_today` Gemini tool by default — the agent uses the same memory tools it already has.
-- **End-of-day cron (L3, optional)** — you can add a `cron_add` for a midnight job that imports `Consolidator` and calls `consolidate(yesterday)`. Wire it yourself; the engine exposes the API.
-
-> **Why a separate LLM step?** Without curation, the bank fills with chatter. The consolidator is your editor — it picks what's durable, names it well, and discards noise.
-
-> **What about a `consolidate_today` tool?** Earlier drafts of the workshop exposed one. We removed it because two tools (`daily_append` for capture + `memory_save` for promote) already cover the user-visible surface; a third tool would just rename the same call. If your students want it, the `Consolidator.consolidate()` method is one tool wrapper away — same shape as the other memory tools.
-
-### Test it
+In the **terminal**, run:
 
 ```bash
-npm test src/memory/daily-notes.test.ts
+npm run verify
 ```
 
-The consolidator has integration tests that mock `client.models.generateContent` and verify the JSON-loose parsing handles fenced output.
+The type-checker confirms all modules wire together. Tests still pass.
 
-## 6. Markdown Skills — runtime extensibility
+### Run it
 
-Tools are **functions** the agent can call. Skills are **procedures** the agent can follow. Both expand what the agent can do — but skills don't require redeploying code.
+In the **terminal**:
 
-### What a skill looks like
-
-```markdown
----
-name: research-topic
-description: Research a topic from multiple sources and produce a structured brief
-when_to_invoke: User says "research X", "look into Y", "find sources on Z"
----
-
-## Steps
-
-1. Call `web_search` for the topic — note the top 5 results.
-2. For each top result, call `web_fetch` and extract 3–5 key facts.
-3. Cross-reference: dedupe facts that appear in multiple sources.
-4. Search the memory bank with `memory_recall` — surface anything we already know.
-5. Combine into a structured brief: Background → Key facts → Open questions.
-6. Save as a fact in the bank with `memory_save`.
-7. Return the brief.
+```bash
+npm run dev
 ```
 
-The agent's system prompt advertises the skill's `description` and `when_to_invoke`. When the conditions match, the agent calls the `load_skill` tool, which returns the body — a procedure to follow.
+**Example output**:
 
-### Read `src/skills/loader.ts` (pre-provided)
+```
+[http] listening on http://localhost:3000
+[telegram] bot online
+Agent Dudu is online.
+```
 
-`SkillsLoader` is **pre-provided** in your starter — read it, don't rewrite it. The mechanical work (frontmatter parsing, filename whitelisting) is boilerplate; the *lesson* is the runtime extensibility pattern this enables. The unit tests already exercise the loader's surface (frontmatter, missing files, path-traversal rejection), so you can trust the behaviour and focus on wiring it into the agent.
+### Test on Telegram
 
-The shape that matters:
+1. Open Telegram, find your bot (the one whose token you pasted), send `/start`.
+2. The bot replies with your numeric ID.
+3. Edit `.env`: set `ALLOWED_SENDERS=<your-numeric-id>`.
+4. Restart the daemon (`Ctrl+C`, then `npm run dev`).
+5. Send a message: `Hi, I am Ahmed. Can I name you Dudu?`
+6. The agent embraces the nickname (because `SOUL.md` allows it).
+
+### Test the CLI REPL
+
+In a second **terminal**, with the daemon still running:
+
+```bash
+npm run chat
+```
+
+Same agent, terminal interface. Same memory across both channels (session is per-channel-per-user, but `workspace/USER.md` is shared).
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Store conversation history in SQLite keyed by `<channel>:<senderId>`.
+- Wire Telegram via telegraf and handle the `/start` self-discovery pattern.
+- Run an HTTP API at `localhost:3000` that powers both Telegram and the terminal REPL.
+- See your agent live on two channels: Telegram and the CLI.
+
+**Key takeaway:** Sessions are keyed `<channel>:<senderId>` — same agent, multiple users, no conversation leakage. Both Telegram and CLI POST to `/api/chat` and share the same session store.
+
+## 7. Agent observability basics
+
+You now have a working agent. But how do you **see** what it decided? Observability — logging each tool call and its result — is how you debug agent behavior and tune tool descriptions.
+
+### Why observability matters
+
+When an agent calls the wrong tool or a tool fails silently, you need a trace. Observability is the foundation for:
+- **Debugging:** "Why did the agent call `web_search` instead of `web_fetch`?"
+- **Tuning:** "Are tool descriptions clear enough? Which tools does the agent prefer?"
+- **Production metrics:** in Level 4 you'll add structured tracing and cost attribution per user.
+
+### Log each tool call and result
+
+Open `src/agent/runner.ts`. Inside the agent loop (where you already have `const result = await this.registry.invoke(...)`), add this logging just **before** the result is appended to history:
 
 ```typescript
-export class SkillsLoader {
-  // List all skills (name + description) for the system prompt to advertise.
-  async list(): Promise<SkillSummary[]>;
-
-  // Load one skill body by name. Returns null if not found.
-  // Filename is sanitised — '../../etc/passwd' is normalised to 'etcpasswd' and misses.
-  async load(name: string): Promise<Skill | null>;
-}
+// Immediately after: const result = await this.registry.invoke(call.name ?? '', call.args ?? {}, ctx);
+const truncatedResult = typeof result === 'string' 
+  ? result.slice(0, 200) 
+  : JSON.stringify(result).slice(0, 200);
+console.log(`[agent] 🔧 tool: ${call.name}, args: ${JSON.stringify(call.args).slice(0, 100)}, result: ${truncatedResult}`);
 ```
 
-Internally `list()` reads `workspace/skills/*.md`, parses YAML frontmatter to extract `description` and `when_to_invoke`, and returns metadata for the system prompt. `load(name)` whitelists the filename to alphanumerics + `._-` (a defence against `../` traversal), reads the markdown, and returns the parsed body — the *procedure* the agent will follow.
+### How to read the trace
 
-> **Why this is pre-provided.** It's defensive file I/O with no agent-specific logic. The Level 2 lesson is *what skills enable* (runtime extensibility, self-learning loop), not "how do you parse YAML?". Tests under `src/skills/loader.test.ts` ship green; if you want to read the implementation, open the file in your editor — the whole thing fits on one screen.
-
-### Wire two tools
-
-In `src/tools/skills.ts`:
-
-```typescript
-export function makeListSkillsTool(loader: SkillsLoader): AgentTool { /* lists names + descriptions */ }
-export function makeLoadSkillTool(loader: SkillsLoader): AgentTool { /* returns body of a named skill */ }
-```
-
-Register them in `src/index.ts` and add the skills index to `ContextEngine.bootstrap()` so the system prompt advertises them.
-
-### The self-learning loop
-
-Drop one skill into `workspace/skills/`:
-
-```bash
-cat > workspace/skills/remember-decisions.md <<'EOF'
----
-name: remember-decisions
-description: When the user makes a decision, save it as a structured bank entry
-when_to_invoke: User says "I prefer X over Y", "let's go with X", "we decided X"
----
-
-## Steps
-
-1. Identify the decision and its rationale.
-2. Call `memory_save` with category=`decisions`, a descriptive name, and the rationale.
-3. Confirm to the user with the bank entry path.
-EOF
-```
-
-Restart the daemon. Tell the agent: *"I prefer SQLite over Postgres for v1 projects."* It will recognise the trigger, follow the skill, save to `bank/decisions/prefer-sqlite-over-postgres-for-v1-projects.md`.
-
-Then ask the agent: *"Save what we just did as a skill called 'remember-decisions'."* The agent uses `filesystem` to write a new skill file. Restart. The new skill is now advertised.
-
-That is the **self-learning loop**: the agent watches itself, drafts new skill files, and at the next bootstrap they become part of its repertoire.
-
-### Test it
-
-```bash
-npm test src/skills/loader.test.ts
-```
-
-Tests verify frontmatter parsing, missing-file tolerance, and that path-traversal attempts (`../../etc/passwd`) are normalised away.
-
-> **Security note:** the character whitelist (`replace(/[^a-zA-Z0-9._-]/g, '')`) is **safe by accident** — it strips `/` and `..` so `../../etc/passwd` becomes `etcpasswd` which doesn't exist as a skill, so `load()` returns `null`. For a more defence-in-depth approach, **also** verify the resolved path stays under `skillsDir` using `realpath`:
->
-> ```typescript
-> import { realpathSync } from 'node:fs';
-> const resolved = realpathSync(path);
-> if (!resolved.startsWith(realpathSync(this.skillsDir))) return null;
-> ```
->
-> Combine the two — input sanitisation **and** path validation. Belt and braces.
-
-## 7. The wow demo
-
-Now run the full integration test by hand.
-
-### Setup
-
-```bash
-npm run build
-bin/adkclaw bg
-```
-
-### Demo 1 — survives a restart
-
-On Telegram:
-
-> You: Remember I prefer SQLite over Postgres for v1 projects.
-> Bot: Got it — saved to `bank/decisions/prefer-sqlite-over-postgres-for-v1-projects.md`. ✓
-
-```bash
-bin/adkclaw stop
-bin/adkclaw bg
-```
-
-> You: What database do I prefer for v1 projects?
-> Bot: SQLite — based on a decision you logged earlier today. (`bank/decisions/...`)
-
-The agent **survived a restart** because the answer is on disk.
-
-### Demo 2 — gains a skill from a markdown file
-
-```bash
-cat > workspace/skills/research-topic.md <<'EOF'
----
-name: research-topic
-description: Research a topic from multiple sources, produce a structured brief
-when_to_invoke: User says "research X" or "look into Y"
----
-## Steps
-1. web_search the topic.
-2. For each top result, web_fetch + extract key facts.
-3. Combine into a brief: Background → Key facts → Open questions.
-4. Save as a fact via memory_save.
-EOF
-```
-
-Restart. Ask: *"Research Vertex AI Vector Search."*
-
-The agent:
-1. Lists skills, sees `research-topic`, sees the trigger matches
-2. Loads the skill body via `load_skill`
-3. Follows the steps — `web_search`, `web_fetch` x3, `memory_save`
-4. Returns the structured brief
-
-You taught the agent a new procedure **without writing a line of TypeScript**. Restart-proof, version-controlled, easy to share.
-
-### Demo 3 — compaction in action
-
-In a long Telegram session (~50 turns), watch the logs for:
+Run your agent on Telegram or the CLI and send a message that triggers a tool call. Look at your terminal output:
 
 ```
-[compaction] tokensBefore=820000 oldest=30 summary=18kb tokensAfter=210000
+[agent] 🔧 tool: web_search, args: {"query":"latest nodejs release"}, result: (stub) search results...
+[agent] 🔧 tool: filesystem, args: {"action":"read","path":"IDENTITY.md"}, result: # Your Agent...
+[agent] 🔧 tool: web_fetch, args: {"url":"https://example.com"}, result: <!doctype html>...
 ```
 
-The agent kept reasoning fresh. Open `data/sessions.db` and inspect `compaction_checkpoints` — every compaction has a row with the summary preserved.
+Each line shows:
+- **Tool name** — which tool was called
+- **Args (truncated)** — what parameters the LLM passed
+- **Result (first 200 chars)** — what the tool returned
 
-## 8. Light up your Level 2 badge
+**Red flags to watch for:**
+- ❌ `tool: web_search, args: {"query":"<something that makes no sense>"}` — agent misunderstood the user or bad tool description
+- ❌ `tool: filesystem, args: {"action":"write",...}` — agent is trying to modify files when it should only read
+- ✅ `tool: web_fetch, args: {"url":"https://..."}` → `result: <!doctype html>...` — expected flow
 
-**Trigger**: the memory bank gets its first entry **AND** at least one compaction has run. The agent calls `mark_level_complete` with `level: 2` after both conditions are met in the same session.
+### Next: metrics and production tracing
 
-If you registered at [adkclaw.dev/join/sandbox](https://adkclaw.dev/join/sandbox) (Level 0 → Connect to the Cohort Fleet), your second pillar lights up on the fleet view. If not registered, the call is a no-op locally — no harm done.
+This is where Level 4's `HealingEngine` picks up — structured logging, token tracking, and cost attribution per session. For now, `console.log` is your friend.
 
-## What you have now
+> ℹ️ **Note:** Production agents add a `Logger` service that writes to `stdout` or a file in JSON format, then ships to a metrics backend. The pattern you just added (tool name + args + result) is the foundation.
 
-Your agent has graduated from "stateful chatbot with tools" to **stateful operator with persistent memory and runtime extensibility**:
+### ✅ Section recap
 
-- A system prompt that rebuilds from disk every turn (cached by mtime)
-- Compaction at the 70–80% boundary so it can sustain hour-long conversations
-- A four-category bank that survives reboots and is auditable in plain text
-- A daily scratch pad that promotes overnight via Gemini-as-curator
-- A skills directory that turns markdown files into agent capabilities
+By the end of this section you will:
+- Add a one-line `console.log` around each tool call to see the agent's decisions.
+- Understand how to read the trace to debug tool selection and tune descriptions.
+- Know that structured observability is the foundation for production metrics.
 
-You can teach it new behaviour with a markdown file. You can share that markdown with a teammate. You can revert it with `git checkout`. **Personality is data; behaviour is data; memory is data.**
+**Key takeaway:** Observability is how you debug agents. One log line per tool call (name, args, truncated result) shows you exactly what the agent decided — and whether it was right.
 
-## What's next
+## Congratulations!
 
-Level 3 turns this single agent into a **team**. You'll add:
+You have built your first autonomous agent — one that runs on Telegram, calls real tools, holds conversation memory, and embraces whatever nickname you give it.
 
-- Sub-agents with isolated sessions (Search, Researcher, Communicator, Coder)
-- The 5-tier recovery pyramid (retry → fallback → simplify → escape → abort with context)
-- Cron + heartbeat — the agent does work while you sleep
-- The admin dashboard where you watch all of it from your phone
+### Recap
 
-[Continue to Level 3 — The Agent Army →](https://github.com/dahabit/adkclaw/tree/main/level_3)
+In this codelab you:
+
+- Wrote the agent loop — a `for` loop that calls Gemini, runs tool calls, and feeds results back
+- Registered three core tools (`web_search`, `web_fetch`, `filesystem`) with permission tiers
+- Built a `ContextEngine` that assembles the system prompt from markdown files in `workspace/`
+- Created a SQLite session store keyed by `<channel>:<senderId>`
+- Wired Telegram (telegraf) and an HTTP API for the terminal REPL
+- Talked to your agent from your phone
+
+### Continued experimentation
+
+Try these before moving on to Level 2:
+
+- Add a fourth tool — `weather(city: string)` — that fetches the current weather. Hint: use `wttr.in`.
+- Edit `workspace/SOUL.md` and watch the agent's voice change on the next turn.
+- Send a long message and see how the agent handles `MAX_TOOL_ROUNDS=15` if you trigger it (rare, but instructive).
+- Open `data/adkclaw.db` with `sqlite3` and run `SELECT * FROM messages LIMIT 10` — see your conversation in raw form.
+
+### What you built
+
+By the end of this codelab (Chapters 1–7), you have:
+- An `AgentRunner` wrapping Gemini in a 15-round tool-calling loop
+- Three core tools: `web_search` (stub), `web_fetch`, `filesystem`
+- A personality system: `IDENTITY.md`, `SOUL.md`, `USER.md`, `AGENTS.md`, `MEMORY.md`
+- SQLite session storage keyed by `<channel>:<senderId>`
+- Telegram integration with `/start` self-discovery
+- An HTTP API (`localhost:3000`) powering the CLI REPL
+- Observable tool calls via `console.log` traces
+- Clean `npm run verify` and `npm run build` gates
+
+### What is next
+
+- **[Level 3 — Memory & Skills](https://github.com/dahabit/adkclaw/tree/main/level_3)** — your agent forgets you the moment a session expires. Time to give it a real memory.
+- The full reference implementation: [github.com/dahabit/adkclaw](https://github.com/dahabit/adkclaw)
+- Live cohort fleet: [adkclaw.dev](https://adkclaw.dev) — your beacon should now be lit (Level 2 badge unlocked).
+
+### Resources
+
+- [Google ADK documentation](https://google.github.io/adk-docs/)
+- [Gemini API function calling guide](https://ai.google.dev/gemini-api/docs/function-calling)
+- [Gemini API grounding guide](https://ai.google.dev/gemini-api/docs/grounding)
+- [The AdkClaw repository](https://github.com/dahabit/adkclaw)
+- [Other ADK codelabs](https://codelabs.developers.google.com/?text=adk)
+- [Building AI Agents with ADK: The Foundation](https://codelabs.developers.google.com/devsite/codelabs/build-agents-with-adk-foundation) — Google's official starter (Python; same patterns)
+
+## Glossary
+
+| Term | Definition |
+|------|-----------|
+| **Agent** | An LLM in a loop that can call tools, observe results, and act on the world. |
+| **Agent loop** | The `think → act → observe → respond` pattern: call LLM, run tool calls, append results, repeat until text. |
+| **Function calling** | Gemini's ability to emit structured tool calls instead of text; the runtime executes them. |
+| **Tool** | A callable function the agent can invoke: `web_search`, `web_fetch`, `filesystem`, etc. |
+| **Tool description** | The LLM-facing text that explains what a tool does; critical for correct tool selection. |
+| **Tool registry** | The runtime component that holds all tools and converts them to Gemini function declarations. |
+| **Session** | A conversation thread keyed by `<channel>:<senderId>`; persists history in SQLite. |
+| **Context engine** | The component that reads `workspace/*.md` files and assembles the system prompt. |
+| **Workspace** | The `workspace/` directory containing personality files (`IDENTITY.md`, `SOUL.md`, etc.). |
+| **Personality** | The agent's voice, tone, and rules; assembled from markdown files, not source code. |
+| **Observability** | Logging tool calls, arguments, and results to debug agent behavior. |
+| **Permission tier** | How you control tool access: `allow`, `ask`, `deny`. |
+| **Telegram adapter** | The component that connects telegraf to the agent loop. |
+| **HTTP API** | The `localhost:3000` server that powers both Telegram and the CLI REPL. |
 
 ---
 
-## Appendix A — Files you touched
+*This codelab is provided under [Creative Commons 4.0](https://creativecommons.org/licenses/by/4.0/). The AdkClaw repository is licensed under [Apache 2.0](https://github.com/dahabit/adkclaw/blob/main/LICENSE).*
 
-| File | Role | What you did |
-|------|------|--------------|
-| `src/context/manager.ts` | Bootstrap system prompt | Filled `//REPLACE-CONTEXT-ENGINE` — implemented `bootstrap()`, `fingerprint()` |
-| `src/context/compaction.ts` | Compact history at configured threshold (70–80% default) | Filled `//REPLACE-CONTEXT-COMPACTION` — implemented `maybeCompact()` with preservation rules; wired it into both channels (HTTP + Telegram) |
-| `src/context/token-counter.ts` | Approximate token counts | Filled `//REPLACE-CONTEXT-TOKENS` (×2) — implemented `estimateTokens()` + `estimateTokensInHistory()` |
-| `src/memory/bank.ts` | Memory bank CRUD | (pre-provided — `save()`, `list()`, `recall()`, `read()`. Read + use it.) |
-| `src/memory/daily-notes.ts` | Append-only daily scratch pad | (pre-provided — `append()`, `read()`, `listDates()`) |
-| `src/memory/consolidator.ts` | Promote daily → bank via LLM | (pre-provided — `consolidate()`, runs on cron in Level 3) |
-| `src/skills/loader.ts` | Markdown skills loader | (pre-provided — `list()`, `load()`) |
-| `src/tools/memory.ts` | `memory_save`, `memory_recall`, `daily_append` | Registered the tool factories in `src/index.ts` |
-| `src/tools/skills.ts` | `load_skill`, `list_skills` | Registered the tool factories in `src/index.ts` |
-
-## Appendix B — Troubleshooting
-
-| Issue | Fix |
-|-------|-----|
-| `Compaction failed: insufficient context` | Threshold too high. Configure `thresholdTokens` in the 70–80% range of your model window. |
-| Bank entries never appear in recall | The `ContextEngine` is caching past file changes. Add the bank directory to your `fingerprint()`. |
-| Skill file not advertised in system prompt | YAML frontmatter parse error. Validate with `npx yaml-validator workspace/skills/*.md`. |
-| Daily note never appended | `daily_append` tool's path resolution. Check the `TZ` env var matches your machine. |
-| Consolidator returns 0 saved entries | Gemini wrapped the JSON in markdown fences. Verify your `parseJsonLoose` strips them. |
-| `MAX_TOOL_ROUNDS` hit during research-topic skill | Skill body too aggressive. Cap web_fetch calls to 3 in the steps. |
-
-## Appendix C — Where each concept lives in the production code
-
-The starter scaffold is intentionally simplified. The production reference under `src/` adds:
-
-- **Compaction checkpoints table** with full audit (`src/sessions/store.ts`)
-- **Bank index summarisation** for the system prompt (counts + most-recent samples per category)
-- **Skill body cache** to avoid re-reading on every `load_skill` call
-- **Multi-day daily notes** view for the consolidator (rolls up recent days when one is sparse)
-
-Read those after the codelab to see how each concept matures from "good enough to teach" to "good enough to ship".
+*Authored by Ahmed Abu Eldahab — Google Developer Expert in Dart & Flutter, MENA Dev community.*

@@ -68,28 +68,9 @@ export class Compactor {
   // Summarize the oldest turns if the session is over threshold. Returns null
   // when no compaction was needed.
   async maybeCompact(sessionKey: string): Promise<CompactionResult | null> {
-    const history = this.sessions.history(sessionKey);
-    const tokensBefore = estimateTokensInHistory(history);
-    if (tokensBefore < this.thresholdTokens || history.length < 4) return null;
-
-    const cutoff = Math.max(1, Math.floor(history.length * this.summarizeFraction));
-    const oldest = history.slice(0, cutoff);
-    const transcript = oldest.map(contentToLine).join('\n');
-
-    let summary = '';
-    try {
-      const response = await this.client.models.generateContent({
-        model: this.summarizerModel,
-        contents: `${PRESERVATION_RULES}\n\nCONVERSATION TO SUMMARIZE:\n${transcript}`,
-      });
-      summary = (response.text ?? '').trim();
-    } catch (e) {
-      summary = `[Compaction failed: ${e instanceof Error ? e.message : String(e)}]`;
-    }
-    if (!summary) return null;
-
-    this.sessions.replaceWithSummary(sessionKey, cutoff, summary);
-    const tokensAfter = estimateTokensInHistory(this.sessions.history(sessionKey));
-    return { tokensBefore, tokensAfter, summary, summarizedMessageCount: cutoff };
+    //REPLACE-CONTEXT-COMPACTION
+    // Summarize the oldest fraction of history when tokens exceed the threshold,
+    // honouring PRESERVATION_RULES. From level_3/codelab.md §3 "Compaction".
+    throw new Error('REPLACE-CONTEXT-COMPACTION not implemented — see level_3/codelab.md §3');
   }
 }

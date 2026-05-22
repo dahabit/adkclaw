@@ -3,13 +3,13 @@
 **A hands-on workshop where you build an autonomous AI agent — a teammate that lives on Telegram, remembers you across sessions, recovers from any failure, and runs on Google Cloud while you sleep.**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-adkclaw.dev-blue?style=for-the-badge)](https://adkclaw.dev)
-[![Codelab](https://img.shields.io/badge/Codelab-Level%200-green?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-0/instructions)
-[![Codelab](https://img.shields.io/badge/Codelab-Level%201-orange?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-1/instructions)
-[![Codelab](https://img.shields.io/badge/Codelab-Level%202-green?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-2/instructions)
-[![Codelab](https://img.shields.io/badge/Codelab-Level%203-orange?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-3/instructions)
-[![Codelab](https://img.shields.io/badge/Codelab-Level%204-green?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-4/instructions)
+[![Codelab](https://img.shields.io/badge/Codelab-Level%201-green?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-1/instructions)
+[![Codelab](https://img.shields.io/badge/Codelab-Level%202-orange?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-2/instructions)
+[![Codelab](https://img.shields.io/badge/Codelab-Level%203-green?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-3/instructions)
+[![Codelab](https://img.shields.io/badge/Codelab-Level%204-orange?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-4/instructions)
+[![Codelab](https://img.shields.io/badge/Codelab-Level%205-green?style=for-the-badge)](https://codelabs.developers.google.com/adkclaw-level-5/instructions)
 
-> **Just want to use it?** → jump to [Quick Start](#-quick-start) · **Want to build it yourself?** → [start at Level 0](level_0/README.md)
+> **Just want to use it?** → jump to [Quick Start](#-quick-start) · **Want to build it yourself?** → [start at Level 1](level_1/README.md)
 
 ## 🎯 The Journey
 
@@ -19,11 +19,11 @@ Across four hands-on levels (plus an intro tour), you'll build the same autonomo
 
 | Level | Mission | What You'll Learn |
 |-------|---------|-------------------|
-| **Level 0** | Tour the architecture and clone the starter | The 6 pillars of an autonomous agent, ADK fundamentals, repo orientation |
-| **Level 1** | Build the agent loop and put it on Telegram | The ADK agent loop, function calling, tool registration, personality engineering, SQLite sessions |
-| **Level 2** | Give it persistent memory and runtime skills | Workspace bootstrap, memory bank taxonomy, compaction at 80%, markdown skills loader |
-| **Level 3** | Spawn sub-agents and make it self-healing | Multi-agent orchestration, isolated sessions, recovery pyramid, cron + heartbeat |
-| **Level 4** | Ship to Google Cloud and harden it for production | Cloud Run deployment, Firestore, Secret Manager, Cloud Scheduler, Telegram webhook, OIDC for Cloud Scheduler, webhook secret, Cloud DLP, Firestore rules, secret rotation |
+| **Level 1** | Tour the architecture and clone the starter | The 6 pillars of an autonomous agent, ADK fundamentals, repo orientation |
+| **Level 2** | Build the agent loop and put it on Telegram | The ADK agent loop, function calling, tool registration, personality engineering, SQLite sessions |
+| **Level 3** | Give it persistent memory and runtime skills | Workspace bootstrap, memory bank taxonomy, compaction at 80%, markdown skills loader |
+| **Level 4** | Spawn sub-agents and make it self-healing | Multi-agent orchestration, isolated sessions, recovery pyramid, cron + heartbeat |
+| **Level 5** | Ship to the Cloud and harden for production | Cloud Run deployment, Firestore, Secret Manager, Cloud Scheduler, Telegram webhook, OIDC, Cloud DLP, Firestore rules, secret rotation |
 
 ## 🛠️ Technology Stack
 
@@ -32,7 +32,7 @@ Across four hands-on levels (plus an intro tour), you'll build the same autonomo
 | **Brain** | Google [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) (`@google/genai`), Gemini 3.1 Pro / 3 Flash |
 | **Language** | TypeScript 5.6 + Node.js 22+ |
 | **Channels** | Telegram (telegraf), Terminal CLI, HTTP API |
-| **Storage** | SQLite (better-sqlite3) → Firestore in cloud (Level 4) |
+| **Storage** | SQLite (better-sqlite3) → Firestore in cloud (Level 5) |
 | **Cloud** | Cloud Run, Cloud Storage, Secret Manager, Cloud Scheduler, Cloud Logging |
 | **AI/ML** | Vertex AI (embeddings + vector search), Gemini Search Grounding |
 | **Tools** | Playwright (browser), pdfkit (PDFs), Marp (slides), Gemini CLI (code-fix) |
@@ -80,14 +80,14 @@ Build the same framework yourself, level by level.
    ./scripts/setup.sh        # interactive: paste keys, pick username
    ```
 
-4. **Start with Level 0 (the architecture tour):**
+4. **Start with Level 1 (the architecture tour):**
    ```bash
-   cat level_0/README.md
+   cat level_1/README.md
    ```
 
-5. **Build, level by level.** Each level has its own self-contained starter (`level_N/starter/`) with offline `npm run verify` checkpoints (`tsc --noEmit` + `vitest run`, no Gemini key or network needed). L1–L4 are the hands-on levels; production hardening that used to live in a standalone L5 chapter is now folded into L3 (startup gates) and L4 (deploy-time gates).
+5. **Build, level by level.** Each level has its own self-contained starter (`level_N/starter/`) with offline `npm run verify` checkpoints (`tsc --noEmit` + `vitest run`, no Gemini key or network needed). All levels use the per-level-starter model with comprehensive coverage.
 
-6. **Follow the codelab:** [Level 0 Instructions](https://codelabs.developers.google.com/adkclaw-level-0/instructions)
+6. **Follow the codelab:** [Level 1 Instructions](https://codelabs.developers.google.com/adkclaw-level-1/instructions)
 
 ### 🟠 Hosting a workshop?
 
@@ -97,11 +97,11 @@ The instructor materials (slide decks, run-of-show, speaker notes, demo recovery
 
 | Document | What it covers |
 |----------|---------------|
-| [Level 0 README](level_0/README.md) | Architecture tour + scaffold orientation |
-| [Level 1 README](level_1/README.md) | Build the agent loop, register tools, give it personality, wire Telegram |
-| [Level 2 README](level_2/README.md) | Memory bank, compaction at 80%, markdown skills, runtime extensibility |
-| [Level 3 README](level_3/README.md) | Sub-agent profiles, recovery pyramid, cron + heartbeat, admin dashboard |
-| [Level 4 README](level_4/README.md) | Containerize, Firestore migration, Cloud Run deploy, Telegram webhook, Cloud Scheduler, plus the folded-in L5 hardening (OIDC, webhook secret, DLP scan) |
+| [Level 1 README](level_1/README.md) | Architecture tour + scaffold orientation |
+| [Level 2 README](level_2/README.md) | Build the agent loop, register tools, give it personality, wire Telegram |
+| [Level 3 README](level_3/README.md) | Memory bank, compaction at 80%, markdown skills, runtime extensibility |
+| [Level 4 README](level_4/README.md) | Sub-agent profiles, recovery pyramid, cron + heartbeat, admin dashboard |
+| [Level 5 README](level_5/README.md) | Containerize, Firestore migration, Cloud Run deploy, Telegram webhook, Cloud Scheduler, OIDC, DLP scan |
 | [Pre-workshop guide](PREWORK.md) | 7-day prep: accounts, tools, preflight |
 
 ## 🏗️ Architecture Overview
@@ -115,11 +115,11 @@ The instructor materials (slide decks, run-of-show, speaker notes, demo recovery
 │   ────────────────                                                       │
 │                                                                          │
 │   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────────┐   ┌──────┐ │
-│   │ Level 0  │──▶│ Level 1  │──▶│ Level 2  │──▶│ Level 3  │──▶│ L4   │ │
+│   │ Level 1  │──▶│ Level 2  │──▶│ Level 3  │──▶│ Level 4  │──▶│ L5   │ │
 │   │ Tour     │   │ Brain    │   │ Memory   │   │ Army     │   │ Cloud│ │
 │   └──────────┘   └──────────┘   └──────────┘   └──────────┘   └──────┘ │
 │                                                                          │
-│   Final Architecture (after Level 4)                                     │
+│   Final Architecture (after Level 5)                                     │
 │   ──────────────────────────────────                                     │
 │                                                                          │
 │   ┌──────────┐                ┌──────────────────────┐                  │
@@ -204,7 +204,7 @@ The full hosting playbook (slide decks, run-of-show, speaker notes, demo recover
 
 1. Share the event code on slides.
 2. Participants run `./scripts/setup.sh` → enter event code → choose username.
-3. Direct them to the [Level 0 Codelab](https://codelabs.developers.google.com/adkclaw-level-0/instructions).
+3. Direct them to the [Level 1 Codelab](https://codelabs.developers.google.com/adkclaw-level-1/instructions).
 4. Monitor the live dashboard: `https://adkclaw.dev/e/your-event-2026`
 5. Each level activates a new "pillar" badge on each participant's profile — celebrate completions in real time.
 
@@ -218,21 +218,21 @@ Contributions are welcome. Read [CONTRIBUTING.md](CONTRIBUTING.md) before submit
 
 ### Development Setup
 
-**For Level 1 (new per-level-starter format):**
+**For Level 2 (per-level-starter format):**
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/level_1/starter
+cd adkclaw/level_2/starter
 npm install
 cp .env.example .env       # add your keys
 npm run dev
 ```
 
-**For Levels 2–4 (per-level starters, same pattern as Level 1):**
+**For Levels 3–5 (per-level starters, same pattern as Level 2):**
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/level_2/starter        # or level_3/starter, level_4/starter
+cd adkclaw/level_3/starter        # or level_4/starter, level_5/starter
 npm install
 cp .env.example .env               # add your keys
 npm run verify                     # offline: tsc + vitest — should be green
@@ -241,15 +241,13 @@ npm run dev                        # interactive — needs GEMINI_API_KEY in .en
 
 ### Level checkpoints
 
-**Level 1** now uses offline checkpoints and answer keys:
+All levels use offline checkpoints and answer keys:
 - `npm run verify` (offline: `tsc --noEmit + vitest run`)
-- Reference: `solutions/level_1/`
-
-**Levels 2–4** use the same offline-verify pattern as Level 1:
+- Reference solutions: `solutions/level_1/`, `solutions/level_2/`, `solutions/level_3/`, `solutions/level_4/`, `solutions/level_5/`
 
 ```bash
 cd level_2/starter && npm run verify   # offline: tsc + vitest
-# Reference solutions: solutions/level_2/, solutions/level_3/, solutions/level_4/
+# Reference solutions in solutions/level_2/, solutions/level_3/, etc.
 ```
 
 Historical git tags `v0-starter`…`v5-complete` remain in the history for archaeology (they point at the now-removed monolithic `codelab/starter/` flow). The per-level starters under `level_N/starter/` are the canonical entry points. The full reference implementation lives at `src/` in this repo — study it as the answer key.
@@ -277,6 +275,6 @@ If AdkClaw helps you teach autonomous agents, give us a star — it helps other 
 
 ---
 
-**Ready to build your autonomous AI teammate?** Start with [Level 0](level_0/README.md) 🚀
+**Ready to build your autonomous AI teammate?** Start with [Level 1](level_1/README.md) 🚀
 
 © Ahmed Abu Eldahab · Apache 2.0 licensed

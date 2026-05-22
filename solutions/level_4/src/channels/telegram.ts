@@ -75,24 +75,11 @@ export class TelegramAdapter {
     }
   }
 
-  // Long-poll mode (local dev). In webhook mode (Cloud Run) this is a no-op —
-  // mount webhookCallback() on the HTTP server instead.
   async launch(): Promise<void> {
-    if (process.env['TELEGRAM_MODE'] === 'webhook') {
-      console.log('[telegram] webhook mode — mount webhookCallback() on the HTTP server');
-      return;
-    }
     // bot.launch() resolves only when the bot stops — start it in the
     // background so the daemon keeps booting.
     void this.bot.launch();
-    console.log('[telegram] bot online (long-poll)');
-  }
-
-  // Express middleware for webhook mode. telegraf validates the
-  // X-Telegram-Bot-Api-Secret-Token header against the secret given here.
-  webhookCallback(path: string) {
-    const secret = process.env['TELEGRAM_WEBHOOK_SECRET'];
-    return this.bot.webhookCallback(path, secret ? { secretToken: secret } : undefined);
+    console.log('[telegram] bot online');
   }
 
   // Push a message to a chat unprompted — used by cron jobs and the heartbeat.
@@ -110,7 +97,10 @@ export class TelegramAdapter {
 
 /**
  * Call once at startup when Telegram is configured. Throws if ALLOWED_SENDERS is
- * empty (silent lockout) or contains a non-numeric entry.
+ * empty (silent lockout) or contains a non-numeric entry. The handler in this
+ * file silently rejects unknown senders for security, so without this assertion
+ * a misconfigured allowlist looks identical to a working agent that just ignores
+ * messages — exactly the kind of failure students burn an hour on.
  */
 export function assertAllowedSenders(senders: readonly string[]): void {
   if (senders.length === 0) {
@@ -123,21 +113,5 @@ export function assertAllowedSenders(senders: readonly string[]): void {
     if (!/^\d+$/.test(s)) {
       throw new Error(`ALLOWED_SENDERS contains non-numeric value: "${s}" (expected digits only)`);
     }
-  }
-}
-
-/**
- * Call once at startup. Throws if TELEGRAM_MODE=webhook but TELEGRAM_WEBHOOK_SECRET
- * is unset. Without the secret, telegraf's webhookCallback() validates nothing —
- * anyone who learns the webhook URL can POST forged updates and impersonate
- * Telegram. Cloud Run with --allow-unauthenticated makes this trivially exploitable.
- */
-export function assertWebhookSecret(): void {
-  if (process.env['TELEGRAM_MODE'] !== 'webhook') return;
-  if (!process.env['TELEGRAM_WEBHOOK_SECRET']) {
-    throw new Error(
-      'TELEGRAM_WEBHOOK_SECRET is required when TELEGRAM_MODE=webhook. ' +
-        'Generate: openssl rand -hex 32; store in Secret Manager; register with setWebhook.',
-    );
   }
 }

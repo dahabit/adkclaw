@@ -81,37 +81,4 @@ export class TelegramAdapter {
     void this.bot.launch();
     console.log('[telegram] bot online');
   }
-
-  // Push a message to a chat unprompted — used by cron jobs and the heartbeat.
-  async deliver(chatId: string, text: string): Promise<void> {
-    if (!chatId || !text) return;
-    const id = Number(chatId);
-    if (!Number.isFinite(id)) {
-      throw new Error(`Invalid Telegram chat id: ${chatId}`);
-    }
-    for (let i = 0; i < text.length; i += MAX_MESSAGE_LENGTH) {
-      await this.bot.telegram.sendMessage(id, text.slice(i, i + MAX_MESSAGE_LENGTH));
-    }
-  }
-}
-
-/**
- * Call once at startup when Telegram is configured. Throws if ALLOWED_SENDERS is
- * empty (silent lockout) or contains a non-numeric entry. The handler in this
- * file silently rejects unknown senders for security, so without this assertion
- * a misconfigured allowlist looks identical to a working agent that just ignores
- * messages — exactly the kind of failure students burn an hour on.
- */
-export function assertAllowedSenders(senders: readonly string[]): void {
-  if (senders.length === 0) {
-    throw new Error(
-      'ALLOWED_SENDERS is required when TELEGRAM_BOT_TOKEN is set. ' +
-        'Add your Telegram numeric ID (DM your bot /start to discover it) and restart.',
-    );
-  }
-  for (const s of senders) {
-    if (!/^\d+$/.test(s)) {
-      throw new Error(`ALLOWED_SENDERS contains non-numeric value: "${s}" (expected digits only)`);
-    }
-  }
 }

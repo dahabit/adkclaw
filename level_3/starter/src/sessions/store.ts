@@ -1,15 +1,12 @@
 // src/sessions/store.ts
 import Database, { type Database as DB } from 'better-sqlite3';
 import type { Content } from '@google/genai';
-import type { Session, SessionKind } from '../types/index.js';
+import type { Session } from '../types/index.js';
 
 interface SessionRow {
   key: string;
   channel: string | null;
   sender_id: string | null;
-  kind: string;
-  parent_key: string | null;
-  archived: number;
   created_at: number;
   updated_at: number;
 }
@@ -21,9 +18,6 @@ const SCHEMA = [
      key TEXT PRIMARY KEY,
      channel TEXT,
      sender_id TEXT,
-     kind TEXT NOT NULL DEFAULT 'main',
-     parent_key TEXT,
-     archived INTEGER NOT NULL DEFAULT 0,
      created_at INTEGER NOT NULL,
      updated_at INTEGER NOT NULL
    )`,
@@ -35,51 +29,7 @@ const SCHEMA = [
      created_at INTEGER NOT NULL
    )`,
   `CREATE INDEX IF NOT EXISTS idx_messages_session ON messages(session_key)`,
-  `CREATE TABLE IF NOT EXISTS cron_jobs (
-     id TEXT PRIMARY KEY,
-     name TEXT,
-     schedule_kind TEXT NOT NULL DEFAULT 'cron',
-     schedule TEXT NOT NULL,
-     task TEXT NOT NULL,
-     session_key TEXT,
-     channel TEXT,
-     target TEXT,
-     enabled INTEGER NOT NULL DEFAULT 1,
-     idempotency_key TEXT,
-     created_at INTEGER NOT NULL,
-     updated_at INTEGER NOT NULL,
-     last_run_at INTEGER,
-     next_run_at INTEGER
-   )`,
-  `CREATE TABLE IF NOT EXISTS cron_runs (
-     id INTEGER PRIMARY KEY AUTOINCREMENT,
-     job_id TEXT NOT NULL,
-     fired_at INTEGER NOT NULL,
-     completed_at INTEGER,
-     status TEXT NOT NULL,
-     result TEXT,
-     error TEXT,
-     idempotency_key TEXT
-   )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_cron_runs_idem ON cron_runs(idempotency_key)`,
 ];
-
-function rowToSession(row: SessionRow, model: string): Session {
-  return {
-    key: row.key,
-    kind: (row.kind as SessionKind) || 'main',
-    parentKey: row.parent_key,
-    channel: row.channel,
-    target: row.sender_id,
-    senderId: row.sender_id,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-    lastMessageAt: null,
-    model,
-    totalTokens: 0,
-    isArchived: row.archived === 1,
-  };
-}
 
 export class SessionStore {
   private readonly db: DB;
@@ -96,45 +46,38 @@ export class SessionStore {
     }
   }
 
-  /** The underlying better-sqlite3 handle — shared with the CronEngine. */
-  getDatabase(): DB {
-    return this.db;
-  }
-
-  // Session keys are `<channel>:<senderId>`. `kind` is 'main' for top-level
-  // conversations and 'isolated' for sub-agent children (linked via parentKey).
+  // Session keys are `<channel>:<senderId>` — same agent, multiple users,
+  // no leakage between them.
   ensureSession(
     key: string,
     channel: string | null,
     senderId: string | null,
     model: string,
-    kind: SessionKind = 'main',
-    parentKey: string | null = null,
   ): Session {
     const now = Date.now();
     this.db
       .prepare(
-        `INSERT OR IGNORE INTO sessions
-           (key, channel, sender_id, kind, parent_key, archived, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 0, ?, ?)`,
+        `INSERT OR IGNORE INTO sessions (key, channel, sender_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?)`,
       )
-      .run(key, channel, senderId, kind, parentKey, now, now);
+      .run(key, channel, senderId, now, now);
 
     const row = this.db.prepare(`SELECT * FROM sessions WHERE key = ?`).get(key) as SessionRow;
-    return rowToSession(row, model);
-  }
 
-  /** Mark a session archived — used to retire sub-agent children after spawn. */
-  archiveSession(key: string): void {
-    this.db.prepare(`UPDATE sessions SET archived = 1 WHERE key = ?`).run(key);
-  }
-
-  /** Active (non-archived) sessions, most-recently-updated first — for the dashboard. */
-  listSessions(model = ''): Session[] {
-    const rows = this.db
-      .prepare(`SELECT * FROM sessions WHERE archived = 0 ORDER BY updated_at DESC LIMIT 50`)
-      .all() as SessionRow[];
-    return rows.map((r) => rowToSession(r, model));
+    return {
+      key: row.key,
+      kind: 'main',
+      parentKey: null,
+      channel: row.channel,
+      target: row.sender_id,
+      senderId: row.sender_id,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+      lastMessageAt: null,
+      model,
+      totalTokens: 0,
+      isArchived: false,
+    };
   }
 
   history(sessionKey: string): Content[] {

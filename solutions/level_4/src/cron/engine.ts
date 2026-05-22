@@ -1,5 +1,5 @@
 import cron from 'node-cron';
-import Database, { type Database as DB } from 'better-sqlite3';
+import type { Database } from 'better-sqlite3';
 import type { AgentRunner } from '../agent/runner.js';
 import type { SessionStore } from '../sessions/store.js';
 import type { ContextEngine } from '../context/manager.js';
@@ -81,28 +81,11 @@ export interface CronEngineOptions {
   contextEngine: ContextEngine;
   /** Model used for the session a fired job runs in. */
   model: string;
-  /** SQLite file for cron job + run storage — independent of the session backend. */
-  databasePath: string;
+  /** Direct DB handle for cron-specific queries (the SessionStore owns the DB but we share). */
+  db: Database;
   /** How the engine delivers an agent reply back to the user's channel. */
   delivery?: DeliveryFn;
 }
-
-// Cron stores its own jobs/runs in SQLite — separate from the session backend,
-// which may be Firestore in the cloud.
-const CRON_SCHEMA = [
-  `CREATE TABLE IF NOT EXISTS cron_jobs (
-     id TEXT PRIMARY KEY, name TEXT, schedule_kind TEXT NOT NULL DEFAULT 'cron',
-     schedule TEXT NOT NULL, task TEXT NOT NULL, session_key TEXT, channel TEXT,
-     target TEXT, enabled INTEGER NOT NULL DEFAULT 1, idempotency_key TEXT,
-     created_at INTEGER NOT NULL, updated_at INTEGER NOT NULL,
-     last_run_at INTEGER, next_run_at INTEGER
-   )`,
-  `CREATE TABLE IF NOT EXISTS cron_runs (
-     id INTEGER PRIMARY KEY AUTOINCREMENT, job_id TEXT NOT NULL, fired_at INTEGER NOT NULL,
-     completed_at INTEGER, status TEXT NOT NULL, result TEXT, error TEXT, idempotency_key TEXT
-   )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_cron_runs_idem ON cron_runs(idempotency_key)`,
-];
 
 /**
  * CronEngine — schedule + heartbeat orchestrator.
@@ -121,7 +104,7 @@ export class CronEngine {
   private readonly sessions: SessionStore;
   private readonly contextEngine: ContextEngine;
   private readonly model: string;
-  private readonly db: DB;
+  private readonly db: Database;
   private readonly delivery?: DeliveryFn;
   private readonly tasks = new Map<string, cron.ScheduledTask>();
 
@@ -130,15 +113,8 @@ export class CronEngine {
     this.sessions = opts.sessions;
     this.contextEngine = opts.contextEngine;
     this.model = opts.model;
-    this.db = new Database(opts.databasePath);
-    this.db.pragma('journal_mode = WAL');
-    for (const statement of CRON_SCHEMA) this.db.prepare(statement).run();
+    this.db = opts.db;
     if (opts.delivery) this.delivery = opts.delivery;
-  }
-
-  /** True when a job with this id exists — used to validate /api/cron/fire input. */
-  has(id: string): boolean {
-    return this.get(id) !== null;
   }
 
   add(input: CronJobInput): CronJob {

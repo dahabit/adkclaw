@@ -1,32 +1,30 @@
-# Level 3 — Resources
+# Level 2 — Resources
 
-Curated links + ideas for students AND instructors. Same template as L2.
+Curated links + ideas for students AND instructors. Same template as L1.
 
 ---
 
 ## Reference docs
 
-### Sub-agents and orchestration
-- [Anthropic — Multi-agent orchestration patterns](https://www.anthropic.com/research/building-effective-agents) — orchestrator-worker, evaluator-optimiser, parallelisation
-- [LangGraph multi-agent](https://langchain-ai.github.io/langgraph/concepts/multi_agent/) — alternate vendor's framing (graph framework)
-- [ADK 2.0 graph framework](https://google.github.io/adk-docs/) — Google's official multi-agent direction (Cloud Next 2026)
-- [Google's Marathon Planner codelab](https://codelabs.developers.google.com/marathon-planner) — sub-agents in production
+### Memory architecture + context engineering
+- [Anthropic — Building effective agents](https://www.anthropic.com/research/building-effective-agents) — three-tier memory and the "context, not weights" framing
+- [LangChain Memory concepts](https://python.langchain.com/docs/concepts/memory) — alternate vendor's vocabulary (compare, don't copy)
+- [Lilian Weng — LLM-powered Autonomous Agents §3 Memory](https://lilianweng.github.io/posts/2023-06-23-agent/) — canonical academic overview
 
-### Resilience and error recovery
-- [Google SRE Book — Cascading Failures](https://sre.google/sre-book/addressing-cascading-failures/) — canonical reference for retry + backoff
-- [AWS Builders' Library — Timeouts, retries, and backoff with jitter](https://aws.amazon.com/builders-library/timeouts-retries-and-backoff-with-jitter/) — exponential backoff math
-- [Anthropic — Tool use error handling](https://docs.anthropic.com/en/docs/agents-and-tools/tool-use/overview) — fallback patterns
-- [Gemini error reference](https://ai.google.dev/gemini-api/docs/troubleshooting) — what each status code means
+### Compaction + summarisation
+- [Anthropic — Memory and context management](https://docs.anthropic.com/en/docs/agents-and-tools/memory) — strict-preservation patterns we copy
+- [Gemini — Long context guide](https://ai.google.dev/gemini-api/docs/long-context) — when long context helps and when it doesn't
+- [Token counting in Gemini](https://ai.google.dev/gemini-api/docs/tokens) — the heuristic we approximate
 
-### Cron and scheduled work
-- [`node-cron` docs](https://www.npmjs.com/package/node-cron) — the library we use
-- [Cron expression reference](https://crontab.guru/) — interactive cron syntax helper
-- [Cloud Scheduler (preview for L4)](https://cloud.google.com/scheduler/docs) — what we migrate to
-- [SQLite UNIQUE constraint](https://www.sqlite.org/lang_createtable.html#uniqueconst) — the idempotency trick
+### Markdown skills + procedural memory
+- [Anthropic — Agent Skills](https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills/overview) — same idea, structured spec
+- [GitHub Copilot Workspace skills](https://github.blog/changelog/) — runtime extensibility comparison
+- [`workspace.example/skills/`](https://github.com/dahabit/adkclaw/tree/main/workspace.example/skills) — what we ship
 
-### Observability
-- [Cloud Logging structured logs](https://cloud.google.com/logging/docs/structured-logging) — what we'll switch to in L4
-- [Server-Sent Events (SSE) MDN](https://developer.mozilla.org/en-US/docs/Web/API/Server-sent_events/Using_server-sent_events) — for the production dashboard's stream endpoint
+### File-based memory (vs vector DBs)
+- [Simon Willison — Embeddings, not always](https://simonwillison.net/) — when grep beats embeddings
+- [SQLite FTS5](https://www.sqlite.org/fts5.html) — full-text search if you outgrow plain grep
+- [Vertex AI Vector Search](https://cloud.google.com/vertex-ai/docs/vector-search/overview) — what to graduate to past 5K entries
 
 ---
 
@@ -34,107 +32,91 @@ Curated links + ideas for students AND instructors. Same template as L2.
 
 | For our pillar | Google codelab | Why |
 |----------------|----------------|-----|
-| Multi-agent orchestration | [Build agents with ADK Foundation](https://codelabs.developers.google.com/devsite/codelabs/build-agents-with-adk-foundation) | Same orchestrator pattern in Python |
-| Specialised sub-agents | [Marathon Planner Codelab](https://codelabs.developers.google.com/marathon-planner) | Five specialised agents collaborating |
-| Resilience patterns | [Reliability for AI agents](https://cloud.google.com/architecture/reliability-best-practices-ai-agents) | Cloud-native patterns applied to agents |
-| Cron and triggers | [Cloud Scheduler quickstart](https://cloud.google.com/scheduler/docs/quickstart) | Foreshadow of L4 |
-| Live dashboards | [Cloud Run + Firestore real-time dashboards](https://cloud.google.com/firestore/docs/listen) | The L4 production version |
+| Memory architecture | [Building Stateful and Personalized Agents with ADK](https://codelabs.developers.google.com/codelabs/agent-memory/instructions) | Same three-tier model, Python + ADK |
+| Long-context handling | [Gemini Long Context guide](https://ai.google.dev/gemini-api/docs/long-context) | When the 1M window helps |
+| Skills / tools dichotomy | [Building ADK Agents with Skills and Tools](https://codelabs.developers.google.com/next26/dev-keynote/building-agents-with-skills) | The MCP-tools direction |
+| Vector search graduation | [Vertex AI Vector Search quickstart](https://cloud.google.com/vertex-ai/docs/vector-search/quickstart) | Where to go past 5K bank entries |
 
 ---
 
 ## Sample prompts to demo (test your agent with these)
 
-### After Chapter 2 (Sub-agents)
+### After Chapter 4 (Memory bank)
 ```
-Spawn a researcher to investigate Google ADK 2.0 graph framework.
-Have a search sub-agent find me the top 3 results for "Vertex Vector Search pricing".
-Tell the coder sub-agent to check if data/sessions.db has the cron_jobs table.
-```
-
-### After Chapter 3 (Recovery pyramid)
-```
-[disable network] What is the current Flutter version?
-                  (verifies retry → fallback → degrade)
-
-Tell me the current Flutter version using a deliberately bad API key.
-                  (verifies auth errors escalate immediately)
-
-[rate-limit yourself by spamming] Search for Flutter news 10 times.
-                  (verifies rate-limit retry honours Retry-After)
+Remember I prefer SQLite over Postgres for v1 projects.
+Save this as a fact: Vertex AI Vector Search costs $0.20/GB-month.
+What do you know about my database preferences?
+List everything in your memory bank under decisions.
 ```
 
-### After Chapter 4 (Cron)
+### After Chapter 5 (Daily notes + consolidator)
 ```
-Every weekday at 9 AM, search Google ADK news. Ping me only if something new shipped.
-Schedule a one-time job 5 minutes from now to remind me to drink water.
-List my scheduled jobs.
-Remove the water-reminder job.
+Note: had a productive Level 2 session today.
+Append to today's note: Decided to defer skill marketplace to Phase 4.
+Run the consolidator on yesterday's notes and tell me what you saved.
 ```
 
-### After Chapter 5 (Heartbeat)
+### After Chapter 6 (Skills)
 ```
-Add to HEARTBEAT.md: "OPEN: Check Vertex AI release notes weekly."
-[wait 30 min during working hours]
-                  (verifies heartbeat picks up the open task)
+What skills do you have?
+Use the research-topic skill to look into Vertex AI Vector Search pricing.
+Save what we just did as a skill called "remember-decisions".
 ```
 
 ### Stress-test prompts
 ```
-Spawn 4 researchers in parallel to investigate 4 different topics.
-                  (tests spawnParallel + token cost)
+[After 50+ turns]: Tell me what we discussed at the start of this conversation.
+                   (verifies compaction preserved the user's first request)
 
-[disable network for 5 minutes] Continue chatting normally.
-                  (tests degraded operation persistence)
+Save 100 facts about Flutter.   (tests bank scaling)
 
-Schedule a cron for "* * * * *" (every minute).
-                  (tests rapid-fire idempotency under restart)
+Load skill "../../etc/passwd".  (tests path-traversal block)
+
+Search the bank for "decision". (tests recall query matching)
 ```
 
 ---
 
 ## Inspiration — articles, talks, tweets
 
-### On multi-agent systems
-- [Anthropic — Building effective agents](https://www.anthropic.com/research/building-effective-agents) — workflow vs agent, when to use which
-- [Lilian Weng — Multi-agent collaboration](https://lilianweng.github.io/posts/2023-06-23-agent/) — academic survey
-- [DeepMind — AlphaCode 2's two-stage architecture](https://www.deepmind.com/research) — generation + verification as two specialised agents
+### On agent memory
+- [Anthropic — Memory and context management](https://docs.anthropic.com/en/docs/agents-and-tools/memory) — the strict-preservation doctrine
+- [Cline — Memory bank pattern](https://github.com/cline/cline) — open-source agent that popularised the markdown bank
+- [Letta (formerly MemGPT)](https://research.memgpt.ai/) — academic framing of LLM as OS with memory tiers
 
-### On resilience patterns
-- [Google SRE Workbook — Implementing SLOs](https://sre.google/workbook/implementing-slos/) — what "never crashes" actually means in practice
-- [Charity Majors on observability](https://charity.wtf/) — production debugging mindset
-- [Marc Brooker — Backoff with jitter](https://brooker.co.za/blog/2015/03/21/backoff.html) — why jitter matters at scale
+### On compaction
+- [Long-context retrieval — research overview](https://arxiv.org/abs/2310.06825) — why summarisation beats sliding-window for long agents
+- [Anthropic — Compaction in Claude Code](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching) — adjacent pattern (cache control, not summarisation)
 
-### On scheduled work
-- [Mike Perham — Sidekiq's design](https://github.com/sidekiq/sidekiq/wiki/Design) — idempotency keys and at-least-once semantics
-- [Google — Scheduling at scale (Borg paper)](https://research.google/pubs/large-scale-cluster-management-at-google-with-borg/) — the philosophical ancestor of Cloud Scheduler
+### On skills as data
+- [Anthropic — Agent Skills overview](https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills/overview) — same shape, different format
+- [Cursor Rules](https://docs.cursor.com/context/rules) — markdown rules surfaced into the editor agent
+- [Continue.dev rules + slash commands](https://docs.continue.dev/) — converging design across editor agents
 
 ---
 
-## Deep dives — for students who want to go beyond Level 3
+## Deep dives — for students who want to go beyond Level 2
 
-### After Chapter 2 (Sub-agents)
-- Read [`src/multi-agent/orchestrator.ts`](https://github.com/dahabit/adkclaw/blob/main/src/multi-agent/orchestrator.ts) — the production version with `spawnParallel()` (capped at 4 concurrent)
-- Read [`src/multi-agent/profiles/`](https://github.com/dahabit/adkclaw/tree/main/src/multi-agent/profiles) — all four profile definitions
-- Read [`src/tools/spawn.ts`](https://github.com/dahabit/adkclaw/blob/main/src/tools/spawn.ts) — how the spawn-tools wire allowlists into the runner
+### After Chapter 2 (Context engine)
+- Read [`src/context/manager.ts`](https://github.com/dahabit/adkclaw/blob/main/src/context/manager.ts) full version — see how the bank index is summarised (count + samples) for token economy
+- Read [`src/context/manager.test.ts`](https://github.com/dahabit/adkclaw/blob/main/src/context/manager.test.ts) — the cache-invalidation cases worth understanding
 
-### After Chapter 3 (Recovery pyramid)
-- Read [`src/healing/classifier.ts`](https://github.com/dahabit/adkclaw/blob/main/src/healing/classifier.ts) — production version with retry-after parsing
-- Read [`src/healing/engine.ts`](https://github.com/dahabit/adkclaw/blob/main/src/healing/engine.ts) — `protect()` combining retry + fallback
-- Read [`src/healing/types.ts`](https://github.com/dahabit/adkclaw/blob/main/src/healing/types.ts) — full error-type discriminated union
+### After Chapter 3 (Compaction)
+- Read [`src/context/compaction.ts`](https://github.com/dahabit/adkclaw/blob/main/src/context/compaction.ts) full version — see the `compaction_checkpoints` table writes
+- Read [`src/context/token-counter.ts`](https://github.com/dahabit/adkclaw/blob/main/src/context/token-counter.ts) — the approximation we use vs Gemini's exact `countTokens` API
 
-### After Chapter 4 (Cron)
-- Read [`src/cron/engine.ts`](https://github.com/dahabit/adkclaw/blob/main/src/cron/engine.ts) — production version with `cron_runs` audit table
-- Read the SQLite migration — `CREATE UNIQUE INDEX cron_runs_idempotency...`
-- Compare with Cloud Scheduler in L4 — different idempotency model (Cloud Scheduler retries on 5xx)
+### After Chapter 4 (Memory bank)
+- Read [`src/memory/bank.ts`](https://github.com/dahabit/adkclaw/blob/main/src/memory/bank.ts) — the production CRUD
+- Read [`src/tools/memory.ts`](https://github.com/dahabit/adkclaw/blob/main/src/tools/memory.ts) — how the tool wrappers expose `save` / `recall` / `daily_append`
 
-### After Chapter 5 (Heartbeat)
-- Read [`src/cron/heartbeat.ts`](https://github.com/dahabit/adkclaw/blob/main/src/cron/heartbeat.ts) — full version with lock-row pattern
-- Note how the runner's `beforeTurn` callback can rewrite `HEARTBEAT.md` to clear handled tasks
+### After Chapter 5 (Consolidator)
+- Read [`src/memory/consolidator.ts`](https://github.com/dahabit/adkclaw/blob/main/src/memory/consolidator.ts) — `parseJsonLoose()` for fenced-output recovery
+- Read [`workspace.example/memory/`](https://github.com/dahabit/adkclaw/tree/main/workspace.example/memory) — sample daily notes
 
-### After Chapter 6 (Dashboard)
-- Read [`src/server/http.ts`](https://github.com/dahabit/adkclaw/blob/main/src/server/http.ts) — production version with SSE stream
-- Read the dashboard CSS — Style A tokens (slate-blue, cloud-blue, Space Grotesk)
-- Look at how L4 puts the dashboard behind Cloud Run authentication
+### After Chapter 6 (Skills)
+- Read [`src/skills/loader.ts`](https://github.com/dahabit/adkclaw/blob/main/src/skills/loader.ts) — the path-traversal whitelist
+- Read [`workspace.example/skills/`](https://github.com/dahabit/adkclaw/tree/main/workspace.example/skills) — every skill we ship as a reference
+- Read Anthropic's [Agent Skills spec](https://docs.anthropic.com/en/docs/agents-and-tools/agent-skills/overview) — converge formats so a skill works on multiple agents
 
 ---
 
@@ -144,40 +126,40 @@ Quick reference for instructors during Q&A.
 
 | Question | Point them to | One-liner |
 |----------|---------------|-----------|
-| "How is this different from LangGraph?" | `docs/technical-decisions.md` | "Same idea, different abstraction layer. LangGraph hides the spawn pattern; we want students to see it." |
-| "Can I use Vertex AI Agent Builder instead?" | Vertex AI Agent docs | "Yes — for pre-built workflows. AdkClaw teaches the underlying pattern so you can migrate either way." |
-| "What about A2A protocol?" | Cloud Next 2026 announcement | "Phase 4 stretch. Once two AdkClaw agents can speak A2A, they can collaborate across networks." |
-| "Why not retry on 4xx?" | Classifier table | "4xx is a client error — your code is wrong. Retrying makes it wrong again. Fix the code." |
-| "What's the max retries?" | `withRetry` opts | "Default 3. We cap because longer retries push past Telegram's response window." |
-| "Can I have a global Researcher pool?" | Workspace co-mounting | "Yes — same workspace, multiple parents share the same Researcher. They'll race on the same memory bank, idempotent by design." |
-| "Heartbeat too slow?" | `intervalMs` config | "Set lower in `.env` (default 30 min). Don't go below 5 min — Gemini Pro turns add up." |
-| "Can the cron call a sub-agent?" | Yes, via `delivery` | "The cron's action can reference a sub-agent profile. Production tool: `cron_add` accepts `via: 'researcher'`." |
-| "How do I add a Slack channel?" | Channel adapter pattern | "Implement `MessageNormalizer` → `runner.run()` → `bot.deliver()`. Same shape as Telegram. Shipped as Phase 4 plugin in roadmap." |
-| "What if Gemini is down for 30 minutes?" | Fallback degraded mode | "Agent answers from training data only. Logs the outage. Picks up the moment Gemini recovers." |
-| "Can two agents share the dashboard?" | Per-instance dashboards | "Each daemon runs its own. For aggregated multi-agent view, see L4 + Firestore queries." |
-| "Why isolate sub-agent sessions?" | Audit + crash isolation | "Each child's session is a queryable trace. If a child crashed, you can replay it independently." |
+| "Should I use a vector DB?" | `docs/technical-decisions.md` | "Defer until <5K entries breaks. Then swap `recall()` for Vertex Vector Search — interface stays the same." |
+| "What about LangChain Memory?" | LangChain Memory docs | "Same idea, more abstractions. LangChain hides the markdown layer; we want it visible for students. Same shape underneath." |
+| "Can I share my bank with another agent?" | Workspace co-mounting | "Point two daemons at the same `workspace/`. They'll see the same memory. Be careful — they share `IDENTITY.md` too." |
+| "How do I migrate the bank to Firestore in L4?" | L4 Firestore adapter | "Bank stays as files in Cloud Storage; Firestore stores sessions + cron. Different storage shapes for different access patterns." |
+| "What if Gemini hallucinates a fact during consolidation?" | Audit trail | "The original daily note is preserved. The bank entry is one `rm` away. Audit trail is intact." |
+| "Can compaction lose context I needed?" | Preservation rules + checkpoints | "The full original is in `compaction_checkpoints`. You can restore it. The preservation rules cover most pain." |
+| "Why aren't tags supported on bank entries?" | Categories provide partition | "Categories are enough at small scale. If you need richer query, add it to the body and `recall()` will grep." |
+| "Can I pre-load a bank from a JSON dump?" | `bank.save()` is a public API | "Yes — write a one-shot import script. `MemoryBank.save()` is idempotent on slug." |
+| "How do I cron the consolidator?" | Level 3 cron engine | "L3 introduces `cron_add`. Right now run `npm run consolidate` end-of-day yourself." |
+| "What about voice memos as memory input?" | Gemini multimodal | "Add a voice channel in Part 2. Pass `inlineData` to Gemini, transcribe, append via `daily_append`." |
+| "Is the bank GDPR-compliant?" | File-based audit | "Plain markdown means easy export and easy delete. `rm` is the unsubscribe button." |
+| "Can two agents share skills?" | Skill files are version-controlled markdown | "Yes — push the `workspace/skills/` folder to a git repo, share the URL, both agents pull from it." |
 
 ---
 
 ## Cohort fleet view
 
-After completing L3, students light up the **third pillar** on the fleet:
+After completing L2, students light up the **second pillar** on the fleet:
 **[adkclaw.dev/e/<event>/fleet](https://adkclaw.dev/e/sandbox/fleet)**
 
-The L3 badge unlocks when a sub-agent successfully spawns AND returns a non-error result. Students who complete fastest see their third pillar light first.
+The L2 badge unlocks when (1) the agent has at least one bank entry AND (2) at least one compaction has run in the same session. Students who complete fastest see their second pillar light first — a soft motivator.
 
 ---
 
 ## Privacy + ethics notes for instructors
 
-- Sub-agents inherit the **workspace** memory bank. Tell students: anything they put in a fact is visible to every sub-agent. If they want privacy, namespace the workspace.
-- The `ALLOWED_SENDERS` allowlist is per-channel. The cron + heartbeat send via the same channel; tell students to triple-check the allowlist before scheduling.
-- Heartbeat quiet hours apply to **delivery**, not **work**. The agent can still process; it just won't ping. If a student wants the agent to also pause work at night, add a `process_only_during_work_hours` flag.
-- The recovery pyramid logs every retry. Tell students to scrub PII from error messages before shipping to production logs (a Phase 2 cleanup).
+- Bank entries are durable. Tell students: anything they tell their agent is on disk, in plain markdown, in their own `workspace/`. Easy to inspect, easy to delete, easy to export.
+- The consolidator sends raw daily notes to Gemini. Tell students to not put PII or secrets in `daily_append` calls — same hygiene as their git history.
+- Skills are loaded by trust. A malicious markdown file dropped into `workspace/skills/` can guide the agent to misbehave (it's still gated by the tool registry, but it can chain tool calls in surprising ways). Treat `workspace/skills/` like `~/.bashrc` — yours alone.
+- The `web_fetch` tool fetches **untrusted content**. We add `EXTERNAL_UNTRUSTED` markers in L3 — preview now if a student asks.
 
 ---
 
 ## Where to put feedback
 
-- Open an issue: [github.com/dahabit/adkclaw/issues](https://github.com/dahabit/adkclaw/issues) with the label `level-3`
+- Open an issue: [github.com/dahabit/adkclaw/issues](https://github.com/dahabit/adkclaw/issues) with the label `level-2`
 - Or DM Ahmed: [@dahabdev on X](https://x.com/dahabdev)

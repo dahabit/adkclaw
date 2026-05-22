@@ -1,17 +1,17 @@
-author: AdkClaw Team (Ahmed Abu Eldahab — Google Developer Expert in Dart & Flutter, MENA Dev community)
-summary: Wrap a Gemini API call in the core ADK pattern — think → act → observe → respond. Build the agent loop, register three tools, give your agent a name and a personality, and put it on Telegram.
-id: adkclaw-codelab-1-build-the-brain
+author: AdkClaw Team (Ahmed Abu Eldahab — Google Developer Expert, MENA Dev community)
+summary: Tour the AdkClaw repo, learn the six pillars of an autonomous agent, set up your environment, and prepare to build an agent on Telegram in Level 1.
+id: adkclaw-codelab-1-architecture-tour
 categories: ai,ml,gemini,adk,typescript,nodejs,agents
 environments: Web
 status: Published
 feedback link: https://github.com/dahabit/adkclaw/issues
 analytics account: 0
 
-# Level 1 — Build the Brain
+# Level 1 — Architecture Tour: What is an Autonomous Agent?
 
 ## Before you begin
 
-In this codelab, you will wrap one Gemini API call in **a loop**, give it three **tools**, hand it a **personality** through markdown files, and put it on **Telegram** so you can talk to it from your phone. This is **Level 1 of 5** in the AdkClaw series — the first level where you write code.
+In this codelab, you'll learn what an autonomous agent is, tour the AdkClaw scaffold you'll grow over the next four levels, and verify your environment is ready to build. This is **Level 1 of 5** in the AdkClaw series — the foundation tour. There is no code to write here; foundational concepts now prevent confusion later in Levels 2–4.
 
 **PLEASE READ:** This codelab works in either of two environments:
 
@@ -20,677 +20,461 @@ In this codelab, you will wrap one Gemini API call in **a loop**, give it three 
 
 The default path below assumes self-study. Branch points are flagged with **(In-person only)** or **(Self-study only)**.
 
-### Prerequisites
+### Prerequisites Checklist
 
-- Completed [Level 0 — Architecture Tour](https://github.com/dahabit/adkclaw/tree/main/level_0)
-- Familiarity with [TypeScript](https://www.typescriptlang.org/) / [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript)
-- One previous Gemini API call under your belt (`models.generateContent({...})`)
-- A working terminal and editor
+Before you start, make sure you have:
 
-### What you will learn
+- ✓ Familiarity with [TypeScript](https://www.typescriptlang.org/) / [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) (at a "read and understand type signatures" level)
+- ✓ A free Google account to obtain a [Gemini API key](https://aistudio.google.com/apikey)
+- ✓ Access to [Telegram](https://telegram.org/) — free; you'll need a phone number
+- ✓ **Node.js 22+** installed locally (verify with `node --version`)
+- ✓ A working terminal and editor (VS Code, JetBrains, vim — anything you're comfortable with)
+- ✓ [Git](https://git-scm.com/) installed
+- ✓ A `.env` file (you'll create this with the setup wizard in Section 6)
+- ✓ (Optional, for full-cloud path) A Google Cloud project (can wait until Level 4)
 
-- The core ADK pattern: `think → act → observe → respond` — the agent loop
-- [Function calling](https://ai.google.dev/gemini-api/docs/function-calling) in Gemini and the `AgentTool` shape that defines callable tools
-- Permission tiers (`allow` / `ask` / `deny`) — the human-in-the-loop pattern
-- How three tools (`web_search`, `web_fetch`, `filesystem`) are enough for a real agent
-- Personality engineering — `IDENTITY.md` + `SOUL.md` + `agent.yaml` give the agent its voice
-- Telegram via [telegraf](https://telegraf.js.org/) and the `/start` self-service ID-discovery pattern
-- SQLite session storage keyed by `<channel>:<senderId>` — same agent, multiple users
+### What you'll learn
 
-### What you will need
+By the end of this codelab, you will:
 
-- A computer with **Node.js 22+** installed (`node --version` ≥ v22.0.0)
-- A free [Gemini API key](https://aistudio.google.com/apikey)
-- A [Telegram bot token](https://t.me/BotFather) (free; send `/newbot`)
-- [Git](https://git-scm.com/)
-- The `level_1/starter/` directory you cloned in Level 0 (or clone fresh — see below)
+- Understand the five-rung evolution from chatbot to autonomous agent — and identify which rung "agent" means in this course
+- Recognize the six pillars every autonomous agent needs: **brain · tools · memory · personality · self-healing · sub-agents**
+- Map each pillar to its folder in the AdkClaw codebase
+- Distinguish between Google services (the brain, the cloud) and open-source plumbing (Express, SQLite, telegraf)
+- Run the setup wizard and confirm your environment with `npx adkclaw check`
+
+### What you'll have at the end
+
+- A cloned AdkClaw starter scaffold on your machine
+- A populated `.env` file with your Gemini API key and Telegram bot token
+- A named agent (`agent.yaml`) with your chosen personality
+- A `workspace/` directory containing your agent's identity files
+- A passing `npx adkclaw check` — your green light for Level 2
+- A clear mental model of how the six pillars map to folders
+
+**Tip:** If you've never used Cloud Shell, the [Cloud Shell quickstart](https://cloud.google.com/shell/docs/launching-cloud-shell) walks you through Google Cloud fundamentals.
 
 ## Introduction
 
-You have used `client.models.generateContent()`. That is a function call, not an agent. Three things separate the two:
+Most "agent tutorials" show you a chatbot wrapped in a fancy name. AdkClaw teaches something different: an **autonomous agent** that has a brain, hands, memory, a personality, the ability to recover from any failure, and a team of specialist sub-agents — built on top of Google's [Agent Development Kit (ADK)](https://google.github.io/adk-docs/) and [Gemini 3](https://deepmind.google/technologies/gemini/), in TypeScript you'll understand line-by-line.
 
-1. **The loop** — the LLM may emit *tool calls* instead of text. The runtime runs them, appends the results, and calls the LLM again. Repeat until the model emits text.
-2. **Tools** — concrete functions the LLM can invoke: read a file, fetch a URL, search the web. Tools are how the agent acts on the world.
-3. **Persistent personality** — system instructions assembled from markdown files in a `workspace/` directory. The agent has a name, a tone, and a backstory that survives reboots.
+This codelab maps the territory before you start the build. By the end of the next four levels you'll have an autonomous agent on Google Cloud, named whatever you want, reachable from any phone — and the mental model and reference code to build a different one tomorrow.
 
-By the end of this level your agent will speak on Telegram, remember the conversation across turns within a session, and call tools when it needs information. It will not survive a reboot yet — that is Level 2.
+**Today there is no code to write.** Today we name the parts.
 
-### What you will build
+### What you'll build
 
 By the end of this codelab, you will have:
 
-- An `AgentRunner` class wrapping the Gemini API in a tool-calling loop (capped at 15 rounds)
-- A `ToolRegistry` with three tools: `web_search`, `web_fetch`, `filesystem`
-- A SQLite-backed `SessionStore` that persists every message
-- A Telegram bot that talks to your agent from your phone
-- A populated `workspace/` (your agent's personality on disk)
-- An HTTP API at `localhost:3000` powering the `adkclaw chat` terminal REPL
-- A clean `npm run build` and `npm run typecheck`, with the pre-filled `npm test` suites still green
+- A working clone of the **starter scaffold** in your terminal
+- A populated `.env` with your Gemini API key and Telegram bot token
+- A populated `agent.yaml` and `workspace/` (your agent's identity files)
+- A green `npx adkclaw check` confirming everything is wired correctly
+- A clear mental map of where every folder lives in the autonomous-agent picture
+- Confidence to start writing the agent loop in Level 1
 
-## 1. Scaffold and verify
+## 1. The five-rung evolution — where "agent" actually starts
 
-If you skipped Level 0, start here. Otherwise jump to Chapter 2.
+Different products mean different things by "AI agent". This series uses the strictest definition. Knowing where on the ladder each system lives saves you confusion when reading other tutorials.
 
-### Clone the starter
+| Rung | Capability | Examples |
+|------|-----------|----------|
+| 1. **Chatbot** | One prompt, one reply, no memory | Early ChatGPT |
+| 2. **Stateful chat** | Remembers the current conversation | Anthropic Console, Claude.ai |
+| 3. **RAG** | Retrieves over a corpus before answering | Perplexity, Glean |
+| 4. **Tool-using** | Reads files, calls APIs, writes outputs | Cursor, Copilot Workspace |
+| 5. **Autonomous** | Memory across sessions, recovers from failures, runs scheduled work, spawns sub-agents | What you build in Levels 1–4 |
+
+A chatbot **answers**. An autonomous agent **acts** — across time, across channels, and across delegation to sub-agents. AdkClaw teaches Rung 5.
+
+> ℹ️ **Note:** Many frameworks and tutorials use "agent" loosely to mean Rung 2–4. This codelab is precise: we build Rung 5 only.
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Know where your agent sits on the five-rung ladder
+- Understand why Rung 5 (autonomous) is different from Rungs 1–4
+- Be ready to meet the six pillars that make Rung 5 possible
+
+## 2. The six pillars
+
+Every autonomous agent has these six things. Take any one away and it stops being autonomous.
+
+```
+   BRAIN  +  TOOLS  +  MEMORY  +  PERSONALITY  +  SELF-HEALING  +  SUB-AGENTS
+```
+
+### Brain
+
+The LLM that thinks. AdkClaw uses **Gemini 3.1 Pro** for the parent agent (1 M token context, deep reasoning) and **Gemini 3 Flash** for sub-agents (cheaper, fast enough for specialist tasks). Reached via [`@google/genai`](https://www.npmjs.com/package/@google/genai), the official ADK SDK.
+
+The brain lives in `src/agent/runner.ts` — a single file. Everything else in the repo wraps the one `client.models.generateContent({...})` call inside it.
+
+> 🎯 **Goal:** In Level 1 you'll write that `runner.ts` file — 30 lines of agent loop.
+
+### Tools
+
+The hands that act on the world. Twenty-one tools by Level 4: filesystem read/write, web search, web fetch, browser automation, content extraction, memory operations, skill loading, sub-agent spawning, cron scheduling, and more.
+
+Tools live in `src/tools/`. Each tool has the same shape:
+
+```typescript
+export const webSearchTool: AgentTool = {
+  name: 'web_search',
+  description:
+    'Search Google for current information. Use for news, recent events, ' +
+    'version numbers, or anything time-sensitive. Returns cited results.',
+  permission: 'allow',
+  parameters: {
+    type: 'object',
+    properties: { query: { type: 'string' } },
+    required: ['query'],
+  },
+  async execute({ query }) {
+    /* ... */
+  },
+};
+```
+
+> ❌ **Common pitfall:** Writing vague tool descriptions (e.g., "Searches the web") instead of specific ones. The LLM *only* sees the description when choosing tools. Invest in clarity here — it's the difference between your agent using the right tool and the wrong one.
+
+### Memory
+
+Three tiers, ranked by lifetime:
+
+1. **In-context history** — the current conversation, lasts until compaction
+2. **Daily notes** — raw events, append-only, rotated nightly into the bank
+3. **Memory bank** — durable structured memory: `bank/facts/`, `bank/decisions/`, `bank/projects/`, `bank/people/`
+
+Memory lives in `src/context/`, `src/memory/`, and the agent's `workspace/` directory.
+
+> ℹ️ **Note:** The `workspace/` directory **is data, not code.** You debug your agent's mind with `cat`, `grep`, and `git diff` — Unix tools, not a custom UI. This keeps the agent's thinking transparent and auditable.
+
+### Personality
+
+Three files give the agent its public-facing identity:
+
+- `workspace/IDENTITY.md` — who the agent is (name, role, backstory)
+- `workspace/SOUL.md` — how it talks (tone, quirks, what it loves)
+- `agent.yaml` — machine-readable identity (`name`, `tone`, `traits`)
+
+Filled by the interactive setup wizard you'll run in Section 6. Naming the agent is part of the ceremony — students who name their agent something playful (Dudu, Buddy, Coco) report higher engagement and faster iteration than students who keep the default `AdkClaw`.
+
+### Self-healing
+
+The brand promise: **the agent never crashes.**
+
+The recovery pyramid (built in Level 4):
+
+```
+                              ESCALATE  ↑ tell the user
+                                DEGRADE ↑ reduced capability
+                                  RECOVER ↑ restart subsystem
+                                  FALLBACK ↑ Pro → Flash, Playwright → web_fetch
+                                    RETRY ↑ exp backoff 1s / 2s / 4s
+                                  CLASSIFY → which tier applies?
+```
+
+Lives in `src/healing/`. Every new component you build will answer: *what happens when this fails?*
+
+### Sub-agents
+
+Specialists collaborating with the main agent. Four profiles in Level 3:
+
+- **SearchAgent** — web search + grounding
+- **ResearcherAgent** — multi-step deep research
+- **CommunicatorAgent** — talks to other agents (A2A protocol)
+- **CoderAgent** — writes code (optional, integrates Gemini CLI)
+
+Each sub-agent runs in an **isolated session** with **forked context** — it sees only the parent's IDENTITY and the relevant memory, never the full parent history. Isolation is a teaching point in Level 4.
+
+Sub-agents live in `src/multi-agent/`.
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Understand what each pillar does and why all six are necessary for autonomy
+- Know which pillar maps to which folder in the codebase
+- Recognize that a chatbot has only the brain; an autonomous agent has all six pillars
+
+## 3. The tech stack
+
+A clear answer to "why this and not LangChain?".
+
+### Why TypeScript?
+
+- Tool schemas are typed contracts between the LLM and your code
+- Async-first runtime — agents are I/O-bound, not CPU-bound
+- Single language for backend + tools + CLI
+- Familiar to most web developers
+
+The tradeoff: Python has more LLM tooling. TypeScript has fewer dependencies you need to learn.
+
+### Google services we use
+
+| Layer | Google product |
+|-------|----------------|
+| LLM (the brain) | **Gemini 3.1 Pro / 3 Flash** via `@google/genai` |
+| Web grounding | Built into Gemini |
+| Embeddings + vector search (Level 2 stretch, Level 4) | **Vertex AI** |
+| Cloud hosting (Level 5) | **Cloud Run** |
+| Persistent storage (Level 5) | **Firestore** + **Cloud Storage** |
+| Secrets (Level 5) | **Secret Manager** |
+| Scheduled work (Level 5) | **Cloud Scheduler** |
+| CI/CD (Level 5) | **Cloud Build** |
+
+### Open-source plumbing
+
+| Need | Library |
+|------|---------|
+| HTTP server | [Express](https://expressjs.com/) |
+| Telegram bot | [telegraf](https://telegraf.js.org/) |
+| Local DB (Levels 1–3) | [better-sqlite3](https://github.com/WiseLibs/better-sqlite3) |
+| Browser automation (optional) | [Playwright](https://playwright.dev/) |
+| In-process cron (Levels 1–3) | [node-cron](https://github.com/node-cron/node-cron) |
+| Markdown rendering | [marked](https://marked.js.org/) |
+
+### What we deliberately do NOT use
+
+- **No LangChain / LangGraph.** Frameworks hide the agent loop you need to see. The loop is 30 lines — you'll write them yourself in Level 1.
+- **No Model Context Protocol (MCP).** MCP is for tool *discovery*; this course teaches tool *authoring*. You can add MCP later as an exercise.
+- **No Postgres / Redis / Kafka.** A single-host agent doesn't need them. Cloud Firestore in Level 5 is the only managed datastore.
+- **No third-party monitoring.** Cloud Logging plus a small dashboard suffice.
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Know which layers use Google services (Gemini, Vertex AI, Cloud Run)
+- Know which layers use open-source libraries and why
+- Understand why we're not using LangChain, MCP, or managed databases in Levels 1–3
+
+## 4. Tour the starter scaffold
+
+Time to look at what you'll clone in Level 1.
+
+### Clone the repo
 
 In the **terminal**, run:
 
 ```bash
 git clone https://github.com/dahabit/adkclaw.git
-cd adkclaw/level_1/starter
-```
-
-### Install dependencies and verify the toolchain
-
-```bash
-npm install
-npm run typecheck
-```
-
-**Example output**:
-
-```
-> adkclaw@0.1.0 typecheck
-> tsc --noEmit
-```
-
-A clean exit means the four pre-filled folders compile. You are ready.
-
-**Tip:** if `npm install` is slow, `node_modules` is ~600 MB (Playwright is the bulk). For Level 1 you do not strictly need Playwright; set `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` to skip the browser binaries.
-
-### Verify the starter compiles and tests pass
-
-Before you write any code, verify that the starter's type checks and tests pass. The starter comes with `//REPLACE-*` markers standing in for code you will write in the chapters ahead.
-
-```bash
-npm run verify
-```
-
-**Example output**:
-
-```
-> adkclaw@0.1.0 verify
-> tsc --noEmit && vitest run
-
-✓ src/config/index.test.ts (1 test)
-✓ src/cli/setup.test.ts (2 tests)
-```
-
-The verify step type-checks the project (`tsc --noEmit`) and runs the test suite offline (`vitest run` — no Gemini key or network needed). A green pass at this stage confirms the starter skeleton compiles and the pre-filled modules are correct. As you fill in the `//REPLACE-*` markers in each chapter, `npm run verify` is your checkpoint — it should stay green.
-
-### Configure the wizard
-
-```bash
-npm run setup
-```
-
-Follow the prompts. Pick a name (`Dudu`, `Buddy`, anything you like) and tone (`friendly` recommended). Paste your Gemini API key and Telegram bot token when asked.
-
-The wizard writes `.env`, `agent.yaml`, and a populated `workspace/` from the templates.
-
-### Section recap
-
-- The starter has 4 pre-filled folders under `src/` (types, config, cli, index stub) — everything else you will fill in by replacing `//REPLACE-*` markers in existing files.
-- `npm install && npm run typecheck` is the green-light check before writing any code.
-- `npm run verify` is your per-section checkpoint — it runs type-checks and tests offline (no Gemini key needed).
-- The starter compiles green with all markers standing in, ready for you to fill in chapters 2–6.
-
-## 2. Make your first Gemini call
-
-Prove the SDK works before adding any complexity.
-
-### Create a scratch file and test the Gemini API
-
-In your **editor**, create a new file `src/hello-gemini.ts` with this content:
-
-```typescript
-// src/hello-gemini.ts
-import 'dotenv/config';
-import { GoogleGenAI } from '@google/genai';
-
-async function main() {
-  const apiKey = process.env['GEMINI_API_KEY'];
-  if (!apiKey) {
-    throw new Error('GEMINI_API_KEY is not set. Re-run `npm run setup`.');
-  }
-
-  const client = new GoogleGenAI({ apiKey });
-  const response = await client.models.generateContent({
-    model: 'gemini-3.1-pro-preview',
-    contents: 'Hello, what is your name?',
-  });
-
-  console.log(response.text);
-}
-
-main().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
-```
-
-In the **terminal**, run:
-
-```bash
-npx tsx src/hello-gemini.ts
+cd adkclaw/level_2/starter
 ```
 
 **Example output** (yours may be a little different):
 
 ```
-I am an AI assistant created by Google. I do not have a personal name in
-the human sense — but I am here to help. What can I do for you today?
+Cloning into 'adkclaw'...
+remote: Enumerating objects: 1245, done.
+...
+Resolving deltas: 100% (412/412), done.
 ```
 
-That works. But it is not an agent — it is a one-shot function call. There is no loop, no tools, no memory. The next chapter wraps a single call in **the loop** that turns it into an agent.
-
-**Important:** if you got `Error: API key is invalid`, re-check your `.env`. The wizard might have appended a stray newline; open `.env` in your editor and verify the key has no leading/trailing whitespace.
-
-### Clean up
-
-Delete the scratch file — you no longer need it. The real entry point is `src/index.ts` (which you'll complete in §6 by replacing the `//REPLACE-MAIN-ENTRY` marker).
-
-```bash
-rm src/hello-gemini.ts
-npm run verify
-```
-
-The verify should still pass green.
-
-### Section recap
-
-- One `generateContent` call is a function call, not an agent.
-- The Gemini SDK is reached via `@google/genai` (the [Agent Development Kit (ADK)](https://google.github.io/adk-docs/)).
-- Reference: [`src/index.ts`](https://github.com/dahabit/adkclaw/blob/main/src/index.ts) (eventually replaces this minimal version with the full wire-up).
-
-## 3. The agent loop
-
-The core ADK pattern. Once you have this, every other chapter is filling in tools.
-
-### The pattern
+### Top-level layout
 
 ```
-┌──── user message ─────┐
-▼                       │
-[ generateContent ]     │
-       │                │
-       ▼                │
-function calls?         │
-  ├── YES → run → append → ┘ (loop)
-  └── NO  → return text
+starter/
+├── package.json                deps + scripts + the `adkclaw` bin
+├── tsconfig.json               strict, ESM, NodeNext
+├── .env.example                fill in API keys here
+├── agent.yaml.example          name, tone, traits — schema
+├── workspace.example/          IDENTITY/SOUL/AGENTS/MEMORY templates
+├── data/                       SQLite + logs (gitignored)
+├── src/                        all the code (will grow over 4 levels)
+├── bin/adkclaw                 convenience wrapper for the CLI
+└── README.md                   index
 ```
 
-The LLM may emit **tool calls** instead of text. The runtime runs each call, appends the result back to the conversation, then calls the LLM again. The loop ends when the model emits text instead of more tool calls.
+The four pre-filled folders are `src/types/`, `src/config/`, `src/cli/`, and `workspace.example/`. Everything else under `src/` you'll create as you go.
 
-### Open `src/agent/runner.ts` and fill the agent loop
+### `src/` — the four pre-filled subfolders
 
-In your **editor**, open `src/agent/runner.ts`. You will see the class skeleton with an `async run()` method marked with `//REPLACE-AGENT-LOOP`. Replace the marker and the throwing stub with this implementation:
-
-```typescript
-    const history: Content[] = [...req.history, { role: 'user', parts: [{ text: req.userText }] }];
-    let toolCalls = 0;
-
-    const sdkTools: Array<{ functionDeclarations: object[] }> = [
-      { functionDeclarations: this.registry.toFunctionDeclarations() },
-    ];
-
-    for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const response = await this.client.models.generateContent({
-        model: this.config.gemini.defaultModel,
-        contents: history,
-        config: { systemInstruction: req.systemPrompt, tools: sdkTools },
-      });
-
-      const calls: FunctionCall[] = response.functionCalls ?? [];
-
-      // No tool calls? The model is done — return its text answer.
-      if (calls.length === 0) {
-        const text = response.text ?? '';
-        history.push({ role: 'model', parts: [{ text }] });
-        return { reply: text, toolCalls, rounds: round + 1, newHistory: history };
-      }
-
-      // Otherwise: record the request, run each tool, append the responses.
-      history.push({ role: 'model', parts: calls.map((call) => ({ functionCall: call })) });
-
-      const responseParts: Part[] = [];
-      for (const call of calls) {
-        toolCalls++;
-        const ctx: ToolContext = {
-          session: req.session,
-          workspacePath: this.config.paths.workspace,
-          config: this.config,
-        };
-        const result = await this.registry.invoke(call.name ?? '', call.args ?? {}, ctx);
-        responseParts.push({
-          functionResponse: { name: call.name ?? '', response: { result } },
-        });
-      }
-      history.push({ role: 'user', parts: responseParts });
-    }
-
-    return {
-      reply: '(Tool round limit reached — stopping for safety.)',
-      toolCalls,
-      rounds: MAX_TOOL_ROUNDS,
-      newHistory: history,
-    };
+```
+src/
+├── types/         all shared interfaces (AgentTool, Session, Message, ToolResult, …)
+├── config/        env + agent.yaml loader with validation
+├── cli/           setup wizard, REPL stub, `adkclaw` CLI entrypoint
+└── index.ts       the scaffold stub — replaced in Level 1
 ```
 
-### Open `src/tools/registry.ts` and fill the registry methods
+**Important:** these four are pre-filled because they're not where the lesson is. Boilerplate is solved; you focus on the agent code.
 
-In your **editor**, open `src/tools/registry.ts`. You will see the class skeleton with a `//REPLACE-TOOL-REGISTRY` marker over the `toFunctionDeclarations()` and `invoke()` methods. Replace both method bodies (after the comment, before the closing brace of each) with these implementations:
+### `src/` — the eleven folders you'll create
 
-**For `toFunctionDeclarations()`**:
-```typescript
-    return this.list().map((t) => ({
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters,
-    }));
+| Folder | Created in | What it holds |
+|--------|------------|---------------|
+| `agent/` | Level 1 | `runner.ts` — the agent loop |
+| `tools/` | Level 1 | tool registry + each tool's `execute()` |
+| `sessions/` | Level 1 | SQLite store, `<channel>:<senderId>` keys |
+| `channels/` | Level 1 | Telegram adapter via telegraf |
+| `server/` | Level 1 | Express HTTP server, `/api/chat` endpoint |
+| `context/` | Level 2 | bootstrap (read workspace files), compaction |
+| `memory/` | Level 2 | bank, daily notes, consolidator |
+| `skills/` | Level 2 | markdown-skill loader |
+| `multi-agent/` | Level 4 | orchestrator + 4 specialist profiles |
+| `healing/` | Level 4 | classifier + recovery engine |
+| `cron/` | Level 4 | engine + heartbeat |
+
+Level 5 doesn't add a top-level folder — it swaps adapters (`sessions/firestore-store.ts`, `storage/gcs.ts`) and adds a `Dockerfile` plus deploy scripts.
+
+### `workspace/` — the agent's brain on disk
+
+After running the setup wizard, you'll have a populated `workspace/` next to `workspace.example/`:
+
+```
+workspace/
+├── IDENTITY.md           who you are (filled by setup)
+├── SOUL.md               how you talk (filled by setup)
+├── USER.md               about the human you talk to
+├── AGENTS.md             behavioral rules
+├── MEMORY.md             curated long-term memory (cap ~20K tokens)
+├── memory/YYYY-MM-DD.md  raw daily notes
+├── bank/                 structured memory
+│   ├── facts/
+│   ├── decisions/
+│   ├── projects/
+│   └── people/
+├── skills/               markdown skills (runtime extensible — Level 2)
+└── HEARTBEAT.md          open tasks (Level 4)
 ```
 
-**For `async invoke()`**:
-```typescript
-    const tool = this.tools.get(name);
-    if (!tool) {
-      return { error: `Unknown tool: ${name}` };
-    }
-    if (tool.permission === 'deny') {
-      return { error: `Tool denied by policy: ${name}` };
-    }
-    try {
-      return await tool.execute(args as Record<string, unknown>, ctx);
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : String(err) };
-    }
-```
+**Note:** every file under `workspace/` is plain Markdown. To debug your agent's mind, open them in your editor or `cat` them in the terminal. There is no proprietary database.
 
-**Tip:** the `MAX_TOOL_ROUNDS = 15` constant is your safety circuit breaker. If a tool description is wrong or the model misbehaves, the agent could loop forever. The cap is a non-negotiable guard rail.
+### Pillars → folders map
 
-### Verify your progress
+| Pillar | Where it lives |
+|--------|----------------|
+| Brain | `src/agent/runner.ts` |
+| Tools | `src/tools/*` |
+| Memory | `src/context/`, `src/memory/`, `workspace/` |
+| Personality | `workspace/IDENTITY.md`, `SOUL.md`, `agent.yaml` |
+| Self-healing | `src/healing/` |
+| Sub-agents | `src/multi-agent/` |
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Be able to find any pillar (brain, tools, memory, personality, self-healing, sub-agents) in the directory tree
+- Understand which folders are scaffolded and which you'll create
+- Know where your agent's identity files live (`workspace/IDENTITY.md`, `workspace/SOUL.md`)
+
+## 5. The four-level journey
+
+Preview of what each level adds and what you'll have at the end.
+
+| Level | Title | What's added | At the end you have… |
+|-------|-------|--------------|---------------------|
+| **1** | [Build the Brain](https://github.com/dahabit/adkclaw/tree/main/level_2) | Brain + Tools + Personality | Agent on Telegram + CLI with conversation memory |
+| **2** | [Memory & Skills](https://github.com/dahabit/adkclaw/tree/main/level_3) | Memory bank + compaction + skills | Agent that remembers across reboots, learns new skills at runtime |
+| **3** | [The Agent Army](https://github.com/dahabit/adkclaw/tree/main/level_4) | Sub-agents + healing + cron | Multi-agent system, never crashes, runs autonomous schedules |
+| **4** | [Ship to the Cloud](https://github.com/dahabit/adkclaw/tree/main/level_5) | Cloud Run + Storage + Secret Manager + webhook | Agent on Google Cloud, reachable from any phone, globally |
+
+Each level is a self-contained working tree. After Level 1 you can clone `codelab/snapshot-1/` and skip ahead. After Level 5 your agent runs 24/7 on Google Cloud.
+
+### ✅ Section recap
+
+By the end of this section you will:
+- Know what each of the next four levels teaches
+- Understand that you can stop at any level and have a working agent
+- Be able to point to a reference implementation for each level
+
+## 6. Set up your environment
+
+Time to get the scaffold running on your machine.
+
+### Verify Node.js
 
 In the **terminal**, run:
 
 ```bash
-npm run verify
+node --version
 ```
 
-The type-checker confirms the loop and registry compile correctly. Tests still pass.
+**Example output**:
 
-### Section recap
-
-- The agent loop is a `for` loop. Each iteration: call the model, extract tool calls, run them, append, loop.
-- The loop ends when the LLM emits text instead of a tool call.
-- `MAX_TOOL_ROUNDS=15` is the circuit breaker — without it a misbehaving agent runs forever.
-- Reference: [`src/agent/runner.ts`](https://github.com/dahabit/adkclaw/blob/main/src/agent/runner.ts) is the production version (with `HealingEngine` integration that lands in Level 3).
-
-## 4. Three core tools
-
-An agent without tools is a chatbot. Here are the three minimums.
-
-### Open `src/tools/web.ts` and fill both tool implementations
-
-In your **editor**, open `src/tools/web.ts`. You will see the tool skeletons with a `//REPLACE-TOOL-WEB` marker. Replace the `async execute` body of **both** `webSearchTool` and `webFetchTool` with these implementations:
-
-**For `webSearchTool.execute()`**:
-```typescript
-    const query = String(args.query ?? '');
-    if (!query) return { error: 'query is required' };
-    // Stub for now — returns a placeholder so you can see the loop wire
-    // through end-to-end. Level 3 swaps this for Gemini search grounding.
-    return {
-      success: true,
-      result: `(stub) search results for "${query}". Level 3 wires real grounding.`,
-    };
+```
+v22.11.0
 ```
 
-**For `webFetchTool.execute()`**:
-```typescript
-    const url = String(args.url ?? '');
-    if (!url) return { error: 'url is required' };
-    const res = await fetch(url);
-    if (!res.ok) return { error: `HTTP ${res.status} for ${url}` };
-    const text = await res.text();
-    return { success: true, result: text.slice(0, 16_000) };
+If you see anything below `v22.0.0`, install Node 22 from [nodejs.org](https://nodejs.org/) or via [`nvm`](https://github.com/nvm-sh/nvm):
+
+```bash
+nvm install 22
+nvm use 22
 ```
 
-### Open `src/tools/filesystem.ts` and fill the filesystem tool
+> ⚠️ **Watch out:** Node 20 or earlier will fail. Some npm packages require Node 22+ features. Verify your version before proceeding.
 
-In your **editor**, open `src/tools/filesystem.ts`. You will see the tool skeleton with a `//REPLACE-TOOL-FILESYSTEM` marker. Replace the `async execute` body with this implementation:
+### Install dependencies
 
-```typescript
-    const action = String(args.action ?? '');
-    const target = safePath(ctx.workspacePath, String(args.path ?? ''));
+In the **starter directory**, run:
 
-    if (action === 'read') {
-      const text = await readFile(target, 'utf8');
-      return { success: true, result: text };
-    }
-    if (action === 'write') {
-      await mkdir(resolve(target, '..'), { recursive: true });
-      const content = String(args.content ?? '');
-      await writeFile(target, content, 'utf8');
-      return { success: true, result: `Wrote ${content.length} bytes.` };
-    }
-    if (action === 'list') {
-      const entries = await readdir(target, { withFileTypes: true });
-      const lines = entries.map((e) => `${e.isDirectory() ? 'dir ' : 'file'}  ${e.name}`);
-      return { success: true, result: lines.join('\n') || '(empty)' };
-    }
-    return { error: `Unknown action: ${action}` };
+```bash
+npm install
 ```
 
-Note: the `safePath()` helper is already defined in the file — it prevents directory-traversal attacks by ensuring all operations stay inside the workspace.
+This downloads the dependencies listed in `package.json`. Most of the size is Playwright's browser binaries. If you don't plan to use browser automation tools in Level 1, you can skip the download:
 
-
-
-### Open `src/tools/index.ts` and fill the tool registration
-
-In your **editor**, open `src/tools/index.ts`. You will see the `registerCoreTools()` function with a `//REPLACE-TOOL-REGISTER` marker. Replace the function body with this implementation:
-
-```typescript
-  registry.register(webSearchTool);
-  registry.register(webFetchTool);
-  registry.register(filesystemTool);
+```bash
+PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install
 ```
 
-**Important:** the tool's `description` field is the **only signal** the LLM has when picking which tool to call. Compare:
+You can add Playwright binaries later without reinstalling.
 
-- ❌ `"description": "Run commands"` — the LLM has no idea what this does, when to call it, or what it returns
-- ✅ `"description": "Run shell commands inside the workspace directory. Returns stdout, stderr, and exit code as JSON."` — clear scope, output shape, and constraints
+### Run the setup wizard
 
-Spend more time on descriptions than feels necessary. Bad descriptions are the #1 reason agents pick the wrong tool.
-
-### Verify your progress
+The wizard names your agent, generates `.env`, and populates your workspace identity files.
 
 In the **terminal**, run:
 
 ```bash
-npm run verify
+npm run setup
 ```
 
-The type-checker confirms all three tools compile and wire together correctly. Tests still pass.
+Follow the prompts. Suggested answers for your first run:
 
-### Section recap
+| Prompt | Answer |
+|--------|--------|
+| Agent name | `Dudu` (or anything you like) |
+| Agent tone | `friendly` |
+| Gemini API key | paste from [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| Telegram bot token | paste from [@BotFather](https://t.me/BotFather) — send `/newbot` first |
+| Telegram allowed sender IDs | leave blank for now (you'll fill it in Level 2 after `/start`) |
 
-- Three tools is the minimum: read the web, fetch a URL, read/write files.
-- Permission tiers (`allow`, `ask`, `deny`) are how you control destructive actions.
-- The `description` field is load-bearing. Treat it as documentation for the LLM, not for humans.
-- Reference: [`src/tools/registry.ts`](https://github.com/dahabit/adkclaw/blob/main/src/tools/registry.ts), [`src/tools/web-search.ts`](https://github.com/dahabit/adkclaw/blob/main/src/tools/web-search.ts), [`src/tools/filesystem.ts`](https://github.com/dahabit/adkclaw/blob/main/src/tools/filesystem.ts).
+The wizard writes:
+- `.env` — populated with your keys
+- `agent.yaml` — populated with your chosen name and tone
+- `workspace/` — copied from `workspace.example/`, with your agent's name substituted
 
-## 5. Personality on disk
+> ℹ️ **Note:** You can re-run `npm run setup` anytime to change your agent's name or tone. Your `.env` keys are preserved by default.
 
-The `workspace/` directory is your agent's brain on disk. Each turn, the runtime reads a fixed list of markdown files and stitches them into the system prompt. To change your agent's behavior, you edit Markdown — no daemon restart required.
+### Verify everything is wired
 
-### The personality stack
-
-| File | Purpose |
-|------|---------|
-| `IDENTITY.md` | Who the agent is — name, role, backstory |
-| `SOUL.md` | How it talks — tone, quirks, what it loves |
-| `USER.md` | About the human it talks to — your name, your context |
-| `AGENTS.md` | Behavioral rules — what it will not do, how it asks for permission |
-| `MEMORY.md` | Long-term curated memory (cap ~20 K tokens — Level 2 grows this) |
-| `agent.yaml` | Machine-readable identity (`name`, `tone`, `traits`) |
-
-The wizard you ran in Chapter 1 already populated these from the `workspace.example/` templates. You will now customize them using one of two approaches: the Hybrid AI-Studio path (optional) or hand-writing.
-
-### Customize `workspace/SOUL.md` and `IDENTITY.md` — Two Paths
-
-#### Path 1: Hybrid AI-Studio (Optional)
-
-If you want the AI to help draft your agent's personality, paste this prompt into **[Gemini at aistudio.google.com](https://aistudio.google.com/)** (with your Gemini API key already added):
-
-```
-I am building an agent named [YOUR_AGENT_NAME] with tone [YOUR_TONE].
-My name is [YOUR_NAME].
-
-Draft two markdown files:
-
-1. SOUL.md — [YOUR_AGENT_NAME]'s voice, personality, and philosophy (tone, quirks, what it values)
-2. IDENTITY.md — [YOUR_AGENT_NAME]'s origin story, context, and role (who it is, what it does)
-
-Each file should be 50–100 words. Use a conversational, direct voice. No placeholders.
-```
-
-Copy the output, paste it into `workspace/SOUL.md` and `workspace/IDENTITY.md` in your editor, and skip to "Verify your progress" below.
-
-#### Path 2: Write It Yourself (Fallback)
-
-In your **editor**, open `workspace/SOUL.md` and `workspace/IDENTITY.md`. The starter shipped templates — each file begins with a `<!-- REPLACE-AGENT-PERSONALITY -->` HTML comment marker. Replace that marker and the template content below it with your own voice. The templates look like this:
-
-**SOUL.md**:
-```markdown
-# {{AGENT_NAME}}'s Soul
-
-You are {{AGENT_NAME}} — but that is just your codename. If {{USER_NAME}}
-gives you a nickname like Dudu, Buddy, or Coco, embrace it warmly. Your
-real name is whatever they call you.
-
-You are warm, direct, and honest about uncertainty. Use humor sparingly. When
-you do not know something, say so and offer to find out.
-```
-
-Replace the templates with your own voice. The `{{AGENT_NAME}}` and `{{USER_NAME}}` placeholders are hints — rewrite them as actual names or remove them. Make it sound like your agent talking to you. The next turn picks up the change — no restart needed.
-
-### Open `src/context/manager.ts` and fill the context engine
-
-In your **editor**, open `src/context/manager.ts`. You will see the `ContextEngine` class with a `//REPLACE-CONTEXT-BOOTSTRAP` marker over the `bootstrap()` method. Replace the method body with this implementation:
-
-```typescript
-    const fingerprint = this.computeFingerprint();
-    if (this.cache?.fingerprint === fingerprint) {
-      return this.cache.prompt;
-    }
-
-    const sections: string[] = [];
-    for (const file of CORE_FILES) {
-      const path = resolve(this.workspacePath, file);
-      if (!existsSync(path)) continue;
-      const text = readFileSync(path, 'utf8').trim();
-      if (text) sections.push(text);
-    }
-
-    const prompt = sections.join('\n\n---\n\n');
-    this.cache = { fingerprint, prompt };
-    return prompt;
-```
-
-The `computeFingerprint()` helper is already defined. The mtime fingerprint means an edit to a workspace file invalidates the cache on the next turn — no restart needed.
-
-### Verify your progress
-
-In the **terminal**, run:
+Run the pre-flight check:
 
 ```bash
-npm run verify
+npx adkclaw check
 ```
 
-The type-checker confirms the context engine compiles correctly. Tests still pass.
+**Example output** (yours may be a little different):
 
-### Section recap
-
-- Personality lives in `workspace/*.md` files, not in source code.
-- You customized `SOUL.md` and `IDENTITY.md` either via AI Studio or by hand.
-- `ContextEngine.bootstrap()` reads personality files in fixed order on every turn (cached by mtime).
-- The first turn after editing a workspace file picks up the change automatically — no restart.
-- Reference: [`src/context/manager.ts`](https://github.com/dahabit/adkclaw/blob/main/src/context/manager.ts) (production version reads more files for Level 2's bank + skills).
-
-## 6. Sessions and channels — Telegram + CLI
-
-An agent in your terminal is not autonomous. Telegram puts it in your pocket.
-
-### Open `src/sessions/store.ts` and fill the session storage methods
-
-In your **editor**, open `src/sessions/store.ts`. You will see the class skeleton with a `//REPLACE-SESSION-STORE` marker over the `history()` and `appendAll()` methods. Replace both method bodies with these implementations:
-
-**For `history()`**:
-```typescript
-    const rows = this.db
-      .prepare(`SELECT content_json FROM messages WHERE session_key = ? ORDER BY id ASC`)
-      .all(sessionKey) as Array<{ content_json: string }>;
-    return rows.map((r) => JSON.parse(r.content_json) as Content);
+```
+✓ Node 22.11.0 detected
+✓ GEMINI_API_KEY set (39 chars)
+✓ TELEGRAM_BOT_TOKEN set (46 chars)
+✓ agent.yaml: name=Dudu, tone=friendly
+✓ workspace/IDENTITY.md exists (724 bytes)
+✓ workspace/SOUL.md exists (612 bytes)
+✓ data/ writable
+⚠ ALLOWED_SENDERS empty (expected — you'll fill this in Level 2)
+✓ All checks passed (with 1 warning)
 ```
 
-**For `appendAll()`**:
-```typescript
-    const stmt = this.db.prepare(
-      `INSERT INTO messages (session_key, role, content_json, created_at) VALUES (?, ?, ?, ?)`,
-    );
-    const now = Date.now();
-    const tx = this.db.transaction(() => {
-      for (const c of contents) {
-        stmt.run(sessionKey, c.role ?? 'user', JSON.stringify(c), now);
-      }
-      this.db.prepare(`UPDATE sessions SET updated_at = ? WHERE key = ?`).run(now, sessionKey);
-    });
-    tx();
-```
+The `ALLOWED_SENDERS` warning is expected — you'll populate it in Level 2 after Telegram tells you your numeric user ID.
 
-Session keys are `<channel>:<senderId>` — same agent, multiple users, no leakage. SQLite via `better-sqlite3` is synchronous, embedded, and zero-config.
+> ❌ **Common pitfall:** If you see `✗ GEMINI_API_KEY not found`, your key wasn't pasted correctly. Re-run `npm run setup` and paste the key again.
 
-### Open `src/channels/telegram.ts` and fill the Telegram handler
-
-In your **editor**, open `src/channels/telegram.ts`. You will see the class skeleton with a `//REPLACE-CHANNEL-TELEGRAM` marker over the `handleMessage()` method. Replace the method body with this implementation:
-
-```typescript
-    const senderId = ctx.from?.id;
-    if (!senderId) return;
-    const senderIdStr = String(senderId);
-
-    // ALLOWED_SENDERS holds numeric IDs only — silently reject everyone else.
-    if (!this.config.telegram.allowedSenders.includes(senderIdStr)) {
-      console.log(`[telegram] rejected sender ${senderIdStr}`);
-      return;
-    }
-
-    const message = ctx.message;
-    const text = message && 'text' in message ? message.text : '';
-    if (!text) return;
-
-    const session = this.sessions.ensureSession(
-      `telegram:${senderIdStr}`,
-      'telegram',
-      senderIdStr,
-      this.config.gemini.defaultModel,
-    );
-    const history = this.sessions.history(session.key);
-
-    const result = await this.runner.run({
-      session,
-      systemPrompt: this.contextEngine.bootstrap(),
-      history,
-      userText: text,
-    });
-
-    this.sessions.appendAll(session.key, result.newHistory.slice(history.length));
-
-    // Telegram caps messages at ~4000 chars — chunk if needed.
-    let reply = result.reply || '(no reply)';
-    while (reply.length > 0) {
-      await ctx.reply(reply.slice(0, MAX_MESSAGE_LENGTH));
-      reply = reply.slice(MAX_MESSAGE_LENGTH);
-    }
-```
-
-**Important:** `ALLOWED_SENDERS` must contain **numeric IDs**, not `@username`. Telegram's API only sends numeric IDs to bots. Setting `ALLOWED_SENDERS=dahabdev` looks right but silently rejects every message.
-
-### Open `src/server/http.ts` and fill the HTTP server
-
-In your **editor**, open `src/server/http.ts`. You will see the `createHttpServer()` function with a `//REPLACE-SERVER-HTTP` marker. Replace the function body with this implementation:
-
-```typescript
-  const app = express();
-  app.use(express.json({ limit: '256kb' }));
-
-  app.get('/api/health', (_req, res) => {
-    res.json({ ok: true });
-  });
-
-  app.post('/api/chat', async (req, res) => {
-    const { sessionKey, message, channel, senderId } = req.body as {
-      sessionKey?: string;
-      message?: string;
-      channel?: string;
-      senderId?: string;
-    };
-    if (!sessionKey || !message) {
-      res.status(400).json({ error: 'sessionKey and message are required' });
-      return;
-    }
-
-    try {
-      const session = sessions.ensureSession(
-        sessionKey,
-        channel ?? 'cli',
-        senderId ?? 'cli',
-        config.gemini.defaultModel,
-      );
-      const history = sessions.history(session.key);
-      const result = await runner.run({
-        session,
-        systemPrompt: contextEngine.bootstrap(),
-        history,
-        userText: message,
-      });
-      sessions.appendAll(session.key, result.newHistory.slice(history.length));
-      res.json({ text: result.reply, toolCallCount: result.toolCalls });
-    } catch (err) {
-      res.status(500).json({ error: err instanceof Error ? err.message : String(err) });
-    }
-  });
-
-  return app;
-```
-
-### Open `src/index.ts` and fill the main entry point
-
-In your **editor**, open `src/index.ts`. You will see the main function with a `//REPLACE-MAIN-ENTRY` marker. Replace the function body with this implementation:
-
-```typescript
-  const config = loadConfig();
-  const { errors, warnings } = validateConfig(config);
-  for (const w of warnings) console.warn(`[config] ${w}`);
-  if (errors.length > 0) {
-    for (const e of errors) console.error(`[config] ${e}`);
-    throw new Error('Invalid configuration — see errors above.');
-  }
-
-  const client = new GoogleGenAI({ apiKey: config.gemini.apiKey });
-  const registry = new ToolRegistry();
-  registerCoreTools(registry);
-
-  const sessions = new SessionStore(config.paths.database);
-  const contextEngine = new ContextEngine(config.paths.workspace);
-  const runner = new AgentRunner(client, registry, config);
-
-  const app = createHttpServer(config, runner, contextEngine, sessions);
-  app.listen(config.server.port, () => {
-    console.log(`[http] listening on http://${config.server.host}:${config.server.port}`);
-  });
-
-  if (config.telegram.botToken) {
-    const tg = new TelegramAdapter(config, runner, contextEngine, sessions);
-    await tg.launch();
-  }
-
-  console.log(`🤖 ${config.agent.name} is online.`);
-```
-
-### Verify your progress
-
-In the **terminal**, run:
-
-```bash
-npm run verify
-```
-
-The type-checker confirms all modules wire together. Tests still pass.
-
-### Run it
-
-In the **terminal**:
+### Run the scaffold
 
 ```bash
 npm run dev
@@ -699,78 +483,136 @@ npm run dev
 **Example output**:
 
 ```
-[http] listening on http://localhost:3000
-[telegram] bot online
-Agent Dudu is online.
+🤖 AdkClaw scaffold v0 — start Level 1 to build the brain
 ```
 
-### Test on Telegram
+The scaffold is intentionally a one-line stub. Level 1 (the next codelab) replaces it with the agent runner loop.
 
-1. Open Telegram, find your bot (the one whose token you pasted), send `/start`.
-2. The bot replies with your numeric ID.
-3. Edit `.env`: set `ALLOWED_SENDERS=<your-numeric-id>`.
-4. Restart the daemon (`Ctrl+C`, then `npm run dev`).
-5. Send a message: `Hi, I am Ahmed. Can I name you Dudu?`
-6. The agent embraces the nickname (because `SOUL.md` allows it).
+> 🎯 **Goal:** At the end of this section, `npx adkclaw check` should show all green ticks (except `ALLOWED_SENDERS` warning).
 
-### Test the CLI REPL
+### ✅ Section recap
 
-In a second **terminal**, with the daemon still running:
+By the end of this section you will:
+- Have Node 22+ running on your machine
+- Have a cloned `level_2/starter` directory with dependencies installed
+- Have a populated `.env` file with your Gemini API key and Telegram bot token
+- Have a named agent with its own `workspace/` directory
+- Have a passing `npx adkclaw check` (green light for Level 1)
+
+## 7. (Optional) Cloud Shell setup
+
+If you're in an in-person workshop with sponsored Cloud Shell access — or if you just don't want to install Node locally — Cloud Shell is a fully-supported alternative.
+
+### Open Cloud Shell
+
+Visit [console.cloud.google.com](https://console.cloud.google.com) and click the terminal icon (top-right). Cloud Shell opens with `gcloud`, `node`, `npm`, and a 5 GB persistent home directory.
+
+### Install Node 22 (if Cloud Shell defaults to an older version)
 
 ```bash
-npm run chat
+nvm install 22 && nvm use 22 && nvm alias default 22
 ```
 
-Same agent, terminal interface. Same memory across both channels (session is per-channel-per-user, but `workspace/USER.md` is shared).
+### Clone, install, set up
 
-### Section recap
+```bash
+git clone https://github.com/dahabit/adkclaw.git
+cd adkclaw/level_2/starter
+npm install
+npm run setup
+npx adkclaw check
+```
 
-- Sessions are keyed `<channel>:<senderId>` — same agent, multiple users.
-- Telegram is one channel, the CLI REPL is another. Both POST to `/api/chat`.
-- The `/start` self-service ID-discovery pattern is the cleanest way to onboard.
-- Reference: [`src/sessions/store.ts`](https://github.com/dahabit/adkclaw/blob/main/src/sessions/store.ts), [`src/channels/telegram.ts`](https://github.com/dahabit/adkclaw/blob/main/src/channels/telegram.ts), [`src/server/http.ts`](https://github.com/dahabit/adkclaw/blob/main/src/server/http.ts).
+Same steps as self-study; the only difference is the host machine.
+
+**Tip:** Cloud Shell sessions time out after 20 minutes of inactivity. For long-running daemons in Level 1+, run `npm run dev` and keep the tab focused, or use `nohup npm run dev &` to detach.
+
+### ✅ Section recap
+
+By the end of this section you will (if taking the Cloud Shell path):
+- Know how to open and navigate Cloud Shell
+- Understand that Cloud Shell has persistent storage for your project
+- Be able to run the same setup steps as self-study, on Google's infrastructure
+
+---
 
 ## Congratulations!
 
-You have built your first autonomous agent — one that runs on Telegram, calls real tools, holds conversation memory, and embraces whatever nickname you give it.
+You've toured the architecture, named your agent, and verified your environment. You have a clear mental model: an autonomous agent is **brain + tools + memory + personality + self-healing + sub-agents**, and every pillar has a folder you can point to.
 
-### Recap
+## What you built
 
 In this codelab you:
 
-- Wrote the agent loop — a `for` loop that calls Gemini, runs tool calls, and feeds results back
-- Registered three core tools (`web_search`, `web_fetch`, `filesystem`) with permission tiers
-- Built a `ContextEngine` that assembles the system prompt from markdown files in `workspace/`
-- Created a SQLite session store keyed by `<channel>:<senderId>`
-- Wired Telegram (telegraf) and an HTTP API for the terminal REPL
-- Talked to your agent from your phone
+- Placed "agent" on the five-rung evolution ladder — Rung 5, the strictest definition
+- Met the six pillars (**brain · tools · memory · personality · self-healing · sub-agents**) and where each lives in the codebase
+- Understood why Google services power the brain and cloud, while open-source libraries handle the plumbing
+- Toured the starter scaffold and identified the 11 folders you'll create across Levels 2–4
+- Cloned the repo, ran the setup wizard, and confirmed `npx adkclaw check` passes
+- Named your agent (the first ceremony of autonomous agent building)
 
-### Continued experimentation
+## Optional: Deepen your understanding
 
-Try these before moving on to Level 2:
+Before moving to Level 2, try these:
 
-- Add a fourth tool — `weather(city: string)` — that fetches the current weather. Hint: use `wttr.in`.
-- Edit `workspace/SOUL.md` and watch the agent's voice change on the next turn.
-- Send a long message and see how the agent handles `MAX_TOOL_ROUNDS=15` if you trigger it (rare, but instructive).
-- Open `data/adkclaw.db` with `sqlite3` and run `SELECT * FROM messages LIMIT 10` — see your conversation in raw form.
+- **Edit your identity:** Open `workspace/IDENTITY.md` in your editor and rewrite it in your voice. This is what your agent will read on every turn — make it personal.
+- **Explore the tool interface:** Look at `src/types/index.ts` and skim the `AgentTool` interface. You'll implement your first three tools to match this shape in Level 2.
+- **Map the code:** Create a sketch or mind map of the six pillars and their folders. Reference it as you build in Levels 2–4.
 
-### What is next
+## What's next
 
-- **[Level 2 — Memory & Skills](https://github.com/dahabit/adkclaw/tree/main/level_2)** — your agent forgets you the moment a session expires. Time to give it a real memory.
-- The full reference implementation: [github.com/dahabit/adkclaw](https://github.com/dahabit/adkclaw)
-- Live cohort fleet: [adkclaw.dev](https://adkclaw.dev) — your beacon should now be lit (Level 1 badge unlocked).
+This was **Level 1 — Architecture Tour**. You've learned the territory. Now:
 
-### Resources
+- **[Level 2 — Build the Brain](https://github.com/dahabit/adkclaw/tree/main/level_2)** — Write the 30-line agent loop, register three tools, handle Telegram messages, store conversation history.
+- **Level 3 — Memory & Skills** (coming next in the series)
+- **Level 4 — The Agent Army** — Sub-agents, self-healing, cron scheduling
+- **Level 5 — Ship to the Cloud** — Deploy to Google Cloud Run
+
+The full reference implementation: [github.com/dahabit/adkclaw](https://github.com/dahabit/adkclaw)
+
+Live cohort fleet: [adkclaw.dev](https://adkclaw.dev) — see who else is building right now.
+
+## Glossary
+
+**Autonomous Agent** — Rung 5 on the evolution ladder. An AI system with all six pillars: a brain (LLM), tools (hands to act), memory (across sessions), personality (identity), self-healing (never crashes), and sub-agents (delegation).
+
+**Brain** — The LLM (Gemini 3.1 Pro or 3 Flash). The thinking engine. Lives in `src/agent/runner.ts`.
+
+**Tool** — A function the agent can call to act on the world (read a file, search the web, schedule a task). Lives in `src/tools/`.
+
+**Memory** — Three tiers: in-context history (current conversation), daily notes (raw events), and the memory bank (structured long-term facts, decisions, projects, people). Lives in `src/memory/`, `src/context/`, and `workspace/`.
+
+**Personality** — Three files: `IDENTITY.md` (who you are), `SOUL.md` (how you talk), `agent.yaml` (machine-readable config).
+
+**Self-healing** — The recovery pyramid: classify → retry → fallback → recover → degrade → escalate. The agent's promise to never crash.
+
+**Sub-agent** — A specialist AI that runs in isolation, tasked with a specific job (research, coding, communication). Lives in `src/multi-agent/`.
+
+**Workspace** — The `workspace/` directory. Your agent's brain on disk. Markdown files, no database. Debug with `cat`, `grep`, `git diff`.
+
+**Pillar** — One of the six foundational components of an autonomous agent. All six are required; none are optional.
+
+**Rung** — One of five levels on the evolution ladder from chatbot (Rung 1) to autonomous agent (Rung 5). AdkClaw teaches Rung 5.
+
+**Level** — One of five codelabs in the AdkClaw series. This is Level 1 (Architecture Tour). Level 2 is Build the Brain. Levels 3–5 follow.
+
+**Setup Wizard** — Interactive CLI (`npm run setup`) that names your agent, generates `.env`, and populates `workspace/`. Run it once to get started, or anytime to change your agent's identity.
+
+**Adkclaw Check** — Verification script (`npx adkclaw check`) that confirms your environment is ready. Green ticks = you can start Level 2.
+
+---
+
+## Resources
 
 - [Google ADK documentation](https://google.github.io/adk-docs/)
-- [Gemini API function calling guide](https://ai.google.dev/gemini-api/docs/function-calling)
-- [Gemini API grounding guide](https://ai.google.dev/gemini-api/docs/grounding)
+- [Gemini API reference](https://ai.google.dev/)
 - [The AdkClaw repository](https://github.com/dahabit/adkclaw)
 - [Other ADK codelabs](https://codelabs.developers.google.com/?text=adk)
-- [Building AI Agents with ADK: The Foundation](https://codelabs.developers.google.com/devsite/codelabs/build-agents-with-adk-foundation) — Google's official starter (Python; same patterns)
+- [Building AI Agents with ADK: The Foundation](https://codelabs.developers.google.com/devsite/codelabs/build-agents-with-adk-foundation) — Google's official starter
+- [Build Multi-Agent Systems with ADK](https://codelabs.developers.google.com/codelabs/production-ready-ai-with-gc/3-developing-agents/build-a-multi-agent-system-with-adk) — when you finish Level 4 and want more
 
 ---
 
 *This codelab is provided under [Creative Commons 4.0](https://creativecommons.org/licenses/by/4.0/). The AdkClaw repository is licensed under [Apache 2.0](https://github.com/dahabit/adkclaw/blob/main/LICENSE).*
 
-*Authored by Ahmed Abu Eldahab — Google Developer Expert in Dart & Flutter, MENA Dev community.*
+*Authored by Ahmed Abu Eldahab — Google Developer Expert, MENA Dev community.*

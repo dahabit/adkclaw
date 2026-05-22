@@ -2,7 +2,6 @@
 import { GoogleGenAI, type Content, type FunctionCall, type Part } from '@google/genai';
 import type { Config, Session, ToolContext } from '../types/index.js';
 import type { ToolRegistry } from '../tools/registry.js';
-import type { HealingEngine } from '../healing/index.js';
 
 // MAX_TOOL_ROUNDS caps the loop so a misbehaving model can't ping-pong tools
 // forever. 15 is more than enough for any real task — hitting it is a bug
@@ -14,9 +13,6 @@ export interface RunRequest {
   systemPrompt: string;
   history: Content[];
   userText: string;
-  /** If set, only tools whose name is in this list are exposed to the model.
-   *  Sub-agent profiles use this to restrict a child's capabilities. */
-  allowedToolNames?: string[];
 }
 
 export interface RunResult {
@@ -27,45 +23,26 @@ export interface RunResult {
 }
 
 export class AgentRunner {
-  // `healing` is optional: when provided, every Gemini call is wrapped in the
-  // recovery pyramid (retry transient errors, fall back Pro → Flash).
   constructor(
     private readonly client: GoogleGenAI,
     private readonly registry: ToolRegistry,
     private readonly config: Config,
-    private readonly healing?: HealingEngine,
   ) {}
 
   async run(req: RunRequest): Promise<RunResult> {
     const history: Content[] = [...req.history, { role: 'user', parts: [{ text: req.userText }] }];
     let toolCalls = 0;
 
-    // Build the tool list — restricted to the allowlist when one is provided.
-    let declarations = this.registry.toFunctionDeclarations();
-    if (req.allowedToolNames) {
-      const allow = new Set(req.allowedToolNames);
-      declarations = declarations.filter((d) => allow.has(d.name));
-    }
-    const sdkTools: Array<{ functionDeclarations: object[] }> | undefined =
-      declarations.length > 0 ? [{ functionDeclarations: declarations }] : undefined;
+    const sdkTools: Array<{ functionDeclarations: object[] }> = [
+      { functionDeclarations: this.registry.toFunctionDeclarations() },
+    ];
 
     for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-      const genConfig = {
-        systemInstruction: req.systemPrompt,
-        ...(sdkTools ? { tools: sdkTools } : {}),
-      };
-      const callModel = (model: string) =>
-        this.client.models.generateContent({ model, contents: history, config: genConfig });
-
-      // Recovery pyramid: retry transient errors, then fall back Pro → Flash.
-      const response = this.healing
-        ? (
-            await this.healing.protect(
-              () => callModel(this.config.gemini.defaultModel),
-              () => callModel(this.config.gemini.fallbackModel),
-            )
-          ).result
-        : await callModel(this.config.gemini.defaultModel);
+      const response = await this.client.models.generateContent({
+        model: this.config.gemini.defaultModel,
+        contents: history,
+        config: { systemInstruction: req.systemPrompt, tools: sdkTools },
+      });
 
       const calls: FunctionCall[] = response.functionCalls ?? [];
 

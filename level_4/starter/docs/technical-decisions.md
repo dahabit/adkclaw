@@ -135,7 +135,7 @@ The complete record of **what** is in AdkClaw, **why** we chose it, and **what w
 
 **HealingEngine pattern:** primary call uses Pro, on retryable error falls back to Flash. Students rarely notice the swap.
 
-### Vertex AI (`@google-cloud/aiplatform` — Level 4)
+### Vertex AI (`@google-cloud/aiplatform` — Level 5)
 
 **What it is:** Google Cloud's enterprise AI platform.
 
@@ -451,7 +451,7 @@ interface AgentTool {
 **Why over raw Bot API:**
 - ~150 LOC adapter vs ~400 LOC raw HTTP polling
 - Typed message handlers (`bot.on('message', ...)`)
-- Built-in support for both long-polling and webhook modes (Level 4 switch)
+- Built-in support for both long-polling and webhook modes (Level 5 switch)
 - Active maintenance, good TypeScript support
 
 **What we considered:**
@@ -470,7 +470,7 @@ interface AgentTool {
 - Allowlist by numeric ID is the simplest auth
 - Future: replace with Cloud Run auth + Telegram auth bridge
 
-**Webhook (Level 4) vs long-polling (CL1-3):**
+**Webhook (Level 5) vs long-polling (CL1-3):**
 - Long-polling works locally and in Cloud Shell
 - Webhook is required for Cloud Run (free tier scales to zero)
 - The codelab teaches the switch
@@ -524,7 +524,7 @@ interface AgentTool {
 - **Postgres** — overkill for v1, single-host. Level 4 swap path documented.
 - **Redis** — fast but ephemeral. Wrong shape for "session history."
 - **DynamoDB** — schemaless, scales infinitely. AWS lock-in.
-- **Firestore** — exactly what Level 4 swaps to for cloud-mode.
+- **Firestore** — exactly what Level 5 swaps to for cloud-mode.
 
 ### Schema (5 tables)
 
@@ -553,7 +553,7 @@ cron_runs            -- append-only fired-job log (idempotency)
 
 **Why over alternatives:**
 - **Persistent jobs in SQLite** — survive daemon restart
-- **In-process timer** is sufficient locally; Level 4 swaps to Cloud Scheduler
+- **In-process timer** is sufficient locally; Level 5 swaps to Cloud Scheduler
 - **Cron syntax** familiar to most developers
 
 **What we considered:**
@@ -603,7 +603,7 @@ cron_runs            -- append-only fired-job log (idempotency)
 - `browser_screenshot` — visual capture
 - `browser_pdf` — `page.pdf()` for HTML → PDF
 
-**Container size hit:** ~500MB Playwright base image for Cloud Run. Documented in Level 4.
+**Container size hit:** ~500MB Playwright base image for Cloud Run. Documented in Level 5.
 
 ### `pdfkit` 0.18+ (programmatic PDFs)
 
@@ -638,7 +638,7 @@ cron_runs            -- append-only fired-job log (idempotency)
 
 ---
 
-## 12. Cloud deployment (Level 4)
+## 12. Cloud deployment (Level 5)
 
 ### Cloud Run
 
@@ -656,7 +656,7 @@ cron_runs            -- append-only fired-job log (idempotency)
 - **GKE** — overkill, ops burden
 - **Compute Engine VMs** — old-school, manual ops
 
-### Firestore (Level 4 — replaces SQLite)
+### Firestore (Level 5 — replaces SQLite)
 
 **What it is:** Google Cloud's schemaless document DB.
 

@@ -21,26 +21,15 @@ export class ToolRegistry {
 
   // Gemini FunctionDeclaration-shaped objects. `parameters` is widened to
   // `object` so the agent's JsonSchema flows into the SDK without friction.
+  //REPLACE-TOOL-REGISTRY
+  // Convert your registered tools into the Gemini SDK's FunctionDeclaration format,
+  // and then execute tool calls with safety checks (permission, errors, etc).
+  // Fill this in from level_2/codelab.md §3.
   toFunctionDeclarations(): Array<{ name: string; description: string; parameters: object }> {
-    return this.list().map((t) => ({
-      name: t.name,
-      description: t.description,
-      parameters: t.parameters,
-    }));
+    throw new Error('REPLACE-TOOL-REGISTRY not implemented — see level_2/codelab.md §3');
   }
 
   async invoke(name: string, args: unknown, ctx: ToolContext): Promise<ToolResult> {
-    const tool = this.tools.get(name);
-    if (!tool) {
-      return { error: `Unknown tool: ${name}` };
-    }
-    if (tool.permission === 'deny') {
-      return { error: `Tool denied by policy: ${name}` };
-    }
-    try {
-      return await tool.execute(args as Record<string, unknown>, ctx);
-    } catch (err) {
-      return { error: err instanceof Error ? err.message : String(err) };
-    }
+    throw new Error('REPLACE-TOOL-REGISTRY not implemented — see level_2/codelab.md §3');
   }
 }
