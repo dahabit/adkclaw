@@ -1,7 +1,5 @@
 # 🤖 AdkClaw
 
-![AdkClaw — Autonomous AI Agents on Google ADK](docs/img/hero.png)
-
 **A hands-on workshop where you build an autonomous AI agent — a teammate that lives on Telegram, remembers you across sessions, recovers from any failure, and runs on Google Cloud while you sleep.**
 
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-adkclaw.dev-blue?style=for-the-badge)](https://adkclaw.dev)
@@ -64,7 +62,7 @@ npm run setup            # interactive: name your agent, paste your keys
 npm start                # agent boots on http://localhost:3000
 ```
 
-You'll need a [Gemini API key](https://aistudio.google.com/apikey); a [Telegram bot token](https://t.me/BotFather) is optional. See the [Capabilities Tour](docs/capabilities.md) for what the finished agent can do and [examples/](examples/) for copy-paste recipes.
+You'll need a [Gemini API key](https://aistudio.google.com/apikey); a [Telegram bot token](https://t.me/BotFather) is optional. See [examples/](examples/) for copy-paste recipes.
 
 ### 🔵 Want to learn to build it? (workshop)
 
@@ -89,8 +87,6 @@ Build the same framework yourself, level by level.
 
 5. **Build, level by level.** Each level has its own self-contained starter (`level_N/starter/`) with offline `npm run verify` checkpoints (`tsc --noEmit` + `vitest run`, no Gemini key or network needed). L1–L4 are the hands-on levels; production hardening that used to live in a standalone L5 chapter is now folded into L3 (startup gates) and L4 (deploy-time gates).
 
-   See [ARCHITECTURE.md](ARCHITECTURE.md) for the three-repo layout, and [RUNBOOK.md](RUNBOOK.md) for operating your deployed agent after Level 4.
-
 6. **Follow the codelab:** [Level 0 Instructions](https://codelabs.developers.google.com/adkclaw-level-0/instructions)
 
 ### 🟠 Hosting a workshop?
@@ -106,12 +102,7 @@ The instructor materials (slide decks, run-of-show, speaker notes, demo recovery
 | [Level 2 README](level_2/README.md) | Memory bank, compaction at 80%, markdown skills, runtime extensibility |
 | [Level 3 README](level_3/README.md) | Sub-agent profiles, recovery pyramid, cron + heartbeat, admin dashboard |
 | [Level 4 README](level_4/README.md) | Containerize, Firestore migration, Cloud Run deploy, Telegram webhook, Cloud Scheduler, plus the folded-in L5 hardening (OIDC, webhook secret, DLP scan) |
-| [Tech Stack Audit](docs/tech-stack.md) | Google vs open-source dependencies, with rationale per package |
-| [Capabilities Tour](docs/capabilities.md) | What the finished agent can do — 8 wow demos |
-| [API Reference](docs/api.md) | All HTTP endpoints with curl examples |
-| [Architecture File Map](ARCHITECTURE.md) | Three-repo layout (public / instructor / platform) + level checkpoint tags |
 | [Pre-workshop guide](PREWORK.md) | 7-day prep: accounts, tools, preflight |
-| [Post-workshop guide](POST_WORKSHOP.md) | Graduation, certificate, extension projects |
 
 ## 🏗️ Architecture Overview
 

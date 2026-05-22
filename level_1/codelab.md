@@ -134,7 +134,6 @@ The wizard writes `.env`, `agent.yaml`, and a populated `workspace/` from the te
 - `npm install && npm run typecheck` is the green-light check before writing any code.
 - `npm run verify` is your per-section checkpoint — it runs type-checks and tests offline (no Gemini key needed).
 - The starter compiles green with all markers standing in, ready for you to fill in chapters 2–6.
-- Reference: [`docs/teaching-guide.md`](https://github.com/dahabit/adkclaw/blob/main/docs/teaching-guide.md) explains why each pre-filled file is what it is.
 
 ## 2. Make your first Gemini call
 
@@ -759,7 +758,6 @@ Try these before moving on to Level 2:
 
 - **[Level 2 — Memory & Skills](https://github.com/dahabit/adkclaw/tree/main/level_2)** — your agent forgets you the moment a session expires. Time to give it a real memory.
 - The full reference implementation: [github.com/dahabit/adkclaw](https://github.com/dahabit/adkclaw)
-- Architecture deep-dive: [`docs/teaching-guide.md`](https://github.com/dahabit/adkclaw/blob/main/docs/teaching-guide.md)
 - Live cohort fleet: [adkclaw.dev](https://adkclaw.dev) — your beacon should now be lit (Level 1 badge unlocked).
 
 ### Resources

@@ -19,11 +19,10 @@ npm test                   # all 145 tests should pass
 | Type of contribution | What we look for |
 |----------------------|------------------|
 | **Bug fixes** | Reproduce → red test → green fix → PR. Include the reproduction in the PR description. |
-| **New tools** | Adds an `AgentTool` with: `name`, `description` (the LLM signal!), `permission`, JSON Schema, `execute()`. Include unit tests + brief docs in `docs/extending.md`. |
+| **New tools** | Adds an `AgentTool` with: `name`, `description` (the LLM signal!), `permission`, JSON Schema, `execute()`. Include unit tests. |
 | **New sub-agent profiles** | New file in `src/multi-agent/profiles/`. Include role + tool allowlist + default model. |
-| **Skill files** | New `workspace.example/skills/<name>.md` with frontmatter. Brief description in `docs/extending.md`. |
+| **Skill files** | New `workspace.example/skills/<name>.md` with frontmatter. |
 | **Codelab improvements** | PRs to `level_N/README.md` with clearer instructions, fixed links, better diagrams. |
-| **Documentation** | Improvements to `docs/`, especially `tech-stack.md`, `capabilities.md`, `internals.md`. |
 | **Translation** | Codelab translations (Arabic, Spanish, Portuguese, etc.) to `level_N/README.<lang>.md`. |
 | **Cloud Run deploy improvements** | `Dockerfile`, `cloudbuild.yaml`, `deploy/` scripts. Especially welcome: cost-reduction tips. |
 
@@ -74,7 +73,6 @@ npm test                   # all 145 tests should pass
 2. Description is the **only signal the LLM uses** to pick the tool — write it carefully
 3. Permission tier: `allow` for read-only, `ask` for writes/destructive, `deny` for forbidden
 4. Add to `src/index.ts` registration block
-5. Document in `docs/extending.md`
 
 ### Adding a sub-agent profile
 1. New file in `src/multi-agent/profiles/<Name>Agent.ts`

@@ -71,23 +71,11 @@ This will:
 source ~/adkclaw/set_env.sh
 ```
 
-### 5. Read the architecture overview
-
-```bash
-cd level_0
-cat docs/teaching-guide.md
-```
-
-Skim the **Six Pillars**, **Why TypeScript / Why Google ADK**, and **The Request Flow** sections.
-
-### 6. Tour the repo (live with your instructor or solo)
+### 5. Tour the repo (live with your instructor or solo)
 
 ```bash
 # Top-level
 ls
-
-# Read the three-repo layout + checkpoint tags doc
-cat ARCHITECTURE.md
 
 # The per-level starters — each is its own self-contained project
 ls level_1/starter level_2/starter level_3/starter level_4/starter
@@ -213,7 +201,7 @@ A **chatbot** has only Brain. A **RAG system** has Brain + retrieval. **Autonomy
 | Browser automation | Playwright (Microsoft) | JS rendering + `page.pdf()` |
 | PDFs / slides | pdfkit, Marp (open source) | Programmatic content generation |
 
-> **The brain is Google. The plumbing is open source. Level 4 swaps the plumbing for Google Cloud equivalents.** See [`docs/tech-stack.md`](../docs/tech-stack.md) for the full audit.
+> **The brain is Google. The plumbing is open source. Level 4 swaps the plumbing for Google Cloud equivalents.**
 
 ## 📁 Repo Map
 
@@ -224,11 +212,8 @@ A **chatbot** has only Brain. A **RAG system** has Brain + retrieval. **Autonomy
 | `solutions/level_1/` … `solutions/level_4/` | Answer keys (filled starters) | Diff against your starter when stuck |
 | `src/` | Post-Level-4 reference implementation (the finished agent) | Study as answer key |
 | `scripts/` | `setup.sh`, `preflight.sh` | Shared bootstrap |
-| `docs/` | `tech-stack.md`, `capabilities.md`, `api.md`, `internals.md`, `teaching-guide.md` | Reference material |
-| `extensions/` | Optional post-workshop projects (Slack, RAG, voice) | Take it further |
-| `RUNBOOK.md` | Operating your deployed agent after Level 4 | Ops doc, not workshop |
 
-Level checkpoints are the per-level `npm run verify` (offline `tsc --noEmit` + `vitest run`) inside each `level_N/starter/`. Historical git tags `v1-complete` … `v5-complete` remain in the history for archaeology — see [`ARCHITECTURE.md`](../ARCHITECTURE.md) for context.
+Level checkpoints are the per-level `npm run verify` (offline `tsc --noEmit` + `vitest run`) inside each `level_N/starter/`. Historical git tags `v1-complete` … `v5-complete` remain in the history for archaeology.
 
 ## 🐛 Troubleshooting
 

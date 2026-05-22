@@ -82,7 +82,6 @@ A chatbot **answers**. An autonomous agent **acts** — across time, across chan
 
 - The word "agent" gets used for everything from Rung 1 to Rung 5; AdkClaw means Rung 5 specifically.
 - The next sections explain what makes Rung 5 different.
-- Reference: [`docs/teaching-guide.md`](https://github.com/dahabit/adkclaw/blob/main/docs/teaching-guide.md) covers the rung definitions in depth.
 
 ## 2. The six pillars
 
@@ -229,7 +228,6 @@ The tradeoff: Python has more LLM tooling. TypeScript has fewer dependencies you
 ### Section recap
 
 - The brain and cloud are Google. The plumbing is open source. Level 4 swaps the plumbing for Google Cloud equivalents.
-- Reference: [`docs/tech-stack.md`](https://github.com/dahabit/adkclaw/blob/main/docs/tech-stack.md) has the full dependency audit with rationale per package.
 
 ## 4. Tour the starter scaffold
 
@@ -264,7 +262,6 @@ starter/
 ├── workspace.example/          IDENTITY/SOUL/AGENTS/MEMORY templates
 ├── data/                       SQLite + logs (gitignored)
 ├── src/                        all the code (will grow over 4 levels)
-├── docs/                       teaching guide + API reference
 ├── bin/adkclaw                 convenience wrapper for the CLI
 └── README.md                   index
 ```
@@ -339,7 +336,6 @@ workspace/
 
 - The starter scaffold has 4 pre-filled subfolders under `src/` and 11 you'll create across Levels 1–4.
 - Every pillar maps to one or two specific folders — no magic, no hidden state.
-- Reference: [`docs/teaching-guide.md`](https://github.com/dahabit/adkclaw/blob/main/docs/teaching-guide.md) walks the same map at narrative pace.
 
 ## 5. The four-level journey
 
@@ -521,13 +517,11 @@ Try these before moving on to Level 1:
 
 - Open `workspace/IDENTITY.md` in your editor and rewrite it in your voice. The agent reads this on every turn.
 - Look at `src/types/index.ts` and skim the `AgentTool` interface — you'll implement three tools that match this shape in Level 1.
-- Read [`docs/teaching-guide.md`](https://github.com/dahabit/adkclaw/blob/main/docs/teaching-guide.md) for the deep "why" behind each pillar.
 
 ### What's next
 
 - **[Level 1 — Build the Brain](https://github.com/dahabit/adkclaw/tree/main/level_1)** — wrap the Gemini API in an agent loop, register three tools, give your agent a personality, put it on Telegram.
 - The full reference implementation: [github.com/dahabit/adkclaw](https://github.com/dahabit/adkclaw)
-- Architecture deep-dive: [`docs/teaching-guide.md`](https://github.com/dahabit/adkclaw/blob/main/docs/teaching-guide.md)
 - Live cohort fleet: [adkclaw.dev](https://adkclaw.dev) — see who else is building right now.
 
 ### Resources

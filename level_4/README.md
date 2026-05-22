@@ -288,7 +288,7 @@ The legacy `level_5/` directory has been removed from the repo; its content (thr
 
 You walked in knowing how to call an LLM. You're walking out knowing how to **build, deploy, and operate an autonomous agent** — on the same Google Cloud stack used by production systems.
 
-Next: read [`POST_WORKSHOP.md`](../POST_WORKSHOP.md) for graduation, certificate, extension projects, and how to keep your agent cheap (or kill it cleanly).
+You've completed the AdkClaw workshop. Congratulations on shipping a production-grade autonomous agent on Google Cloud!
 
 ---
 
