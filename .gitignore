@@ -92,3 +92,6 @@ venv/
 
 # === Private-repo stragglers (never belong in the public repo) ===
 platform/
+
+# === Local tool configs (not part of the workshop) ===
+.antigravitycli/
