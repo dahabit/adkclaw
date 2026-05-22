@@ -1,0 +1,333 @@
+Ahmed Abu Eldahab
+GDE Flutter & Dart
+@dahabdev
+From Prompts to Agents
+Building Autonomous AI Systems with Google ADK
+
+Ahmed Abu Eldahab
+Google Developer Expert in Flutter & Dart
+Kortobaa CEO
+Egypt/Saudi Arabia/UAE/USA
+/Dahabdev
+
+bit.ly/dahab-youtube
+http://bit.ly/dahab-youtube
+https://www.youtube.com/user/h3boh3bo/
+
+Chat-based AI (No Local Access, No Project Context)
+ChatGPT (OpenAI)
+
+Claude (Anthropic)
+
+Grok (xAI)
+
+Gemini (Google)
+
+Meta LLaMA Web Tools
+
+DeepSeek
+
+Other browser-only AI playgrounds
+No access to your project files
+
+No understanding of folder structure
+
+Cannot edit your code
+
+Cannot run tools or commands
+
+Only a “chat box” → no real engineering workflow
+AI Started on the Web
+Great for ideas… but NOT enough for real development.
+Web AI Tools
+Limitations
+/DahabDev
+This is where AI development started for almost all of us — the browser. We had ChatGPT Web, Claude Web, Gemini Web, Grok, DeepSeek, Meta LLaMA websites…
+These tools were amazing for thinking, writing, summarizing — but they had one huge problem: no local access. They didn’t know your project structure, they didn’t know your files, and they couldn’t help you engineer, only chat.
+Great for ideas… but not enough for real development
+
+Local Context • File Awareness • Code Refactoring
+Cursor
+Windsurf
+JetBrains AI
+Continue.dev (VS Code)
+GitHub Copilot
+Sourcegraph Cody
+Zed AI
+Chinese open-source editors (QodoAI, WritePilot, etc.)
+AI can read project files
+AI understands folder structure
+AI can create & edit files
+AI can generate diffs
+AI can refactor entire components
+Massive jump in productivity
+AI Moved Into Your Editor
+Great for ideas… but NOT enough for real development.
+AI Editors & Plugins
+What Improved
+/DahabDev
+This is where AI development started for almost all of us — the browser. We had ChatGPT Web, Claude Web, Gemini Web, Grok, DeepSeek, Meta LLaMA websites…
+These tools were amazing for thinking, writing, summarizing — but they had one huge problem: no local access. They didn’t know your project structure, they didn’t know your files, and they couldn’t help you engineer, only chat.
+Great for ideas… but not enough for real development
+
+Full File Access • Multi-Step Reasoning • End-to-End Project Generation
+Google: gemini CLI
+OpenAI: openai CLI
+ Anthropic: claude CLI
+Others ….
+✔ Access the full file system
+✔ Create entire project structures
+✔ Edit multiple folders at once
+✔ Run commands, tests, scripts, servers
+✔ Call APIs & tools during reasoning
+✔ Generate Flutter apps + GenKit backends
+✔ Build real multi-step agents
+AI CLI Tools
+CLI turns AI from a “chat assistant” into a real software engineer.
+AI CLI Tools
+Why CLI Is the Future
+/DahabDev
+This is where AI development started for almost all of us — the browser. We had ChatGPT Web, Claude Web, Gemini Web, Grok, DeepSeek, Meta LLaMA websites…
+These tools were amazing for thinking, writing, summarizing — but they had one huge problem: no local access. They didn’t know your project structure, they didn’t know your files, and they couldn’t help you engineer, only chat.
+Great for ideas… but not enough for real development
+
+AI Agents: An evolution
+   7
+LLM + Prompt
+LLM + Retrieval
+LLM + Retrieval + Tools
++ Many Tools 
++ Reasoning Loop
+Agent
+Multi Agent 
+Systems
+LLM
+LLM
+RAG
+LLM
+RAG
+Tools
+LLM
+RAG
+Tools
+So, what exactly is an AI agent? In the context of ADK and modern AI, an agent is more than just a program. It's a self-contained execution unit that acts autonomously to achieve specific goals. It can perform tasks, interact with users, and crucially, use external tools to gather information or take actions. Agents move beyond simple input-output; they can reason, plan, and orchestrate complex workflows, much like an intelligent worker you delegate tasks to.
+
+So, what exactly is an AI agent? In the context of ADK and modern AI, an agent is more than just a program. It's a self-contained execution unit that acts autonomously to achieve specific goals. It can perform tasks, interact with users, and crucially, use external tools to gather information or take actions. Agents move beyond simple input-output; they can reason, plan, and orchestrate complex workflows, much like an intelligent worker you delegate tasks to.
+
+Gartner says by 2028, 33% of enterprise apps will be agentic—an S-curve from less than 1% in 2024
+—-----
+
+Gartner in a last year research said that by 2028, 33% of enterprise software applications will include Agentic AI which now we are seeing more…
+
+Agents drive ROI
+Agents are the key to driving tangible ROI. They aren't just models; they are AI-powered applications built for a specific purpose. To build them, you need a complete stack. For that Google Cloud provides it all: global Infrastructure, powerful Models like Gemini, and a unified Platform, Vertex AI. This foundation makes building robust agents simple and scalable.And on this platform, you can create agents that transform every part of your business. For example:
+Starting on the left, Customer Agents that revolutionize your service and sales experience.
+Employee Agents that act as productivity assistants for your entire workforce.
+Creative Agents that become partners in generating marketing copy, designs, and new ideas.
+Data Agents that allow you to query your business data in natural language and get instant insights.
+Code Agents that supercharge your developers, helping them write, explain, and debug code faster.
+And critically, Security Agents that work around the clock to help your teams detect and respond to threats.As you can see, every agent solves a real-world problem. They are the bridge between AI technology and business value. We are delivering agents that produce measurable results for your company. 
+
+
+Before ADK we took 500 lines of code for a travel agent and now with ADK only 50 lines of code for the same travel agent…
+
+…the use of Agent Development Kit in this case and why I am wearing this t-shirt …how many of you knows ADK? How many of you are using ADK? Nice! 
+
+
+        Sequential Agent
+
+
+
+
+        Parallel Agent
+
+
+
+
+
+
+
+        
+        Loop Agent
+
+
+
+
+
+
+
+
+
+
+  LLM Agent
+
+
+
+
+Sequential Models
+Chains multiple specialized LLMs in a pipeline.
+
+LLM
+Input
+Output
+Intermediate Result…
+LLM
+Parallel Models
+Multiple LLMs concurrently and aggregate outputs
+
+Aggregator
+Input
+Output
+LLM
+LLM
+LLM
+Hierarchical Routing
+Router model to direct inputs to specialized LLMs based on content or intent
+Router
+Input
+LLM
+LLM
+LLM
+LLM
+Output
+Analysis and Classification
+processing
+Workflow Agents
+Core concepts: Building Blocks of Intelligent Agents
+….Workflow Agents let you build predictable pipelines — with steps that run in sequence, in parallel, or in loops.
+You can mix and match these patterns, giving you a lot of flexibility for structured tasks.
+—-----
+
+Hierarchical Routing
+Benefits: Intent-based routing, resource efficiency, scalability, and improved accuracy.
+Drawbacks: Critical reliance on routing accuracy, coordination complexity
+
+Uses a central router model (LLM) to direct inputs to specialized LLMs based on content or intent.
+To maintain consistent quality and accuracy across diverse domains by leveraging expert models.
+Benefits: Intent-based routing & specialization, resource efficiency, scalability, and improved accuracy.
+Drawbacks: Critical reliance on routing accuracy, coordination complexity, challenges in maintaining contextual continuity, and higher development effort.
+Balancing quality, speed, and cost, it improves quality with specialized expertise but introduces complexity in routing and coordination.
+
+
+Agent2Agent (A2A) Protocol 
+Agent
+Tool
+Tool
+Agent
+Tool
+Tool
+Workflow Agent
+Agent
+Tool
+Tool
+?
+A2A Server
+
+
+
+
+
+
+
+
+
+
+
+
+
+            
+             Workflow Agent 
+            
+
+
+
+
+
+
+
+
+
+
+
+
+Model
+Instruction
+Sub Agents
+get Agent Cards
+Get Task
+Send Task
+Agent A
+Agent B
+Agent C
+Agent D
+
+Model Context Protocol (MCP)
+            
+             Agent 
+            (MCP Client)
+
+
+
+
+
+
+
+
+
+
+
+
+            
+             MCP Server
+
+
+
+
+
+
+
+
+
+
+
+
+List Tools
+Call Tools
+Model
+Instruction
+Tools
+doABC
+fetchDEF
+genGHI
+sendJKL
+
+A2A - Agent Card
+Name: Agent ABC
+Provider: Google (URL)
+Capabilities:
+    I can do streaming
+    I can do Push Notifications
+Skills:
+   Skill A
+Description
+Input
+Output
+    Skill B
+Description
+Input
+Output
+Authentication:
+    Scheme: Bearer
+    Key: xxx
+Preferred input/output: text
+A digital profile or manifest for an agent. It's a standardized metadata file (JSON) 
+To orchestrating systems
+For discovery
+
+Deploying ADK Agents to Google Cloud
+Once your ADK agent has been built and tested locally, the next crucial step is to deploy it so it can be accessed, queried, and integrated with other applications in a production environment. ADK offers flexible deployment options within Google Cloud to meet various scalability and control needs.
+The three main options are:
+Vertex AI Agent Engine: This is a fully managed, auto-scaling service specifically designed for deploying, managing, and scaling AI agents built with frameworks like ADK on Google Cloud.
+Cloud Run: A managed, auto-scaling compute platform on Google Cloud that allows you to run your agent as a container-based application. It's ideal for use cases requiring on-demand scalability without the complexity of managing underlying infrastructure.
+Google Kubernetes Engine (GKE): For scenarios demanding greater control over the deployment environment or running open models, GKE offers a managed Kubernetes service for running agents in a containerized environment.
+

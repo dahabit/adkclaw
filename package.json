@@ -58,7 +58,6 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "audit:security": "tsx scripts/audit-security.ts",
-    "eval": "tsx evals/runner.ts",
     "link": "npm run build && npm link",
     "prepublishOnly": "npm test && npm run build:dist"
   },
